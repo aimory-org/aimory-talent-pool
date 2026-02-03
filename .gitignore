@@ -1,10 +1,12 @@
 # Terraform
-infra/.terraform/
-infra/.terraform.lock.hcl
-infra/terraform.tfstate
-infra/terraform.tfstate.backup
-infra/*.tfstate
-infra/*.tfstate.*
+**/.terraform/
+**/.terraform.lock.hcl
+**/terraform.tfstate
+**/terraform.tfstate.backup
+**/*.tfstate
+**/*.tfstate.*
+**/*.tfvars
+**/.terraform.tfstate.lock.info
 
 # Logs
 *.log
@@ -13,3 +15,20 @@ infra/*.tfstate.*
 .DS_Store
 .vscode/
 .idea/
+
+# Python (if you add any scripts)
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+venv/
+
+# Node (if you add any tooling)
+node_modules/
+package-lock.json
+yarn.lock
+
+# Environment variables
+.env
+.env.local
