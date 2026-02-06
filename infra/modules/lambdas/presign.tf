@@ -27,6 +27,22 @@ resource "aws_iam_role_policy_attachment" "presign_basic_logs" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
+resource "aws_iam_role_policy" "presign_s3_put" {
+  name = "${var.project_name}-${var.environment}-presign-s3-put"
+  role = aws_iam_role.presign_lambda_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = ["s3:PutObject"],
+        Resource = "arn:aws:s3:::${var.resume_bucket}/${var.resume_prefix}/*"
+      }
+    ]
+  })
+}
+
 resource "aws_lambda_function" "presign" {
   function_name = "${var.project_name}-${var.environment}-presign"
   role          = aws_iam_role.presign_lambda_role.arn
@@ -49,4 +65,21 @@ resource "aws_lambda_function" "presign" {
 resource "aws_lambda_function_url" "presign" {
   function_name      = aws_lambda_function.presign.arn
   authorization_type = "NONE"
+}
+
+# Allow unauthenticated invoke of the Function URL (AuthType NONE)
+resource "aws_lambda_permission" "presign_allow_url" {
+  statement_id           = "AllowPublicInvokeFunctionUrl"
+  action                 = "lambda:InvokeFunctionUrl"
+  function_name          = aws_lambda_function.presign.function_name
+  principal              = "*"
+  function_url_auth_type = "NONE"
+}
+
+# Required by AWS for Function URLs created under the newer auth model (Oct 2025+)
+resource "aws_lambda_permission" "presign_allow_invoke" {
+  statement_id  = "AllowPublicInvokeFunction"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.presign.function_name
+  principal     = "*"
 }
