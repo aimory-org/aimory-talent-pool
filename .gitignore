@@ -8,6 +8,10 @@
 **/*.tfvars
 **/.terraform.tfstate.lock.info
 
+# Lambda build artifacts
+**/lambda_build/
+**/*.zip
+
 # Logs
 *.log
 
