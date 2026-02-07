@@ -37,7 +37,7 @@ resource "aws_iam_role_policy" "presign_s3_put" {
       {
         Effect = "Allow",
         Action = ["s3:PutObject"],
-        Resource = "arn:aws:s3:::${var.resume_bucket}/${var.resume_prefix}/*"
+        Resource = "arn:aws:s3:::${var.resume_bucket}/${var.raw_prefix}/*"
       }
     ]
   })
@@ -55,7 +55,7 @@ resource "aws_lambda_function" "presign" {
   environment {
     variables = {
       RESUME_BUCKET   = var.resume_bucket
-      RESUME_PREFIX   = var.resume_prefix
+      RESUME_PREFIX   = var.raw_prefix
       PRESIGN_API_KEY = var.presign_api_key
     }
   }

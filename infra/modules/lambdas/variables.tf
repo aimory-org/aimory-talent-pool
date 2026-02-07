@@ -1,26 +1,22 @@
-variable "project_name" {
-  description = "Project name used as a prefix for resources"
-  type        = string
+variable "project_name" { type = string }
+variable "environment"  { type = string }
+
+# one bucket, different prefixes
+variable "resume_bucket" { type = string }
+
+variable "raw_prefix" {
+  type    = string
+  default = "raw"
 }
 
-variable "environment" {
-  description = "Environment name (dev/staging/prod)"
-  type        = string
+variable "extracted_prefix" {
+  type    = string
+  default = "extracted"
 }
 
-variable "resume_bucket" {
-  description = "S3 bucket name where resumes are stored"
-  type        = string
-}
+# SSM parameter name that will contain the SFN state machine arn
+# e.g. "/aimory-talent-pool/dev/pipeline/state_machine_arn"
+variable "sfn_arn_param_name" { type = string }
 
-variable "resume_prefix" {
-  description = "S3 key prefix for resume uploads"
-  type        = string
-
-}
-
-variable "presign_api_key" {
-  description = "Shared secret sent by Power Automate as x-api-key"
-  type        = string
-  sensitive   = true
-}
+# Presign (for your existing presign.tf)
+variable "presign_api_key" { type = string }

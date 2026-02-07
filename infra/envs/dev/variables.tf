@@ -22,8 +22,19 @@ variable "presign_api_key" {
   sensitive   = true
 }
 
-variable "resume_prefix" {
+variable "raw_prefix" {
   description = "S3 key prefix for resume uploads"
   type        = string
   default     = "raw/onedrive"
+}
+
+variable "extracted_prefix" {
+  description = "S3 key prefix for textract json"
+  type        = string
+  default     = "extracted"
+}
+
+variable "sfn_arn_param_name" {
+  description = "SSM Parameter name containing Step Functions state machine ARN"
+  type        = string
 }
