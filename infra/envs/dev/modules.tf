@@ -12,4 +12,5 @@ module "lambdas" {
   environment     = var.environment
   resume_bucket   = module.storage.resume_bucket_name
   presign_api_key = var.presign_api_key
+  resume_prefix   = var.resume_prefix
 }

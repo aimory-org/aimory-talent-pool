@@ -16,7 +16,7 @@ variable "resume_bucket" {
 variable "resume_prefix" {
   description = "S3 key prefix for resume uploads"
   type        = string
-  default     = "raw/onedrive"
+
 }
 
 variable "presign_api_key" {

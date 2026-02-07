@@ -21,3 +21,9 @@ variable "presign_api_key" {
   type        = string
   sensitive   = true
 }
+
+variable "resume_prefix" {
+  description = "S3 key prefix for resume uploads"
+  type        = string
+  default     = "raw/onedrive"
+}
