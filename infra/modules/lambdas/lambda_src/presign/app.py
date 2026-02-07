@@ -42,7 +42,7 @@ def handler(event, context):
     # remove empties
     meta = {k: v for k, v in meta.items() if v}
 
-    key = f"{PREFIX}/{int(time.time())}_{filename}"
+    key = f"{PREFIX}/{filename}"
 
     url = s3.generate_presigned_url(
         ClientMethod="put_object",
