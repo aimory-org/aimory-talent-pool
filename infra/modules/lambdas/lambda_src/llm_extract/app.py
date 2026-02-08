@@ -16,8 +16,20 @@ TALENT_SCHEMA = {
   "title": "TalentProfile",
   "type": "object",
   "additionalProperties": False,
-  "required": ["skillsets", "years_of_experience", "companies", "location", "rates"],
+  "required": ["name", "contact", "skillsets", "years_of_experience", "companies", "location", "rates"],
   "properties": {
+    "name": {"type": ["string", "null"], "minLength": 1},
+    "contact": {
+      "type": "object",
+      "additionalProperties": False,
+      "required": ["email", "phone", "linkedin", "github"],
+      "properties": {
+        "email": {"type": ["string", "null"], "minLength": 3},
+        "phone": {"type": ["string", "null"], "minLength": 7},
+        "linkedin": {"type": ["string", "null"]},
+        "github": {"type": ["string", "null"]}
+      }
+    },
     "skillsets": {
       "type": "array",
       "items": {
@@ -71,7 +83,7 @@ SYSTEM_INSTRUCTIONS = """You extract structured talent info from a resume.
 Rules:
 - Return ONLY JSON matching the schema.
 - Do NOT include markdown, code fences, or commentary.
-- Extract only: skillsets, years_of_experience, companies, location, rates.
+- Extract only: name, contact, skillsets, years_of_experience, companies, location, rates.
 - Evidence snippets must be short and taken verbatim from the resume text.
 - If a field is not present or cannot be confidently inferred, use null (or "unknown" for rate unit/currency).
 """
