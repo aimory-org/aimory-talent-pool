@@ -26,7 +26,13 @@ locals {
 
     normalize = { timeout = 30, memory = 512, env = {} }
 
-    llm_extract = { timeout = 60, memory = 1024, env = {} }
+    llm_extract = {
+      timeout = 60
+      memory  = 1024
+      env = {
+        MODEL_ID   = "anthropic.claude-3-5-sonnet-20240620-v1:0"
+      }
+    }
 
     persist = { timeout = 30, memory = 512, env = {} }
   }
@@ -85,6 +91,11 @@ resource "aws_iam_role_policy" "pipeline_policy" {
       },
       {
         Effect = "Allow",
+        Action = ["s3:GetObject"],
+        Resource = "arn:aws:s3:::${var.resume_bucket}/${var.extracted_prefix}/*"
+      },
+      {
+        Effect = "Allow",
         Action = [
           "textract:StartDocumentTextDetection",
           "textract:GetDocumentTextDetection"
@@ -95,6 +106,14 @@ resource "aws_iam_role_policy" "pipeline_policy" {
         Effect = "Allow",
         Action = ["ssm:GetParameter"],
         Resource = "arn:aws:ssm:*:*:parameter${var.sfn_arn_param_name}"
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "bedrock:InvokeModel",
+          "bedrock:InvokeModelWithResponseStream"
+        ],
+        Resource = "*"
       }
     ]
   })
