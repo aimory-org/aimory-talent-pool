@@ -1,75 +1,76 @@
 {
   "Comment": "Aimory pipeline: S3 -> Textract -> Normalize -> LLM -> Persist",
+  "TimeoutSeconds": 600,
   "StartAt": "ClassifyAndPrep",
   "States": {
     "ClassifyAndPrep": {
       "Type": "Task",
       "Resource": "${lambda_classify_arn}",
       "ResultPath": "$.prep",
-      "Next": "StartTextract",
-      "Retry": [{ "ErrorEquals": ["States.ALL"], "IntervalSeconds": 2, "MaxAttempts": 3, "BackoffRate": 2.0 }]
+      "Next": "StartTextract"
     },
-
     "StartTextract": {
       "Type": "Task",
       "Resource": "${lambda_start_textract_arn}",
       "ResultPath": "$.textract",
-      "Next": "WaitBeforeCheck",
-      "Retry": [{ "ErrorEquals": ["States.ALL"], "IntervalSeconds": 2, "MaxAttempts": 3, "BackoffRate": 2.0 }]
+      "Next": "WaitBeforeCheck"
     },
-
-    "WaitBeforeCheck": { "Type": "Wait", "Seconds": 10, "Next": "CheckTextract" },
-
+    "WaitBeforeCheck": {
+      "Type": "Wait",
+      "Seconds": 10,
+      "Next": "CheckTextract"
+    },
     "CheckTextract": {
       "Type": "Task",
       "Resource": "${lambda_check_textract_arn}",
       "ResultPath": "$.textractStatus",
-      "Next": "TextractStatusChoice",
-      "Retry": [{ "ErrorEquals": ["States.ALL"], "IntervalSeconds": 2, "MaxAttempts": 3, "BackoffRate": 2.0 }]
+      "Next": "TextractStatusChoice"
     },
-
     "TextractStatusChoice": {
       "Type": "Choice",
       "Choices": [
-        { "Variable": "$.textractStatus.status", "StringEquals": "SUCCEEDED", "Next": "FetchTextractBlocks" },
-        { "Variable": "$.textractStatus.status", "StringEquals": "FAILED", "Next": "FailWorkflow" }
+        {
+          "Variable": "$.textractStatus.status",
+          "StringEquals": "SUCCEEDED",
+          "Next": "FetchTextractBlocks"
+        },
+        {
+          "Variable": "$.textractStatus.status",
+          "StringEquals": "FAILED",
+          "Next": "FailWorkflow"
+        }
       ],
       "Default": "WaitBeforeCheck"
     },
-
     "FetchTextractBlocks": {
       "Type": "Task",
       "Resource": "${lambda_fetch_textract_arn}",
       "ResultPath": "$.textractBlocks",
-      "Next": "Normalize",
-      "Retry": [{ "ErrorEquals": ["States.ALL"], "IntervalSeconds": 2, "MaxAttempts": 3, "BackoffRate": 2.0 }]
+      "Next": "Normalize"
     },
-
     "Normalize": {
       "Type": "Task",
       "Resource": "${lambda_normalize_arn}",
       "ResultPath": "$.normalized",
-      "Next": "LLMExtract",
-      "Retry": [{ "ErrorEquals": ["States.ALL"], "IntervalSeconds": 2, "MaxAttempts": 2, "BackoffRate": 2.0 }]
+      "Next": "LLMExtract"
     },
-
     "LLMExtract": {
       "Type": "Task",
       "Resource": "${lambda_llm_extract_arn}",
       "ResultPath": "$.extracted",
-      "Next": "Persist",
-      "Retry": [{ "ErrorEquals": ["States.ALL"], "IntervalSeconds": 2, "MaxAttempts": 2, "BackoffRate": 2.0 }]
+      "Next": "Persist"
     },
-
     "Persist": {
       "Type": "Task",
       "Resource": "${lambda_persist_arn}",
       "ResultPath": "$.persisted",
       "Next": "Done"
     },
-
     "Done": { "Type": "Succeed" },
-
-    "FailWorkflow": { "Type": "Fail", "Error": "TextractFailed", "Cause": "Textract job returned FAILED" }
+    "FailWorkflow": {
+      "Type": "Fail",
+      "Error": "TextractFailed",
+      "Cause": "Textract job returned FAILED"
+    }
   }
 }
