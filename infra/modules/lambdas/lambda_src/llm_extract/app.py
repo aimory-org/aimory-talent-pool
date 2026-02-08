@@ -3,7 +3,7 @@ import json
 import boto3
 from botocore.exceptions import ClientError
 
-# Example model id: set this in Lambdaa env var MODEL_ID
+# Example model id: set this in Lambda env var MODEL_ID
 # (Choose a Claude Sonnet model available in your region.)
 MODEL_ID = os.environ.get("MODEL_ID", "")
 AWS_REGION = os.environ.get("AWS_REGION", "us-east-1")
@@ -16,7 +16,7 @@ TALENT_SCHEMA = {
   "title": "TalentProfile",
   "type": "object",
   "additionalProperties": False,
-  "required": ["skillsets", "years_of_experience", "companies", "location", "rates", "confidence"],
+  "required": ["skillsets", "years_of_experience", "companies", "location", "rates"],
   "properties": {
     "skillsets": {
       "type": "array",
@@ -63,17 +63,6 @@ TALENT_SCHEMA = {
         "currency": {"type": "string", "enum": ["USD","unknown"]},
         "evidence": {"type": "array", "items": {"type": "string"}, "minItems": 0, "maxItems": 2}
       }
-    },
-    "confidence": {
-      "type": "object",
-      "additionalProperties": False,
-      "required": ["overall", "years_of_experience", "location", "rates"],
-      "properties": {
-        "overall": {"type": "number", "minimum": 0, "maximum": 1},
-        "years_of_experience": {"type": "number", "minimum": 0, "maximum": 1},
-        "location": {"type": "number", "minimum": 0, "maximum": 1},
-        "rates": {"type": "number", "minimum": 0, "maximum": 1}
-      }
     }
   }
 }
@@ -82,8 +71,9 @@ SYSTEM_INSTRUCTIONS = """You extract structured talent info from a resume.
 Rules:
 - Return ONLY JSON matching the schema.
 - Do NOT include markdown, code fences, or commentary.
+- Extract only: skillsets, years_of_experience, companies, location, rates.
 - Evidence snippets must be short and taken verbatim from the resume text.
-- If a field is not present or cannot be confidently inferred, use null (or "unknown" for rate unit/currency) and keep confidence low.
+- If a field is not present or cannot be confidently inferred, use null (or "unknown" for rate unit/currency).
 """
 
 def _extract_text(event: dict) -> str:
