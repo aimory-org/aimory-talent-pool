@@ -259,7 +259,7 @@ def handler(event, context):
     ) VALUES (
         :pk, :bucket, :key, :name, CAST(:contact AS jsonb), :summary, :talent_category,
         CAST(:skillsets AS jsonb), :years_of_experience, CAST(:companies AS jsonb),
-        CAST(:location AS jsonb), CAST(:rates AS jsonb), :updated_at
+        CAST(:location AS jsonb), CAST(:rates AS jsonb), CAST(:updated_at AS timestamptz)
     )
     ON CONFLICT (pk) DO UPDATE SET
         bucket = EXCLUDED.bucket,
