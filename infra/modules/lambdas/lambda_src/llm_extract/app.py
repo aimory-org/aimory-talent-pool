@@ -41,7 +41,7 @@ TALENT_SCHEMA = {
         "properties": {
           "name": {"type": "string", "minLength": 1},
           "category": {"type": "string"},
-          "evidence": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "maxItems": 3}
+          "evidence": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1}
         }
       }
     },
@@ -54,7 +54,7 @@ TALENT_SCHEMA = {
         "required": ["name", "evidence"],
         "properties": {
           "name": {"type": "string", "minLength": 1},
-          "evidence": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "maxItems": 2}
+          "evidence": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1}
         }
       }
     },
@@ -75,7 +75,7 @@ TALENT_SCHEMA = {
         "amount": {"type": ["number", "null"]},
         "unit": {"type": "string", "enum": ["hour","day","year","project","unknown"]},
         "currency": {"type": "string", "enum": ["USD","unknown"]},
-        "evidence": {"type": "array", "items": {"type": "string"}, "minItems": 0, "maxItems": 2}
+        "evidence": {"type": "array", "items": {"type": "string"}, "minItems": 0}
       }
     }
   }

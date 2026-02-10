@@ -59,8 +59,8 @@ def _validate_skillset(skill, index):
     _validate_string(skill["name"], f"skillsets[{index}].name", min_len=1, allow_null=False)
     _validate_string(skill["category"], f"skillsets[{index}].category")
     evidence = skill["evidence"]
-    if not isinstance(evidence, list) or not (1 <= len(evidence) <= 3):
-        raise ValueError(f"skillsets[{index}].evidence must be list of 1-3 strings")
+    if not isinstance(evidence, list) or len(evidence) < 1:
+        raise ValueError(f"skillsets[{index}].evidence must be list of 1+ strings")
     for j, snippet in enumerate(evidence):
         _validate_string(snippet, f"skillsets[{index}].evidence[{j}]", min_len=1, allow_null=False)
 
@@ -72,8 +72,8 @@ def _validate_company(company, index):
     _require_keys(company, required, required, f"companies[{index}]")
     _validate_string(company["name"], f"companies[{index}].name", min_len=1, allow_null=False)
     evidence = company["evidence"]
-    if not isinstance(evidence, list) or not (1 <= len(evidence) <= 2):
-        raise ValueError(f"companies[{index}].evidence must be list of 1-2 strings")
+    if not isinstance(evidence, list) or len(evidence) < 1:
+        raise ValueError(f"companies[{index}].evidence must be list of 1+ strings")
     for j, snippet in enumerate(evidence):
         _validate_string(snippet, f"companies[{index}].evidence[{j}]", min_len=1, allow_null=False)
 
@@ -106,8 +106,8 @@ def _validate_rates(rates):
         raise ValueError("rates.currency invalid")
 
     evidence = rates["evidence"]
-    if not isinstance(evidence, list) or len(evidence) > 2:
-        raise ValueError("rates.evidence must be list of 0-2 strings")
+    if not isinstance(evidence, list):
+        raise ValueError("rates.evidence must be list of strings")
     for j, snippet in enumerate(evidence):
         _validate_string(snippet, f"rates.evidence[{j}]", allow_null=False)
 
