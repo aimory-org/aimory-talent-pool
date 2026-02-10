@@ -2,6 +2,7 @@ module "storage" {
   source       = "../../modules/storage"
   project_name = var.project_name
   environment  = var.environment
+  db_name      = var.db_name
 }
 
 module "lambdas" {
@@ -14,8 +15,9 @@ module "lambdas" {
   extracted_prefix   = var.extracted_prefix
   presign_api_key    = var.presign_api_key
   sfn_arn_param_name = var.sfn_arn_param_name
-  talent_profiles_table_name = module.storage.talent_profiles_table_name
-  talent_profiles_table_arn  = module.storage.talent_profiles_table_arn
+  db_cluster_arn = module.storage.db_cluster_arn
+  db_secret_arn  = module.storage.db_secret_arn
+  db_name        = module.storage.db_name
 }
 
 module "step_functions" {

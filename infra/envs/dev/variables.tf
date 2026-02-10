@@ -38,3 +38,9 @@ variable "sfn_arn_param_name" {
   description = "SSM Parameter name containing Step Functions state machine ARN"
   type        = string
 }
+
+variable "db_name" {
+  description = "Aurora database name"
+  type        = string
+  default     = "talent_profiles"
+}

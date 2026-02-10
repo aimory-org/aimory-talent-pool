@@ -1,13 +1,16 @@
 import os
+import json
 from datetime import datetime, timezone
-from decimal import Decimal
 
 import boto3
 
-TABLE_NAME = os.environ["TALENT_PROFILES_TABLE"]
+DB_CLUSTER_ARN = os.environ["DB_CLUSTER_ARN"]
+DB_SECRET_ARN = os.environ["DB_SECRET_ARN"]
+DB_NAME = os.environ["DB_NAME"]
 
-dynamodb = boto3.resource("dynamodb")
-table = dynamodb.Table(TABLE_NAME)
+rds_data = boto3.client("rds-data")
+
+_TABLE_READY = False
 
 _RATE_UNITS = {"hour", "day", "year", "project", "unknown"}
 _RATE_CURRENCIES = {"USD", "unknown"}
@@ -54,10 +57,9 @@ def _validate_contact(contact):
 def _validate_skillset(skill, index):
     if not isinstance(skill, dict):
         raise ValueError(f"skillsets[{index}] must be an object")
-    required = {"name", "category", "evidence"}
+    required = {"name", "evidence"}
     _require_keys(skill, required, required, f"skillsets[{index}]")
     _validate_string(skill["name"], f"skillsets[{index}].name", min_len=1, allow_null=False)
-    _validate_string(skill["category"], f"skillsets[{index}].category")
     evidence = skill["evidence"]
     if not isinstance(evidence, list) or len(evidence) < 1:
         raise ValueError(f"skillsets[{index}].evidence must be list of 1+ strings")
@@ -156,16 +158,65 @@ def _validate_profile(profile):
     _validate_rates(profile["rates"])
 
 
-def _to_decimal(value):
-    if isinstance(value, list):
-        return [_to_decimal(v) for v in value]
-    if isinstance(value, dict):
-        return {k: _to_decimal(v) for k, v in value.items()}
+def _param(name, value):
+    if value is None:
+        return {"name": name, "value": {"isNull": True}}
+    if isinstance(value, bool):
+        return {"name": name, "value": {"booleanValue": value}}
+    if isinstance(value, int):
+        return {"name": name, "value": {"longValue": value}}
     if isinstance(value, float):
-        return Decimal(str(value))
-    if isinstance(value, int) and not isinstance(value, bool):
-        return Decimal(value)
-    return value
+        return {"name": name, "value": {"doubleValue": value}}
+    return {"name": name, "value": {"stringValue": str(value)}}
+
+
+def _execute(sql, parameters=None):
+    kwargs = {
+        "resourceArn": DB_CLUSTER_ARN,
+        "secretArn": DB_SECRET_ARN,
+        "database": DB_NAME,
+        "sql": sql,
+    }
+    if parameters:
+        kwargs["parameters"] = parameters
+    return rds_data.execute_statement(**kwargs)
+
+
+def _ensure_table():
+    global _TABLE_READY
+    if _TABLE_READY:
+        return
+
+    create_sql = """
+    CREATE TABLE IF NOT EXISTS talent_profiles (
+      pk TEXT PRIMARY KEY,
+      bucket TEXT NOT NULL,
+      key TEXT NOT NULL,
+      name TEXT,
+      contact JSONB,
+      summary TEXT,
+      talent_category TEXT,
+      skillsets JSONB,
+      years_of_experience NUMERIC,
+      companies JSONB,
+      location JSONB,
+      rates JSONB,
+      updated_at TIMESTAMPTZ NOT NULL
+    );
+    """
+
+    _execute(create_sql)
+
+    index_sql = [
+        "CREATE INDEX IF NOT EXISTS idx_talent_category ON talent_profiles (talent_category)",
+        "CREATE INDEX IF NOT EXISTS idx_years_experience ON talent_profiles (years_of_experience)",
+        "CREATE INDEX IF NOT EXISTS idx_location_state ON talent_profiles ((location->>'state'))",
+        "CREATE INDEX IF NOT EXISTS idx_skillsets_gin ON talent_profiles USING GIN (skillsets jsonb_path_ops)",
+    ]
+    for stmt in index_sql:
+        _execute(stmt)
+
+    _TABLE_READY = True
 
 
 def handler(event, context):
@@ -183,23 +234,49 @@ def handler(event, context):
     pk = f"{bucket}#{key}"
     now = datetime.now(timezone.utc).isoformat()
 
-    item = {
-        "pk": pk,
-        "bucket": bucket,
-        "key": key,
-        "name": profile["name"],
-        "contact": profile["contact"],
-        "summary": profile["summary"],
-        "talent_category": profile["talent_category"],
-        "skillsets": profile["skillsets"],
-        "years_of_experience": profile["years_of_experience"],
-        "companies": profile["companies"],
-        "location": profile["location"],
-        "rates": profile["rates"],
-        "updated_at": now,
-    }
+    _ensure_table()
 
-    table.put_item(Item=_to_decimal(item))
+    params = [
+        _param("pk", pk),
+        _param("bucket", bucket),
+        _param("key", key),
+        _param("name", profile["name"]),
+        _param("contact", json.dumps(profile["contact"])),
+        _param("summary", profile["summary"]),
+        _param("talent_category", profile["talent_category"]),
+        _param("skillsets", json.dumps(profile["skillsets"])),
+        _param("years_of_experience", profile["years_of_experience"]),
+        _param("companies", json.dumps(profile["companies"])),
+        _param("location", json.dumps(profile["location"])),
+        _param("rates", json.dumps(profile["rates"])),
+        _param("updated_at", now),
+    ]
+
+    upsert_sql = """
+    INSERT INTO talent_profiles (
+        pk, bucket, key, name, contact, summary, talent_category,
+        skillsets, years_of_experience, companies, location, rates, updated_at
+    ) VALUES (
+        :pk, :bucket, :key, :name, CAST(:contact AS jsonb), :summary, :talent_category,
+        CAST(:skillsets AS jsonb), :years_of_experience, CAST(:companies AS jsonb),
+        CAST(:location AS jsonb), CAST(:rates AS jsonb), :updated_at
+    )
+    ON CONFLICT (pk) DO UPDATE SET
+        bucket = EXCLUDED.bucket,
+        key = EXCLUDED.key,
+        name = EXCLUDED.name,
+        contact = EXCLUDED.contact,
+        summary = EXCLUDED.summary,
+        talent_category = EXCLUDED.talent_category,
+        skillsets = EXCLUDED.skillsets,
+        years_of_experience = EXCLUDED.years_of_experience,
+        companies = EXCLUDED.companies,
+        location = EXCLUDED.location,
+        rates = EXCLUDED.rates,
+        updated_at = EXCLUDED.updated_at;
+    """
+
+    _execute(upsert_sql, params)
 
     return {
         "status": "ok",

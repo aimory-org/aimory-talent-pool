@@ -37,10 +37,9 @@ TALENT_SCHEMA = {
       "items": {
         "type": "object",
         "additionalProperties": False,
-        "required": ["name", "category", "evidence"],
+        "required": ["name", "evidence"],
         "properties": {
           "name": {"type": "string", "minLength": 1},
-          "category": {"type": "string"},
           "evidence": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1}
         }
       }

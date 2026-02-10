@@ -1,0 +1,51 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap');
+
+:root {
+  font-family: 'Source Sans 3', sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color: #101318;
+  background-color: #f6f2ec;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  --ink: #101318;
+  --ink-soft: #3a3f4b;
+  --muted: #6a7280;
+  --surface: #ffffff;
+  --surface-muted: #f1ede7;
+  --border: rgba(20, 24, 31, 0.12);
+  --accent: #ff6a3d;
+  --accent-dark: #ea5229;
+  --accent-soft: rgba(255, 106, 61, 0.18);
+  --shadow: 0 30px 60px -40px rgba(12, 14, 20, 0.45);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #fff8f1 0%, #f6f2ec 48%, #ede7dd 100%);
+  color: var(--ink);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select {
+  font-family: inherit;
+}

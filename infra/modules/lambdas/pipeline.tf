@@ -38,7 +38,9 @@ locals {
       timeout = 30
       memory  = 512
       env = {
-        TALENT_PROFILES_TABLE = var.talent_profiles_table_name
+        DB_CLUSTER_ARN = var.db_cluster_arn
+        DB_SECRET_ARN  = var.db_secret_arn
+        DB_NAME        = var.db_name
       }
     }
   }
@@ -124,10 +126,20 @@ resource "aws_iam_role_policy" "pipeline_policy" {
       {
         Effect = "Allow",
         Action = [
-          "dynamodb:PutItem",
-          "dynamodb:UpdateItem"
+          "rds-data:ExecuteStatement",
+          "rds-data:BatchExecuteStatement",
+          "rds-data:BeginTransaction",
+          "rds-data:CommitTransaction",
+          "rds-data:RollbackTransaction"
         ],
-        Resource = var.talent_profiles_table_arn
+        Resource = var.db_cluster_arn
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "secretsmanager:GetSecretValue"
+        ],
+        Resource = var.db_secret_arn
       }
     ]
   })
