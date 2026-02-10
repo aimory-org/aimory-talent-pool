@@ -14,6 +14,8 @@ module "lambdas" {
   extracted_prefix   = var.extracted_prefix
   presign_api_key    = var.presign_api_key
   sfn_arn_param_name = var.sfn_arn_param_name
+  talent_profiles_table_name = module.storage.talent_profiles_table_name
+  talent_profiles_table_arn  = module.storage.talent_profiles_table_arn
 }
 
 module "step_functions" {

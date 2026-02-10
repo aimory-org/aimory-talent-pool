@@ -34,7 +34,13 @@ locals {
       }
     }
 
-    persist = { timeout = 30, memory = 512, env = {} }
+    persist = {
+      timeout = 30
+      memory  = 512
+      env = {
+        TALENT_PROFILES_TABLE = var.talent_profiles_table_name
+      }
+    }
   }
 }
 
@@ -114,6 +120,14 @@ resource "aws_iam_role_policy" "pipeline_policy" {
           "bedrock:InvokeModelWithResponseStream"
         ],
         Resource = "*"
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "dynamodb:PutItem",
+          "dynamodb:UpdateItem"
+        ],
+        Resource = var.talent_profiles_table_arn
       }
     ]
   })

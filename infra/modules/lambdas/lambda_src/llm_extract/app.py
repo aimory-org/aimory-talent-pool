@@ -16,10 +16,11 @@ TALENT_SCHEMA = {
   "title": "TalentProfile",
   "type": "object",
   "additionalProperties": False,
-  "required": ["name", "contact", "summary", "skillsets", "years_of_experience", "companies", "location", "rates"],
+  "required": ["name", "contact", "summary", "talent_category", "skillsets", "years_of_experience", "companies", "location", "rates"],
   "properties": {
     "name": {"type": ["string", "null"], "minLength": 1},
-      "summary": {"type": ["string", "null"], "minLength": 1, "maxLength": 300},
+    "summary": {"type": ["string", "null"], "minLength": 1, "maxLength": 300},
+    "talent_category": {"type": "string", "enum": ["IT Resources", "Accounting and Finance Resources"]},
     "contact": {
       "type": "object",
       "additionalProperties": False,
@@ -39,7 +40,7 @@ TALENT_SCHEMA = {
         "required": ["name", "category", "evidence"],
         "properties": {
           "name": {"type": "string", "minLength": 1},
-          "category": {"type": "string", "enum": ["language","framework","cloud","database","data","devops","tooling","security","other"]},
+          "category": {"type": "string"},
           "evidence": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "maxItems": 3}
         }
       }
@@ -84,7 +85,7 @@ SYSTEM_INSTRUCTIONS = """You extract structured talent info from a resume.
 Rules:
 - Return ONLY JSON matching the schema.
 - Do NOT include markdown, code fences, or commentary.
-- Extract only: name, contact, summary, skillsets, years_of_experience, companies, location, rates.
+- Extract only: name, contact, summary, talent_category, skillsets, years_of_experience, companies, location, rates.
 - Evidence snippets must be short and taken verbatim from the resume text.
 - If a field is not present or cannot be confidently inferred, use null (or "unknown" for rate unit/currency).
 """
@@ -103,9 +104,13 @@ def handler(event, context):
 
     resume_text = _extract_text(event)
 
-    user_prompt = f"""Resume text:
-{resume_text}
-"""
+    schema_text = json.dumps(TALENT_SCHEMA, indent=2)
+    user_prompt = f"""Target JSON schema:
+  {schema_text}
+
+  Resume text:
+  {resume_text}
+  """
 
     # Note: boto3 Converse does not accept outputConfig; enforce JSON via prompt and validate on parse.
     try:
