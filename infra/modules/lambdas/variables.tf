@@ -21,6 +21,5 @@ variable "sfn_arn_param_name" { type = string }
 # Presign (for your existing presign.tf)
 variable "presign_api_key" { type = string }
 
-variable "db_cluster_arn" { type = string }
-variable "db_secret_arn" { type = string }
-variable "db_name" { type = string }
+variable "talent_profiles_table_name" { type = string }
+variable "talent_profiles_table_arn" { type = string }
