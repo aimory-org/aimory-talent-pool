@@ -9,11 +9,11 @@ module "lambdas" {
   project_name = var.project_name
   environment  = var.environment
 
-  resume_bucket      = module.storage.resume_bucket_name
-  raw_prefix         = var.raw_prefix
-  extracted_prefix   = var.extracted_prefix
-  presign_api_key    = var.presign_api_key
-  sfn_arn_param_name = var.sfn_arn_param_name
+  resume_bucket              = module.storage.resume_bucket_name
+  raw_prefix                 = var.raw_prefix
+  extracted_prefix           = var.extracted_prefix
+  presign_api_key            = var.presign_api_key
+  sfn_arn_param_name         = var.sfn_arn_param_name
   talent_profiles_table_name = module.storage.talent_profiles_table_name
   talent_profiles_table_arn  = module.storage.talent_profiles_table_arn
 }
