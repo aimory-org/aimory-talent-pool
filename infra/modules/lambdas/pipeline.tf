@@ -42,14 +42,36 @@ locals {
       }
     }
   }
+  pdfminer_layer_ready = fileexists("${path.module}/layers/pdfminer/python")
 }
 
 # Package each lambda from lambda_src/<name>/app.py 
 data "archive_file" "pipeline_zip" {
   for_each    = local.pipeline_lambdas
   type        = "zip"
-  source_file = "${path.module}/lambda_src/${each.key}/app.py"
+  source_dir  = "${path.module}/lambda_src/${each.key}"
   output_path = "${path.module}/${each.key}.zip"
+}
+
+data "archive_file" "pdfminer_layer" {
+  type        = "zip"
+  source_dir  = "${path.module}/layers/pdfminer"
+  output_path = "${path.module}/pdfminer_layer.zip"
+}
+
+resource "aws_lambda_layer_version" "pdfminer" {
+  layer_name          = "${var.project_name}-${var.environment}-pdfminer"
+  filename            = data.archive_file.pdfminer_layer.output_path
+  source_code_hash    = data.archive_file.pdfminer_layer.output_base64sha256
+  compatible_runtimes = ["python3.12"]
+  description         = "pdfminer.six for PDF text extraction"
+
+  lifecycle {
+    precondition {
+      condition     = local.pdfminer_layer_ready
+      error_message = "pdfminer layer is missing. Run the build script to create layers/pdfminer/python before terraform apply."
+    }
+  }
 }
 
 # Shared role for all pipeline lambdas
@@ -146,6 +168,7 @@ resource "aws_lambda_function" "pipeline" {
 
   timeout     = each.value.timeout
   memory_size = each.value.memory
+  layers      = each.key == "classify" ? [aws_lambda_layer_version.pdfminer.arn] : []
 
   environment {
     variables = each.value.env

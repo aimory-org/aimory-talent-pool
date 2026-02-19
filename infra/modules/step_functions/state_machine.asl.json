@@ -7,7 +7,18 @@
       "Type": "Task",
       "Resource": "${lambda_classify_arn}",
       "ResultPath": "$.prep",
-      "Next": "StartTextract"
+      "Next": "ChooseTextPath"
+    },
+    "ChooseTextPath": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.prep.skip_textract",
+          "BooleanEquals": true,
+          "Next": "Normalize"
+        }
+      ],
+      "Default": "StartTextract"
     },
     "StartTextract": {
       "Type": "Task",
