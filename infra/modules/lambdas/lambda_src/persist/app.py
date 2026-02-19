@@ -130,7 +130,7 @@ def _validate_profile(profile):
     _require_keys(profile, required, required, "extracted")
 
     _validate_string(profile["name"], "name", min_len=1)
-    _validate_string(profile["summary"], "summary", min_len=1, max_len=300)
+    _validate_string(profile["summary"], "summary", min_len=1, max_len=500)
     category = profile["talent_category"]
     if category not in _TALENT_CATEGORIES:
         raise ValueError("talent_category invalid")

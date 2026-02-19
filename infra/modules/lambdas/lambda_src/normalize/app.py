@@ -22,8 +22,15 @@ def _light_normalize(text: str) -> str:
         "work experience",
         "education",
         "skills",
+        "technical skills",
         "certifications",
         "projects",
+        "coursework",
+        "technologies",
+        "languages",
+        "tools",
+        "frameworks",
+        "project approaches",
     ]
     for header in headers:
         pattern = re.compile(rf"\b{re.escape(header)}\b", re.IGNORECASE)
