@@ -54,10 +54,9 @@ def _validate_contact(contact):
 def _validate_skillset(skill, index):
     if not isinstance(skill, dict):
         raise ValueError(f"skillsets[{index}] must be an object")
-    required = {"name", "category", "evidence"}
+    required = {"name", "evidence"}
     _require_keys(skill, required, required, f"skillsets[{index}]")
     _validate_string(skill["name"], f"skillsets[{index}].name", min_len=1, allow_null=False)
-    _validate_string(skill["category"], f"skillsets[{index}].category")
     evidence = skill["evidence"]
     if not isinstance(evidence, list) or len(evidence) < 1:
         raise ValueError(f"skillsets[{index}].evidence must be list of 1+ strings")
