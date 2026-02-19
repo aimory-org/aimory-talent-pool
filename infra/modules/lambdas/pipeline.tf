@@ -42,7 +42,7 @@ locals {
       }
     }
   }
-  pdfminer_layer_ready = fileexists("${path.module}/layers/pdfminer/python")
+  pdfminer_layer_ready = length(fileset(path.module, "layers/pdfminer/python/**")) > 0
 }
 
 # Package each lambda from lambda_src/<name>/app.py 
