@@ -80,11 +80,12 @@ resource "aws_cognito_identity_provider" "microsoft" {
 
   provider_details = {
     # Microsoft Entra ID OIDC endpoints
-    oidc_issuer               = "https://login.microsoftonline.com/${var.entra_tenant_id}/v2.0"
-    client_id                 = var.entra_client_id
-    client_secret             = var.entra_client_secret
-    attributes_request_method = "GET"
-    authorize_scopes          = "openid email profile"
+    oidc_issuer                   = "https://login.microsoftonline.com/${var.entra_tenant_id}/v2.0"
+    client_id                     = var.entra_client_id
+    client_secret                 = var.entra_client_secret
+    attributes_request_method     = "GET"
+    authorize_scopes              = "openid email profile"
+    attributes_url_add_attributes = "false"
   }
 
   # Map Microsoft claims to Cognito attributes

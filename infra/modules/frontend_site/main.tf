@@ -144,7 +144,8 @@ resource "aws_cloudfront_distribution" "site" {
     cloudfront_default_certificate = var.certificate_arn == null
     acm_certificate_arn            = var.certificate_arn
     ssl_support_method             = var.certificate_arn == null ? null : "sni-only"
-    minimum_protocol_version       = "TLSv1.2_2021"
+    # Default CloudFront cert only supports TLSv1; custom certs get TLSv1.2_2021
+    minimum_protocol_version       = var.certificate_arn == null ? "TLSv1" : "TLSv1.2_2021"
   }
 
   tags = {
