@@ -13,8 +13,22 @@ interface UserInfo {
 const SignInButton = () => {
   const handleClick = async () => {
     try {
+      // Check if already authenticated
+      try {
+        await getCurrentUser()
+        // Already signed in - just reload to refresh state
+        window.location.reload()
+        return
+      } catch {
+        // Not signed in, proceed with redirect
+      }
       await signInWithRedirect({ provider: microsoftProvider })
-    } catch (error) {
+    } catch (error: unknown) {
+      // Handle "already authenticated" gracefully
+      if (error instanceof Error && error.name === 'UserAlreadyAuthenticatedException') {
+        window.location.reload()
+        return
+      }
       console.error('Microsoft sign-in failed', error)
     }
   }
