@@ -67,7 +67,8 @@ const useAuth = () => {
         email: attributes.email || currentUser.username,
         name: attributes.name,
       })
-    } catch {
+    } catch (err) {
+      console.debug('No authenticated user:', err)
       setUser(null)
     } finally {
       setIsLoading(false)
@@ -75,20 +76,34 @@ const useAuth = () => {
   }, [])
 
   useEffect(() => {
-    checkUser()
-
     // Listen for auth events
     const unsubscribe = Hub.listen('auth', ({ payload }: { payload: { event: string } }) => {
+      console.debug('Auth event:', payload.event)
       switch (payload.event) {
         case 'signedIn':
+        case 'signInWithRedirect':
         case 'tokenRefresh':
           checkUser()
           break
         case 'signedOut':
           setUser(null)
           break
+        case 'signInWithRedirect_failure':
+          console.error('OAuth redirect failed')
+          setIsLoading(false)
+          break
       }
     })
+
+    // Check for OAuth redirect code in URL
+    const hasAuthCode = window.location.search.includes('code=')
+    
+    if (hasAuthCode) {
+      // Give Amplify time to exchange the code for tokens, then check
+      setTimeout(() => checkUser(), 1500)
+    } else {
+      checkUser()
+    }
 
     return unsubscribe
   }, [checkUser])
