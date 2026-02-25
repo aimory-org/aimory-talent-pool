@@ -11,27 +11,38 @@ if (!userPoolId || !userPoolClientId || !cognitoDomain) {
   )
 }
 
-const redirectUrl =
-  import.meta.env.VITE_COGNITO_REDIRECT_URI ||
-  (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173')
+// Use environment variable if set, otherwise detect at runtime
+// List all possible redirect URIs - Amplify will match the current origin
+const configuredRedirectUri = import.meta.env.VITE_COGNITO_REDIRECT_URI
 
-export const amplifyConfig: ResourcesConfig = {
-  Auth: {
-    Cognito: {
-      userPoolId,
-      userPoolClientId,
-      loginWith: {
-        oauth: {
-          domain: cognitoDomain,
-          scopes: ['email', 'openid', 'profile'],
-          redirectSignIn: [redirectUrl],
-          redirectSignOut: [redirectUrl],
-          responseType: 'code',
+// Function to get the config - needed because redirect URIs must be determined at runtime
+export const getAmplifyConfig = (): ResourcesConfig => {
+  // Get redirect URL at runtime, not build time
+  const redirectUrl = configuredRedirectUri || window.location.origin
+  
+  return {
+    Auth: {
+      Cognito: {
+        userPoolId,
+        userPoolClientId,
+        loginWith: {
+          oauth: {
+            domain: cognitoDomain,
+            scopes: ['email', 'openid', 'profile', 'aws.cognito.signin.user.admin'],
+            redirectSignIn: [redirectUrl],
+            redirectSignOut: [redirectUrl],
+            responseType: 'code',
+          },
         },
       },
     },
-  },
+  }
 }
+
+// Keep backward compat export - but this will use runtime origin now
+export const amplifyConfig = typeof window !== 'undefined' 
+  ? getAmplifyConfig() 
+  : {} as ResourcesConfig
 
 // Microsoft provider name (must match Cognito IdP configuration)
 export const microsoftProvider = {

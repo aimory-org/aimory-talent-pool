@@ -120,7 +120,13 @@ resource "aws_cognito_user_pool_client" "web" {
   # OAuth 2.0 settings
   allowed_oauth_flows                  = ["code"]
   allowed_oauth_flows_user_pool_client = true
-  allowed_oauth_scopes                 = ["email", "openid", "profile"]
+  allowed_oauth_scopes                 = ["email", "openid", "profile", "aws.cognito.signin.user.admin"]
+
+  # Explicit auth flows for Amplify
+  explicit_auth_flows = [
+    "ALLOW_REFRESH_TOKEN_AUTH",
+    "ALLOW_USER_SRP_AUTH",
+  ]
 
   # Callback URLs (frontend app URLs)
   callback_urls = var.callback_urls
