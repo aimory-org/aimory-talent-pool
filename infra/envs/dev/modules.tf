@@ -99,3 +99,33 @@ resource "aws_s3_bucket_notification" "raw_uploads" {
 
   depends_on = [aws_lambda_permission.allow_s3_invoke_starter]
 }
+
+# -----------------------------------------------------------------------------
+# Frontend deployment - builds and uploads to S3 on terraform apply
+# -----------------------------------------------------------------------------
+
+locals {
+  frontend_src_dir   = "${path.module}/../../../frontend/web"
+  frontend_src_hash  = sha256(join("", [
+    filesha256("${local.frontend_src_dir}/package.json"),
+    filesha256("${local.frontend_src_dir}/src/main.tsx"),
+    filesha256("${local.frontend_src_dir}/src/App.tsx"),
+    filesha256("${local.frontend_src_dir}/src/authConfig.ts"),
+    filesha256("${local.frontend_src_dir}/.env"),
+  ]))
+}
+
+resource "null_resource" "frontend_deploy" {
+  triggers = {
+    src_hash        = local.frontend_src_hash
+    bucket_name     = module.frontend_site.bucket_name
+    distribution_id = module.frontend_site.distribution_id
+  }
+
+  provisioner "local-exec" {
+    working_dir = local.frontend_src_dir
+    command     = "npm install && npm run build && aws s3 sync dist s3://${module.frontend_site.bucket_name} --delete && aws cloudfront create-invalidation --distribution-id ${module.frontend_site.distribution_id} --paths /index.html"
+  }
+
+  depends_on = [module.frontend_site, module.cognito]
+}
