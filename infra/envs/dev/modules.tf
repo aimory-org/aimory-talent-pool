@@ -4,6 +4,29 @@ module "storage" {
   environment  = var.environment
 }
 
+module "frontend_site" {
+  source          = "../../modules/frontend_site"
+  project_name    = var.project_name
+  environment     = var.environment
+  domain_aliases  = var.frontend_domain_aliases
+  certificate_arn = var.frontend_certificate_arn
+}
+
+module "cognito" {
+  source       = "../../modules/cognito"
+  project_name = var.project_name
+  environment  = var.environment
+
+  # OAuth callback URLs - include both localhost and production
+  callback_urls = var.cognito_callback_urls
+  logout_urls   = var.cognito_logout_urls
+
+  # Microsoft Entra ID federation
+  entra_client_id     = var.entra_client_id
+  entra_client_secret = var.entra_client_secret
+  entra_tenant_id     = var.entra_tenant_id
+}
+
 module "lambdas" {
   source       = "../../modules/lambdas"
   project_name = var.project_name

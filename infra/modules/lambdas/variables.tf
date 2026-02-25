@@ -1,5 +1,5 @@
 variable "project_name" { type = string }
-variable "environment"  { type = string }
+variable "environment" { type = string }
 
 # one bucket, different prefixes
 variable "resume_bucket" { type = string }

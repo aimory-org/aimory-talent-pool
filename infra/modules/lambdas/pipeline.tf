@@ -30,7 +30,7 @@ locals {
       timeout = 60
       memory  = 1024
       env = {
-        MODEL_ID   = "anthropic.claude-3-5-sonnet-20240620-v1:0"
+        MODEL_ID = "anthropic.claude-3-5-sonnet-20240620-v1:0"
       }
     }
 
@@ -81,9 +81,9 @@ resource "aws_iam_role" "pipeline_lambda_role" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
-      Effect = "Allow",
+      Effect    = "Allow",
       Principal = { Service = "lambda.amazonaws.com" },
-      Action = "sts:AssumeRole"
+      Action    = "sts:AssumeRole"
     }]
   })
 }
@@ -108,18 +108,18 @@ resource "aws_iam_role_policy" "pipeline_policy" {
     Version = "2012-10-17",
     Statement = [
       {
-        Effect = "Allow",
-        Action = ["s3:GetObject"],
+        Effect   = "Allow",
+        Action   = ["s3:GetObject"],
         Resource = "arn:aws:s3:::${var.resume_bucket}/${var.raw_prefix}/*"
       },
       {
-        Effect = "Allow",
-        Action = ["s3:PutObject"],
+        Effect   = "Allow",
+        Action   = ["s3:PutObject"],
         Resource = "arn:aws:s3:::${var.resume_bucket}/${var.extracted_prefix}/*"
       },
       {
-        Effect = "Allow",
-        Action = ["s3:GetObject"],
+        Effect   = "Allow",
+        Action   = ["s3:GetObject"],
         Resource = "arn:aws:s3:::${var.resume_bucket}/${var.extracted_prefix}/*"
       },
       {
@@ -131,8 +131,8 @@ resource "aws_iam_role_policy" "pipeline_policy" {
         Resource = "*"
       },
       {
-        Effect = "Allow",
-        Action = ["ssm:GetParameter"],
+        Effect   = "Allow",
+        Action   = ["ssm:GetParameter"],
         Resource = "arn:aws:ssm:*:*:parameter${var.sfn_arn_param_name}"
       },
       {
