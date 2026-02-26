@@ -126,7 +126,9 @@ def _validate_profile(profile):
         "location",
         "rates",
     }
-    _require_keys(profile, required, required, "extracted")
+    # Allow is_resume field from llm_extract (used by Step Function choice)
+    allowed = required | {"is_resume"}
+    _require_keys(profile, required, allowed, "extracted")
 
     _validate_string(profile["name"], "name", min_len=1)
     _validate_string(profile["summary"], "summary", min_len=1)

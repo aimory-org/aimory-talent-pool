@@ -69,7 +69,22 @@
       "Type": "Task",
       "Resource": "${lambda_llm_extract_arn}",
       "ResultPath": "$.extracted",
-      "Next": "Persist"
+      "Next": "CheckIsResume"
+    },
+    "CheckIsResume": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.extracted.is_resume",
+          "BooleanEquals": false,
+          "Next": "NotResume"
+        }
+      ],
+      "Default": "Persist"
+    },
+    "NotResume": {
+      "Type": "Succeed",
+      "Comment": "Document was not a resume - deleted from S3"
     },
     "Persist": {
       "Type": "Task",

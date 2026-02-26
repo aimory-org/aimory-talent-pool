@@ -114,6 +114,11 @@ resource "aws_iam_role_policy" "pipeline_policy" {
       },
       {
         Effect   = "Allow",
+        Action   = ["s3:DeleteObject"],
+        Resource = "arn:aws:s3:::${var.resume_bucket}/${var.raw_prefix}/*"
+      },
+      {
+        Effect   = "Allow",
         Action   = ["s3:PutObject"],
         Resource = "arn:aws:s3:::${var.resume_bucket}/${var.extracted_prefix}/*"
       },
