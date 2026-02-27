@@ -101,26 +101,35 @@ TALENT_SCHEMA = {
 }
 
 SYSTEM_INSTRUCTIONS = """You extract structured talent info from a resume.
-Rules:
-- Return ONLY JSON matching the schema.
-- Do NOT include markdown, code fences, or commentary.
-- FIRST determine if the document is actually a resume/CV. Set is_resume to true or false.
-- If is_resume is false, set rejection_reason explaining what the document is (e.g. "document is an invoice"), and set all other fields to null.
-- If is_resume is true, extract all fields: name, contact, summary, talent_bucket, talent_category, skillsets, years_of_experience, clearance_level, certifications, companies, location, bill_rate.
 
-Bucket Assignment Rules:
+CRITICAL: Return ONLY valid JSON. Every string must be properly quoted. Do not include any text outside the JSON object.
+
+Rules:
+- Return ONLY JSON matching the schema - no markdown, no code fences, no commentary.
+- FIRST determine if the document is actually a resume/CV. Set is_resume to true or false.
+- If is_resume is false, set rejection_reason explaining what the document is, and set all other fields to null.
+- If is_resume is true, extract all fields.
+
+JSON Formatting Rules (IMPORTANT):
+- All strings must be enclosed in double quotes
+- Escape any double quotes inside strings with backslash: \"
+- Keep evidence snippets SHORT (under 50 chars each) to avoid formatting issues
+- Limit to 2-3 evidence snippets per skill
+
+Bucket Assignment:
 - IT Resources: Developers, Network Engineers, Database Analysts, Cloud Experts, Project Managers, IT professionals
-- Accounting and Finance Resources: Accountants, Finance professionals, Data Analysts, Forensics specialists
+- Accounting and Finance Resources: Accountants, Finance professionals, Data Analysts, Forensics specialists  
 - HR Resources: Human Resources professionals, Recruiters, HR Managers
 - Business Development/Sales Resources: Sales, Business Development, Account Managers
 
-Category should match one of: Accounting, Finance, Data Analysis, Forensics, Developer, Network Engineer, Database Analyst, Cloud Expert, Project Manager, HR, Business Development, Sales
+Category options: Accounting, Finance, Data Analysis, Forensics, Developer, Network Engineer, Database Analyst, Cloud Expert, Project Manager, HR, Business Development, Sales
 
-- Evidence snippets must be short and taken verbatim from the resume text.
-- Extract certifications as a list of strings (e.g. ["PMP", "AWS Solutions Architect", "CPA"]).
-- Extract clearance_level if mentioned (Secret, Top Secret, TS/SCI, Public Trust, etc.).
-- bill_rate is the hourly rate in USD if mentioned; use null if not found.
-- If a field is not present or cannot be confidently inferred, use null or empty array for certifications.
+Field guidance:
+- Evidence snippets: SHORT phrases from resume (not full sentences)
+- Certifications: list of strings like ["PMP", "AWS Solutions Architect"]
+- Clearance: Secret, Top Secret, TS/SCI, Public Trust, or null
+- bill_rate: hourly USD rate if mentioned, otherwise null
+- If a field cannot be determined, use null (or empty array [] for lists)
 """
 
 def _extract_text(event: dict) -> str:
@@ -157,8 +166,8 @@ def handler(event, context):
         }],
         system=[{"text": SYSTEM_INSTRUCTIONS}],
         inferenceConfig={
-          "maxTokens": 1200,
-          "temperature": 0.2,
+          "maxTokens": 2500,
+          "temperature": 0.1,
           "topP": 0.9
         }
       )
@@ -172,15 +181,34 @@ def handler(event, context):
         raise RuntimeError(f"No text content returned from model. Raw content: {content}")
 
     # Validate the model output as JSON and return it.
-    try:
-      raw = text_blocks[0].strip()
-      if raw.startswith("```"):
-        # Strip fenced code blocks if the model ignores instructions.
-        raw = raw.strip("`")
-        raw = raw.replace("json\n", "", 1).strip()
-      result = json.loads(raw)
-    except json.JSONDecodeError as e:
-      raise RuntimeError(f"Model output was not valid JSON: {e}; output={text_blocks[0]}")
+    raw = text_blocks[0].strip()
+    if raw.startswith("```"):
+      # Strip fenced code blocks if the model ignores instructions.
+      raw = raw.strip("`")
+      raw = raw.replace("json\n", "", 1).strip()
+    
+    # Try to parse JSON, with repair attempts for common LLM errors
+    result = None
+    parse_error = None
+    for attempt in range(3):
+      try:
+        result = json.loads(raw)
+        break
+      except json.JSONDecodeError as e:
+        parse_error = e
+        if attempt == 0:
+          # Attempt 1: Fix trailing commas
+          import re
+          raw = re.sub(r',\s*}', '}', raw)
+          raw = re.sub(r',\s*]', ']', raw)
+        elif attempt == 1:
+          # Attempt 2: Try to truncate at last complete object/array
+          last_brace = raw.rfind('}')
+          if last_brace > 0:
+            raw = raw[:last_brace + 1]
+    
+    if result is None:
+      raise RuntimeError(f"Model output was not valid JSON: {parse_error}; output={text_blocks[0]}")
 
     # Check if the document is a resume
     if not result.get("is_resume", True):
