@@ -15,10 +15,12 @@ const SignInButton = () => {
     try {
       // Check if already authenticated
       try {
-        await getCurrentUser()
-        // Already signed in - just reload to refresh state
-        window.location.reload()
-        return
+        const session = await fetchAuthSession()
+        if (session.tokens) {
+          // Already signed in - just reload to refresh state
+          window.location.reload()
+          return
+        }
       } catch {
         // Not signed in, proceed with redirect
       }
