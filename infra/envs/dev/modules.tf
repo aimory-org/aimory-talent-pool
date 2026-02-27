@@ -39,6 +39,14 @@ module "lambdas" {
   sfn_arn_param_name         = var.sfn_arn_param_name
   talent_profiles_table_name = module.storage.talent_profiles_table_name
   talent_profiles_table_arn  = module.storage.talent_profiles_table_arn
+
+  # Lookup tables
+  skills_lookup_table_name         = module.storage.skills_lookup_table_name
+  skills_lookup_table_arn          = module.storage.skills_lookup_table_arn
+  certifications_lookup_table_name = module.storage.certifications_lookup_table_name
+  certifications_lookup_table_arn  = module.storage.certifications_lookup_table_arn
+  cities_lookup_table_name         = module.storage.cities_lookup_table_name
+  cities_lookup_table_arn          = module.storage.cities_lookup_table_arn
 }
 
 module "step_functions" {
@@ -105,8 +113,8 @@ resource "aws_s3_bucket_notification" "raw_uploads" {
 # -----------------------------------------------------------------------------
 
 locals {
-  frontend_src_dir   = "${path.module}/../../../frontend/web"
-  frontend_src_hash  = sha256(join("", [
+  frontend_src_dir = "${path.module}/../../../frontend/web"
+  frontend_src_hash = sha256(join("", [
     filesha256("${local.frontend_src_dir}/package.json"),
     filesha256("${local.frontend_src_dir}/src/main.tsx"),
     filesha256("${local.frontend_src_dir}/src/App.tsx"),

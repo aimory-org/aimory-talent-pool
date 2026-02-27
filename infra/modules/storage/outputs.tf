@@ -17,3 +17,34 @@ output "talent_profiles_table_arn" {
   description = "DynamoDB table ARN for talent profiles"
   value       = aws_dynamodb_table.talent_profiles.arn
 }
+
+# Lookup tables
+output "skills_lookup_table_name" {
+  description = "DynamoDB table name for skills lookup"
+  value       = aws_dynamodb_table.skills_lookup.name
+}
+
+output "skills_lookup_table_arn" {
+  description = "DynamoDB table ARN for skills lookup"
+  value       = aws_dynamodb_table.skills_lookup.arn
+}
+
+output "certifications_lookup_table_name" {
+  description = "DynamoDB table name for certifications lookup"
+  value       = aws_dynamodb_table.certifications_lookup.name
+}
+
+output "certifications_lookup_table_arn" {
+  description = "DynamoDB table ARN for certifications lookup"
+  value       = aws_dynamodb_table.certifications_lookup.arn
+}
+
+output "cities_lookup_table_name" {
+  description = "DynamoDB table name for cities lookup"
+  value       = aws_dynamodb_table.cities_lookup.name
+}
+
+output "cities_lookup_table_arn" {
+  description = "DynamoDB table ARN for cities lookup"
+  value       = aws_dynamodb_table.cities_lookup.arn
+}

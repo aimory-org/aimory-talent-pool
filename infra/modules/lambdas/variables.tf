@@ -23,3 +23,11 @@ variable "presign_api_key" { type = string }
 
 variable "talent_profiles_table_name" { type = string }
 variable "talent_profiles_table_arn" { type = string }
+
+# Lookup tables
+variable "skills_lookup_table_name" { type = string }
+variable "skills_lookup_table_arn" { type = string }
+variable "certifications_lookup_table_name" { type = string }
+variable "certifications_lookup_table_arn" { type = string }
+variable "cities_lookup_table_name" { type = string }
+variable "cities_lookup_table_arn" { type = string }

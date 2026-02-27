@@ -11,19 +11,34 @@ AWS_REGION = os.environ.get("AWS_REGION", "us-east-1")
 bedrock_client = boto3.client("bedrock-runtime", region_name=AWS_REGION)
 s3_client = boto3.client("s3", region_name=AWS_REGION)
 
-# JSON Schema from the message above (paste it as a single string)
+# JSON Schema for talent profile extraction
 TALENT_SCHEMA = {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "TalentProfile",
   "type": "object",
   "additionalProperties": False,
-  "required": ["is_resume", "name", "contact", "summary", "talent_category", "skillsets", "years_of_experience", "companies", "location", "rates"],
+  "required": ["is_resume", "name", "contact", "summary", "talent_bucket", "talent_category", "skillsets", "years_of_experience", "companies", "location", "clearance_level", "certifications", "bill_rate"],
   "properties": {
     "is_resume": {"type": "boolean", "description": "True if the document is a resume/CV, false otherwise"},
     "rejection_reason": {"type": ["string", "null"], "description": "If is_resume is false, explain why (e.g. 'document is an invoice', 'document is a contract')"},
     "name": {"type": ["string", "null"], "minLength": 1},
     "summary": {"type": ["string", "null"], "minLength": 1, "maxLength": 300},
-    "talent_category": {"type": ["string", "null"], "enum": ["IT Resources", "Accounting and Finance Resources", None]},
+    "talent_bucket": {
+      "type": ["string", "null"],
+      "enum": ["IT Resources", "Accounting and Finance Resources", "HR Resources", "Business Development/Sales Resources", None],
+      "description": "Primary bucket classification for the talent"
+    },
+    "talent_category": {
+      "type": ["string", "null"],
+      "enum": [
+        "Accounting", "Finance", "Data Analysis", "Forensics",
+        "Developer", "Network Engineer", "Database Analyst", "Cloud Expert", "Project Manager",
+        "HR",
+        "Business Development", "Sales",
+        None
+      ],
+      "description": "Specific category within the bucket"
+    },
     "contact": {
       "type": "object",
       "additionalProperties": False,
@@ -48,6 +63,15 @@ TALENT_SCHEMA = {
       }
     },
     "years_of_experience": {"type": ["number", "null"]},
+    "clearance_level": {
+      "type": ["string", "null"],
+      "description": "Security clearance level if mentioned (e.g. Secret, Top Secret, TS/SCI, Public Trust)"
+    },
+    "certifications": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "description": "List of certifications (e.g. PMP, CPA, AWS Solutions Architect, CISSP)"
+    },
     "companies": {
       "type": "array",
       "items": {
@@ -69,16 +93,9 @@ TALENT_SCHEMA = {
         "state": {"type": ["string", "null"]}
       }
     },
-    "rates": {
-      "type": "object",
-      "additionalProperties": False,
-      "required": ["amount", "unit", "currency", "evidence"],
-      "properties": {
-        "amount": {"type": ["number", "null"]},
-        "unit": {"type": "string", "enum": ["hour","day","year","project","unknown"]},
-        "currency": {"type": "string", "enum": ["USD","unknown"]},
-        "evidence": {"type": "array", "items": {"type": "string"}, "minItems": 0}
-      }
+    "bill_rate": {
+      "type": ["number", "null"],
+      "description": "Hourly bill rate in USD if mentioned in resume"
     }
   }
 }
@@ -89,9 +106,21 @@ Rules:
 - Do NOT include markdown, code fences, or commentary.
 - FIRST determine if the document is actually a resume/CV. Set is_resume to true or false.
 - If is_resume is false, set rejection_reason explaining what the document is (e.g. "document is an invoice"), and set all other fields to null.
-- If is_resume is true, extract: name, contact, summary, talent_category, skillsets, years_of_experience, companies, location, rates.
+- If is_resume is true, extract all fields: name, contact, summary, talent_bucket, talent_category, skillsets, years_of_experience, clearance_level, certifications, companies, location, bill_rate.
+
+Bucket Assignment Rules:
+- IT Resources: Developers, Network Engineers, Database Analysts, Cloud Experts, Project Managers, IT professionals
+- Accounting and Finance Resources: Accountants, Finance professionals, Data Analysts, Forensics specialists
+- HR Resources: Human Resources professionals, Recruiters, HR Managers
+- Business Development/Sales Resources: Sales, Business Development, Account Managers
+
+Category should match one of: Accounting, Finance, Data Analysis, Forensics, Developer, Network Engineer, Database Analyst, Cloud Expert, Project Manager, HR, Business Development, Sales
+
 - Evidence snippets must be short and taken verbatim from the resume text.
-- If a field is not present or cannot be confidently inferred, use null (or "unknown" for rate unit/currency).
+- Extract certifications as a list of strings (e.g. ["PMP", "AWS Solutions Architect", "CPA"]).
+- Extract clearance_level if mentioned (Secret, Top Secret, TS/SCI, Public Trust, etc.).
+- bill_rate is the hourly rate in USD if mentioned; use null if not found.
+- If a field is not present or cannot be confidently inferred, use null or empty array for certifications.
 """
 
 def _extract_text(event: dict) -> str:

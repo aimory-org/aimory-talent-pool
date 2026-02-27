@@ -13,3 +13,11 @@ output "pipeline_lambda_names" {
 output "presign_function_url" {
   value = aws_lambda_function_url.presign.function_url
 }
+
+output "stale_checker_function_name" {
+  value = aws_lambda_function.stale_checker.function_name
+}
+
+output "stale_checker_function_arn" {
+  value = aws_lambda_function.stale_checker.arn
+}

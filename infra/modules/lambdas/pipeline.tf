@@ -38,7 +38,10 @@ locals {
       timeout = 30
       memory  = 512
       env = {
-        TALENT_PROFILES_TABLE = var.talent_profiles_table_name
+        TALENT_PROFILES_TABLE       = var.talent_profiles_table_name
+        SKILLS_LOOKUP_TABLE         = var.skills_lookup_table_name
+        CERTIFICATIONS_LOOKUP_TABLE = var.certifications_lookup_table_name
+        CITIES_LOOKUP_TABLE         = var.cities_lookup_table_name
       }
     }
   }
@@ -155,6 +158,17 @@ resource "aws_iam_role_policy" "pipeline_policy" {
           "dynamodb:UpdateItem"
         ],
         Resource = var.talent_profiles_table_arn
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "dynamodb:PutItem"
+        ],
+        Resource = [
+          var.skills_lookup_table_arn,
+          var.certifications_lookup_table_arn,
+          var.cities_lookup_table_arn
+        ]
       }
     ]
   })
