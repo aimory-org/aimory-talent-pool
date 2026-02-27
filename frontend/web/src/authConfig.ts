@@ -28,7 +28,7 @@ export const getAmplifyConfig = (): ResourcesConfig => {
         loginWith: {
           oauth: {
             domain: cognitoDomain,
-            scopes: ['email', 'openid', 'profile', 'aws.cognito.signin.user.admin'],
+            scopes: ['email', 'openid', 'profile'],
             redirectSignIn: [redirectUrl],
             redirectSignOut: [redirectUrl],
             responseType: 'code',

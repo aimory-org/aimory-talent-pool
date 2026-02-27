@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { signInWithRedirect, signOut, getCurrentUser, fetchUserAttributes } from 'aws-amplify/auth'
+import { signInWithRedirect, signOut, fetchAuthSession } from 'aws-amplify/auth'
 import { Hub } from 'aws-amplify/utils'
 import './App.css'
 import { allowedEmailSuffixes, microsoftProvider } from './authConfig'
@@ -60,13 +60,28 @@ const useAuth = () => {
 
   const checkUser = useCallback(async () => {
     try {
-      const currentUser = await getCurrentUser()
-      const attributes = await fetchUserAttributes()
+      // Fetch session and parse user info from ID token
+      const session = await fetchAuthSession()
+      const idToken = session.tokens?.idToken
+      
+      if (!idToken) {
+        setUser(null)
+        setIsLoading(false)
+        return
+      }
+      
+      // Parse claims from the ID token payload
+      const payload = idToken.payload
       setUser({
-        username: currentUser.username,
-        email: attributes.email || currentUser.username,
-        name: attributes.name,
+        username: (payload.sub as string) || 'unknown',
+        email: (payload.email as string) || (payload.sub as string) || 'unknown',
+        name: payload.name as string | undefined,
       })
+      
+      // Clear the OAuth code from URL after successful auth
+      if (window.location.search.includes('code=')) {
+        window.history.replaceState({}, '', window.location.pathname)
+      }
     } catch (err) {
       console.debug('No authenticated user:', err)
       setUser(null)
@@ -87,6 +102,7 @@ const useAuth = () => {
           break
         case 'signedOut':
           setUser(null)
+          setIsLoading(false)
           break
         case 'signInWithRedirect_failure':
           console.error('OAuth redirect failed')
@@ -95,15 +111,8 @@ const useAuth = () => {
       }
     })
 
-    // Check for OAuth redirect code in URL
-    const hasAuthCode = window.location.search.includes('code=')
-    
-    if (hasAuthCode) {
-      // Give Amplify time to exchange the code for tokens, then check
-      setTimeout(() => checkUser(), 1500)
-    } else {
-      checkUser()
-    }
+    // Initial auth check
+    checkUser()
 
     return unsubscribe
   }, [checkUser])
@@ -180,50 +189,8 @@ const InsightsGrid = ({ user }: { user: UserInfo }) => {
   )
 }
 
-// Secret page only for authenticated users
-const SecretPage = ({ user }: { user: UserInfo }) => {
-  return (
-    <div className="shell">
-      <header className="hero">
-        <div>
-          <p className="eyebrow">🔐 Secret Area</p>
-          <h1>You found the secret page!</h1>
-          <p className="lede">
-            This page is only accessible to authenticated users. Your identity has been verified via Cognito.
-          </p>
-        </div>
-        <div className="cta">
-          <SignOutButton />
-        </div>
-      </header>
-
-      <main>
-        <div className="panel emphasis">
-          <p className="eyebrow">Your verified identity</p>
-          <h2>Welcome, {user.name || user.email}!</h2>
-          <p><strong>Email:</strong> {user.email}</p>
-          <p><strong>Username:</strong> {user.username}</p>
-          <p style={{ marginTop: '1rem', opacity: 0.7 }}>
-            Auth flow: Browser → Cognito → Microsoft Entra ID → Cognito → Browser
-          </p>
-          <button className="btn primary" onClick={() => window.location.href = '/'} style={{ marginTop: '1rem' }}>
-            Back to Dashboard
-          </button>
-        </div>
-      </main>
-    </div>
-  )
-}
-
 function App() {
   const { user, isLoading } = useAuth()
-  const [currentPath, setCurrentPath] = useState(window.location.pathname)
-
-  useEffect(() => {
-    const handlePopState = () => setCurrentPath(window.location.pathname)
-    window.addEventListener('popstate', handlePopState)
-    return () => window.removeEventListener('popstate', handlePopState)
-  }, [])
 
   if (isLoading) {
     return (
@@ -234,17 +201,6 @@ function App() {
         </div>
       </div>
     )
-  }
-
-  // Redirect authenticated users to secret page, or show it if already there
-  if (user && currentPath === '/secret') {
-    return <SecretPage user={user} />
-  }
-
-  // Auto-redirect to secret page after login (for testing)
-  if (user && currentPath === '/') {
-    window.history.pushState({}, '', '/secret')
-    return <SecretPage user={user} />
   }
 
   return (
