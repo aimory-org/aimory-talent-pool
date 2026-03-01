@@ -127,7 +127,7 @@ Category options: Accounting, Finance, Data Analysis, Forensics, Developer, Netw
 Field guidance:
 - Evidence snippets: SHORT phrases from resume (not full sentences)
 - Certifications: list of strings like ["PMP", "AWS Solutions Architect"]
-- Clearance: Secret, Top Secret, TS/SCI, Public Trust, or null
+- Clearance: Confidential, Secret, Top Secret, TS/SCI, Public Trust or null
 - bill_rate: hourly USD rate if mentioned, otherwise null
 - If a field cannot be determined, use null (or empty array [] for lists)
 """
