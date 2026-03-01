@@ -5,7 +5,7 @@ module "storage" {
 }
 
 module "frontend_site" {
-  source          = "../../modules/frontend_site"
+  source          = "../../modules/frontend/site"
   project_name    = var.project_name
   environment     = var.environment
   domain_aliases  = var.frontend_domain_aliases
@@ -13,7 +13,7 @@ module "frontend_site" {
 }
 
 module "cognito" {
-  source       = "../../modules/cognito"
+  source       = "../../modules/frontend/cognito"
   project_name = var.project_name
   environment  = var.environment
 
@@ -27,8 +27,17 @@ module "cognito" {
   entra_tenant_id     = var.entra_tenant_id
 }
 
+module "stale_checker" {
+  source       = "../../modules/frontend/stale_checker"
+  project_name = var.project_name
+  environment  = var.environment
+
+  talent_profiles_table_name = module.storage.talent_profiles_table_name
+  talent_profiles_table_arn  = module.storage.talent_profiles_table_arn
+}
+
 module "lambdas" {
-  source       = "../../modules/lambdas"
+  source       = "../../modules/pipeline/lambdas"
   project_name = var.project_name
   environment  = var.environment
 
@@ -50,7 +59,7 @@ module "lambdas" {
 }
 
 module "step_functions" {
-  source       = "../../modules/step_functions"
+  source       = "../../modules/pipeline/step_functions"
   project_name = var.project_name
   environment  = var.environment
 
