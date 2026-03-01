@@ -12,3 +12,9 @@ variable "lambda_arns" {
     persist        = string
   })
 }
+
+# SSM parameter name to store the SFN ARN
+variable "sfn_arn_param_name" { type = string }
+
+# Role name of pipeline lambdas (to grant states:StartExecution)
+variable "pipeline_lambda_role_name" { type = string }

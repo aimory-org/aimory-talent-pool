@@ -5,7 +5,7 @@ output "resume_bucket_name" {
 
 output "presign_function_url" {
   description = "Public function URL for the presign Lambda"
-  value       = module.lambdas.presign_function_url
+  value       = module.pipeline_lambdas.presign_function_url
 }
 
 output "frontend_site_bucket_name" {

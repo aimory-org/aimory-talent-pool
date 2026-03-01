@@ -52,3 +52,25 @@ resource "aws_sfn_state_machine" "pipeline" {
   definition = data.template_file.asl.rendered
   type       = "STANDARD"
 }
+
+# Store SFN ARN in SSM so starter lambda can read it without terraform cycles
+resource "aws_ssm_parameter" "pipeline_sfn_arn" {
+  name  = var.sfn_arn_param_name
+  type  = "String"
+  value = aws_sfn_state_machine.pipeline.arn
+}
+
+# Allow pipeline lambdas to start executions
+resource "aws_iam_role_policy" "pipeline_can_start_sfn" {
+  name = "${var.project_name}-${var.environment}-pipeline-start-sfn"
+  role = var.pipeline_lambda_role_name
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [{
+      Effect   = "Allow",
+      Action   = ["states:StartExecution"],
+      Resource = aws_sfn_state_machine.pipeline.arn
+    }]
+  })
+}
