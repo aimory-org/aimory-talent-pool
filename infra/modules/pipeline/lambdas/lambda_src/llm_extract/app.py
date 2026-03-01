@@ -65,7 +65,7 @@ TALENT_SCHEMA = {
     "years_of_experience": {"type": ["number", "null"]},
     "clearance_level": {
       "type": ["string", "null"],
-      "enum": ["Secret", "TS", "TS/SCI", "TS/SCI/FSP", "TS/SCI/CI", "Yankee White", null],
+      "enum": ["Secret", "TS", "TS/SCI", "TS/SCI/FSP", "TS/SCI/CI", "Yankee White", None],
       "description": "Security clearance level. Only use these exact values if CLEARLY stated in resume: Secret, TS (Top Secret without SCI), TS/SCI, TS/SCI/FSP (Full Scope Poly), TS/SCI/CI (CI Poly), Yankee White. Use null if no clearance mentioned OR if clearance is below Secret (e.g., Public Trust, Confidential)."
     },
     "certifications": {
