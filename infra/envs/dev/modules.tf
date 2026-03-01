@@ -28,7 +28,7 @@ module "cognito" {
 }
 
 module "stale_checker" {
-  source       = "../../modules/frontend/stale_checker"
+  source       = "../../modules/frontend/lambdas/stale_checker"
   project_name = var.project_name
   environment  = var.environment
 
