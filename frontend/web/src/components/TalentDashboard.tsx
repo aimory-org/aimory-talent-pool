@@ -66,13 +66,13 @@ const statusColors: Record<CandidateStatus, string> = {
   "Do Not Contact": "bg-red-500/20 text-red-300 border-red-500/30",
 }
 
-const clearanceColors: Record<ClearanceLevel, string> = {
-  None: "bg-slate-500/20 text-slate-400 border-slate-500/30",
-  "Public Trust": "bg-sky-500/20 text-sky-300 border-sky-500/30",
-  Confidential: "bg-teal-500/20 text-teal-300 border-teal-500/30",
+const clearanceColors: Record<string, string> = {
   Secret: "bg-amber-500/20 text-amber-300 border-amber-500/30",
-  "Top Secret": "bg-orange-500/20 text-orange-300 border-orange-500/30",
+  TS: "bg-orange-500/20 text-orange-300 border-orange-500/30",
   "TS/SCI": "bg-red-500/20 text-red-300 border-red-500/30",
+  "TS/SCI/FSP": "bg-purple-500/20 text-purple-300 border-purple-500/30",
+  "TS/SCI/CI": "bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/30",
+  "Yankee White": "bg-indigo-500/20 text-indigo-300 border-indigo-500/30",
 }
 
 function StatusBadge({ status }: { status: CandidateStatus }) {
@@ -84,8 +84,9 @@ function StatusBadge({ status }: { status: CandidateStatus }) {
 }
 
 function ClearanceBadge({ level }: { level: ClearanceLevel }) {
+  if (!level) return null
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${clearanceColors[level]}`}>
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${clearanceColors[level] || "bg-slate-500/20 text-slate-400 border-slate-500/30"}`}>
       <Shield className="h-3 w-3 mr-1" />
       {level}
     </span>

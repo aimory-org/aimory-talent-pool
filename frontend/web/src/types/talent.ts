@@ -62,12 +62,13 @@ export type TalentCategory =
   | "Unclassified"
 
 export type ClearanceLevel = 
-  | "None"
-  | "Public Trust"
-  | "Confidential"
   | "Secret"
-  | "Top Secret"
+  | "TS"
   | "TS/SCI"
+  | "TS/SCI/FSP"
+  | "TS/SCI/CI"
+  | "Yankee White"
+  | null
 
 export const CANDIDATE_STATUSES: { value: CandidateStatus; label: string }[] = [
   { value: "Potential Candidate", label: "Potential Candidate" },
@@ -101,13 +102,14 @@ export const TALENT_CATEGORIES: { value: TalentCategory; label: string }[] = [
   { value: "Unclassified", label: "Unclassified" },
 ]
 
-export const CLEARANCE_LEVELS: { value: ClearanceLevel; label: string }[] = [
-  { value: "None", label: "None" },
-  { value: "Public Trust", label: "Public Trust" },
-  { value: "Confidential", label: "Confidential" },
+export const CLEARANCE_LEVELS: { value: string; label: string }[] = [
+  { value: "", label: "Any" },
   { value: "Secret", label: "Secret" },
-  { value: "Top Secret", label: "Top Secret" },
+  { value: "TS", label: "Top Secret" },
   { value: "TS/SCI", label: "TS/SCI" },
+  { value: "TS/SCI/FSP", label: "TS/SCI + Full Scope Poly" },
+  { value: "TS/SCI/CI", label: "TS/SCI + CI Poly" },
+  { value: "Yankee White", label: "Yankee White" },
 ]
 
 export const US_STATES: { value: string; label: string }[] = [

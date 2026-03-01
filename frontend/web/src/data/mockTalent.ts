@@ -64,7 +64,7 @@ export const mockTalentProfiles: TalentProfile[] = [
     ],
     skill_names: "Kubernetes,Terraform,AWS,Azure,Go",
     years_of_experience: 12,
-    clearance_level: "Top Secret",
+    clearance_level: "TS",
     certifications: ["AWS DevOps Professional", "Azure Solutions Architect", "CKA"],
     cert_names: "AWS DevOps Professional,Azure Solutions Architect,CKA",
     companies: [
@@ -136,7 +136,7 @@ export const mockTalentProfiles: TalentProfile[] = [
     ],
     skill_names: "Project Management,Agile,Scrum,JIRA",
     years_of_experience: 15,
-    clearance_level: "Public Trust",
+    clearance_level: null,
     certifications: ["PMP", "CSM", "SAFe Agilist"],
     cert_names: "PMP,CSM,SAFe Agilist",
     companies: [
@@ -208,7 +208,7 @@ export const mockTalentProfiles: TalentProfile[] = [
     ],
     skill_names: "Java,Spring Boot,MongoDB,AWS",
     years_of_experience: 5,
-    clearance_level: "None",
+    clearance_level: null,
     certifications: ["AWS Developer Associate"],
     cert_names: "AWS Developer Associate",
     companies: [
@@ -243,7 +243,7 @@ export const mockTalentProfiles: TalentProfile[] = [
     ],
     skill_names: "Business Development,Federal Sales,Proposal Writing",
     years_of_experience: 7,
-    clearance_level: "Public Trust",
+    clearance_level: null,
     certifications: [],
     cert_names: "",
     companies: [
@@ -315,7 +315,7 @@ export const mockTalentProfiles: TalentProfile[] = [
     ],
     skill_names: "Oracle,SQL Server,Data Warehousing,ETL",
     years_of_experience: 4,
-    clearance_level: "None",
+    clearance_level: null,
     certifications: ["Oracle Certified Professional"],
     cert_names: "Oracle Certified Professional",
     companies: [
@@ -350,7 +350,7 @@ export const mockTalentProfiles: TalentProfile[] = [
     ],
     skill_names: "Talent Acquisition,Workday,Employee Relations",
     years_of_experience: 11,
-    clearance_level: "Public Trust",
+    clearance_level: null,
     certifications: ["SHRM-SCP", "PHR"],
     cert_names: "SHRM-SCP,PHR",
     companies: [
@@ -385,7 +385,7 @@ export const mockTalentProfiles: TalentProfile[] = [
     ],
     skill_names: "Fraud Investigation,Financial Analysis,Data Analytics",
     years_of_experience: 6,
-    clearance_level: "Confidential",
+    clearance_level: "Secret",
     certifications: ["CFE", "CPA"],
     cert_names: "CFE,CPA",
     companies: [
@@ -420,7 +420,7 @@ export const mockTalentProfiles: TalentProfile[] = [
     ],
     skill_names: "Enterprise Sales,Account Management,Salesforce",
     years_of_experience: 8,
-    clearance_level: "None",
+    clearance_level: null,
     certifications: [],
     cert_names: "",
     companies: [
