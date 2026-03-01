@@ -79,6 +79,38 @@ module "step_functions" {
 }
 
 # -----------------------------------------------------------------------------
+# API Gateway for frontend to query DynamoDB
+# -----------------------------------------------------------------------------
+
+module "api" {
+  source       = "../../modules/api"
+  project_name = var.project_name
+  environment  = var.environment
+
+  cognito_user_pool_arn       = module.cognito.user_pool_arn
+  cognito_user_pool_client_id = module.cognito.web_client_id
+
+  talent_profiles_table_name = module.storage.talent_profiles_table_name
+  talent_profiles_table_arn  = module.storage.talent_profiles_table_arn
+
+  skills_lookup_table_name         = module.storage.skills_lookup_table_name
+  skills_lookup_table_arn          = module.storage.skills_lookup_table_arn
+  certifications_lookup_table_name = module.storage.certifications_lookup_table_name
+  certifications_lookup_table_arn  = module.storage.certifications_lookup_table_arn
+  cities_lookup_table_name         = module.storage.cities_lookup_table_name
+  cities_lookup_table_arn          = module.storage.cities_lookup_table_arn
+
+  resume_bucket_name = module.storage.resume_bucket_name
+  resume_bucket_arn  = module.storage.resume_bucket_arn
+
+  cors_allowed_origins = concat(
+    ["http://localhost:5173"],
+    [for url in var.cognito_callback_urls : url if url != "http://localhost:5173"],
+    ["https://${module.frontend_site.distribution_domain_name}"]
+  )
+}
+
+# -----------------------------------------------------------------------------
 # Frontend deployment - builds and uploads to S3 on terraform apply
 # -----------------------------------------------------------------------------
 

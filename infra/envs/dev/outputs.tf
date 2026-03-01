@@ -43,3 +43,9 @@ output "cognito_frontend_config" {
   description = "Full configuration object for frontend auth setup"
   value       = module.cognito.frontend_config
 }
+
+# API Gateway
+output "api_endpoint" {
+  description = "API Gateway endpoint URL for frontend"
+  value       = module.api.api_endpoint
+}

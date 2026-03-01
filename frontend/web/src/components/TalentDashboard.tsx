@@ -16,6 +16,7 @@ import {
   Linkedin,
   Github,
   Building,
+  FileText,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Select } from "@/components/ui/select"
@@ -28,7 +29,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { mockTalentProfiles, mockSkills, mockCities, mockCertifications } from "@/data/mockTalent"
+import { useTalents } from "@/hooks/useTalents"
+import { useLookups } from "@/hooks/useLookups"
+import { getResumeUrl } from "@/lib/api"
 import type { TalentProfile, CandidateStatus, ClearanceLevel } from "@/types/talent"
 import {
   CANDIDATE_STATUSES,
@@ -121,6 +124,68 @@ function SortableHeader({
 }
 
 function ProfileDetailPanel({ profile, onClose }: { profile: TalentProfile; onClose: () => void }) {
+  const [resumeLoading, setResumeLoading] = useState(false)
+  const [resumeUrl, setResumeUrl] = useState<string | null>(null)
+  const [showResume, setShowResume] = useState(false)
+  
+  const handleViewResume = async () => {
+    if (!profile.key) return
+    
+    setResumeLoading(true)
+    try {
+      const { url } = await getResumeUrl(profile.key)
+      
+      // Check file extension to determine viewer type
+      const isDocx = profile.key.toLowerCase().endsWith('.docx') || profile.key.toLowerCase().endsWith('.doc')
+      
+      if (isDocx) {
+        // Use Google Docs viewer for Word documents
+        setResumeUrl(`https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`)
+      } else {
+        // Use direct URL for PDFs
+        setResumeUrl(url)
+      }
+      setShowResume(true)
+    } catch (error) {
+      console.error('Failed to get resume URL:', error)
+      alert('Failed to load resume. Please try again.')
+    } finally {
+      setResumeLoading(false)
+    }
+  }
+  
+  // If showing resume, render full-screen viewer
+  if (showResume && resumeUrl) {
+    return (
+      <div className="fixed inset-y-0 right-0 w-full max-w-4xl bg-slate-900/95 backdrop-blur-lg border-l border-white/10 shadow-2xl z-50 flex flex-col">
+        <div className="flex-none bg-slate-900/95 backdrop-blur-lg border-b border-white/10 p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowResume(false)}
+              className="p-2 rounded-lg hover:bg-white/10 transition-colors text-white/60 hover:text-white"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <h2 className="text-lg font-semibold text-white">{profile.name} - Resume</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 hover:text-white transition-colors text-sm"
+          >
+            Close Panel
+          </button>
+        </div>
+        <div className="flex-1 bg-white">
+          <iframe
+            src={resumeUrl}
+            className="w-full h-full border-0"
+            title={`Resume - ${profile.name}`}
+          />
+        </div>
+      </div>
+    )
+  }
+  
   return (
     <div className="fixed inset-y-0 right-0 w-full max-w-md bg-slate-900/95 backdrop-blur-lg border-l border-white/10 shadow-2xl z-50 overflow-y-auto">
       <div className="sticky top-0 bg-slate-900/95 backdrop-blur-lg border-b border-white/10 p-4 flex items-center justify-between">
@@ -145,6 +210,18 @@ function ProfileDetailPanel({ profile, onClose }: { profile: TalentProfile; onCl
           </div>
           {profile.summary && (
             <p className="text-white/70 text-sm leading-relaxed">{profile.summary}</p>
+          )}
+          
+          {/* View Resume Button */}
+          {profile.key && (
+            <button
+              onClick={handleViewResume}
+              disabled={resumeLoading}
+              className="w-full mt-3 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/30 transition-all disabled:opacity-50"
+            >
+              <FileText className="h-4 w-4" />
+              {resumeLoading ? "Loading..." : "View Resume"}
+            </button>
           )}
         </div>
 
@@ -316,6 +393,33 @@ export function TalentDashboard() {
   const [selectedProfile, setSelectedProfile] = useState<TalentProfile | null>(null)
   const [showFilters, setShowFilters] = useState(true)
 
+  // Fetch data from API
+  const {
+    talents,
+    isLoading: talentsLoading,
+    error: talentsError,
+    refresh: refreshTalents,
+    updateStatus: _updateStatus, // For future use in detail panel
+  } = useTalents({
+    status: filters.status || undefined,
+    talent_bucket: filters.talent_bucket || undefined,
+    talent_category: filters.talent_category || undefined,
+    clearance_level: filters.clearance_level || undefined,
+    location_state: filters.location_state || undefined,
+    search: filters.search || undefined,
+    skills: filters.skills.length > 0 ? filters.skills : undefined,
+    certifications: filters.certifications.length > 0 ? filters.certifications : undefined,
+    minYears: filters.minYears ? parseInt(filters.minYears, 10) : undefined,
+    maxYears: filters.maxYears ? parseInt(filters.maxYears, 10) : undefined,
+  })
+
+  const {
+    skills: lookupSkills,
+    certifications: lookupCertifications,
+    cities: lookupCities,
+    isLoading: _lookupsLoading, // For future loading indicator
+  } = useLookups()
+
   const handleFilterChange = (key: keyof Filters, value: string) => {
     setFilters((prev) => ({ ...prev, [key]: value }))
   }
@@ -345,63 +449,15 @@ export function TalentDashboard() {
     }
   }
 
-  const filteredProfiles = useMemo(() => {
-    let result = [...mockTalentProfiles]
-
-    // Apply filters
-    if (filters.search) {
-      const searchLower = filters.search.toLowerCase()
-      result = result.filter(
-        (p) =>
-          p.name_lower.includes(searchLower) ||
-          p.contact.email?.toLowerCase().includes(searchLower) ||
-          p.skill_names.toLowerCase().includes(searchLower) ||
-          p.cert_names.toLowerCase().includes(searchLower)
-      )
-    }
-    if (filters.status) {
-      result = result.filter((p) => p.status === filters.status)
-    }
-    if (filters.talent_bucket) {
-      result = result.filter((p) => p.talent_bucket === filters.talent_bucket)
-    }
-    if (filters.talent_category) {
-      result = result.filter((p) => p.talent_category === filters.talent_category)
-    }
-    if (filters.clearance_level) {
-      result = result.filter((p) => p.clearance_level === filters.clearance_level)
-    }
-    if (filters.location_state) {
-      result = result.filter((p) => p.location_state === filters.location_state)
-    }
-    if (filters.city) {
-      result = result.filter((p) => p.location.city === filters.city)
-    }
-    if (filters.skills.length > 0) {
-      result = result.filter((p) => 
-        filters.skills.some(skill => p.skillsets.some((s) => s.name === skill))
-      )
-    }
-    if (filters.certifications.length > 0) {
-      result = result.filter((p) => 
-        filters.certifications.some(cert => p.certifications.includes(cert))
-      )
-    }
-    if (filters.minYears) {
-      const minYears = parseInt(filters.minYears, 10)
-      result = result.filter((p) => 
-        p.years_of_experience !== null && p.years_of_experience >= minYears
-      )
-    }
-    if (filters.maxYears) {
-      const maxYears = parseInt(filters.maxYears, 10)
-      result = result.filter((p) => 
-        p.years_of_experience !== null && p.years_of_experience <= maxYears
-      )
-    }
+  // Client-side sorting (filtering is done server-side via useTalents hook)
+  const sortedProfiles = useMemo(() => {
+    // City filtering is still client-side since it's not a GSI key
+    let result = filters.city
+      ? talents.filter((p) => p.location?.city === filters.city)
+      : talents
 
     // Apply sorting
-    result.sort((a, b) => {
+    result = [...result].sort((a, b) => {
       let aVal: string | number = ""
       let bVal: string | number = ""
 
@@ -430,21 +486,21 @@ export function TalentDashboard() {
     })
 
     return result
-  }, [filters, sortField, sortDirection])
+  }, [talents, filters.city, sortField, sortDirection])
 
   const activeFilterCount = Object.entries(filters).filter(([key, v]) => 
     key === "skills" || key === "certifications" ? (v as string[]).length > 0 : v !== ""
   ).length
 
-  // Stats
+  // Stats (based on currently loaded data)
   const stats = useMemo(() => {
     return {
-      total: mockTalentProfiles.length,
-      potentialCount: mockTalentProfiles.filter((p) => p.status === "Potential Candidate").length,
-      activeCount: mockTalentProfiles.filter((p) => p.status === "Active Candidate").length,
-      placedCount: mockTalentProfiles.filter((p) => p.status === "Placed Candidate").length,
+      total: talents.length,
+      potentialCount: talents.filter((p) => p.status === "Potential Candidate").length,
+      activeCount: talents.filter((p) => p.status === "Active Candidate").length,
+      placedCount: talents.filter((p) => p.status === "Placed Candidate").length,
     }
-  }, [])
+  }, [talents])
 
   return (
     <div className="min-h-screen">
@@ -588,7 +644,7 @@ export function TalentDashboard() {
                 <Select
                   value={filters.city}
                   onChange={(e) => handleFilterChange("city", e.target.value)}
-                  options={mockCities.map(c => ({ value: c, label: c }))}
+                  options={lookupCities.map(c => ({ value: c.city, label: `${c.city}, ${c.state}` }))}
                   placeholder="Any city"
                 />
               </div>
@@ -603,7 +659,7 @@ export function TalentDashboard() {
                         setFilters(prev => ({ ...prev, skills: [...prev.skills, skill] }))
                       }
                     }}
-                    options={mockSkills.filter(s => !filters.skills.includes(s)).map(s => ({ value: s, label: s }))}
+                    options={lookupSkills.filter(s => !filters.skills.includes(s)).map(s => ({ value: s, label: s }))}
                     placeholder="Add skill..."
                   />
                 </div>
@@ -637,7 +693,7 @@ export function TalentDashboard() {
                         setFilters(prev => ({ ...prev, certifications: [...prev.certifications, cert] }))
                       }
                     }}
-                    options={mockCertifications.filter(c => !filters.certifications.includes(c)).map(c => ({ value: c, label: c }))}
+                    options={lookupCertifications.filter(c => !filters.certifications.includes(c)).map(c => ({ value: c, label: c }))}
                     placeholder="Add certification..."
                   />
                 </div>
@@ -689,9 +745,20 @@ export function TalentDashboard() {
         {/* Results Count */}
         <div className="flex items-center justify-between mb-4">
           <p className="text-sm text-white/60">
-            Showing <span className="text-white font-medium">{filteredProfiles.length}</span> of{" "}
-            <span className="text-white font-medium">{mockTalentProfiles.length}</span> candidates
+            {talentsLoading ? (
+              <span className="text-white/40">Loading...</span>
+            ) : (
+              <>
+                Showing <span className="text-white font-medium">{sortedProfiles.length}</span> candidates
+              </>
+            )}
           </p>
+          {talentsError && (
+            <p className="text-sm text-red-400">
+              Error: {talentsError.message}
+              <button onClick={refreshTalents} className="ml-2 underline">Retry</button>
+            </p>
+          )}
         </div>
 
         {/* Results Table */}
@@ -741,23 +808,32 @@ export function TalentDashboard() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredProfiles.length === 0 ? (
+              {sortedProfiles.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-12">
                     <div className="flex flex-col items-center gap-2 text-white/40">
-                      <Users className="h-8 w-8" />
-                      <p>No candidates match your filters</p>
-                      <button
-                        onClick={clearFilters}
-                        className="text-indigo-400 hover:underline text-sm"
-                      >
-                        Clear all filters
-                      </button>
+                      {talentsLoading ? (
+                        <>
+                          <div className="h-8 w-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                          <p>Loading candidates...</p>
+                        </>
+                      ) : (
+                        <>
+                          <Users className="h-8 w-8" />
+                          <p>No candidates match your filters</p>
+                          <button
+                            onClick={clearFilters}
+                            className="text-indigo-400 hover:underline text-sm"
+                          >
+                            Clear all filters
+                          </button>
+                        </>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredProfiles.map((profile) => (
+                sortedProfiles.map((profile) => (
                   <TableRow
                     key={profile.pk}
                     className="border-white/5 cursor-pointer hover:bg-white/5 transition-colors"
@@ -800,28 +876,6 @@ export function TalentDashboard() {
             </TableBody>
           </Table>
         </div>
-
-        {/* Skills Quick View */}
-        {filteredProfiles.length > 0 && (
-          <div className="mt-6 bg-slate-800/30 backdrop-blur-lg rounded-2xl border border-white/5 p-4">
-            <h3 className="text-sm font-medium text-white/60 mb-3">Top Skills in Results</h3>
-            <div className="flex flex-wrap gap-2">
-              {Array.from(
-                new Set(filteredProfiles.flatMap((p) => p.skillsets.map(s => s.name)))
-              )
-                .slice(0, 15)
-                .map((skill) => (
-                  <button
-                    key={skill}
-                    onClick={() => handleFilterChange("search", skill)}
-                    className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-white/60 text-xs hover:bg-indigo-500/20 hover:border-indigo-500/30 hover:text-indigo-300 transition-all"
-                  >
-                    {skill}
-                  </button>
-                ))}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Detail Panel */}
