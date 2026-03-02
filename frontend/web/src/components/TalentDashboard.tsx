@@ -808,7 +808,7 @@ export function TalentDashboard() {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40 group-focus-within:text-indigo-400 transition-colors" />
               <input
                 type="text"
-                placeholder="Search candidates by name, skills, or keywords..."
+                placeholder="Search by name..."
                 value={filters.search}
                 onChange={(e) => handleFilterChange("search", e.target.value)}
                 className="w-full h-12 pl-12 pr-4 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 focus:bg-white/10 transition-all duration-300"
