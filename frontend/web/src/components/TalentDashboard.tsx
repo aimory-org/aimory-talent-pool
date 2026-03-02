@@ -17,6 +17,8 @@ import {
   Github,
   Building,
   FileText,
+  Trash2,
+  Save,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Select } from "@/components/ui/select"
@@ -31,7 +33,7 @@ import {
 } from "@/components/ui/table"
 import { useTalents } from "@/hooks/useTalents"
 import { useLookups } from "@/hooks/useLookups"
-import { getResumeUrl } from "@/lib/api"
+import { getResumeUrl, updateTalent, deleteTalent } from "@/lib/api"
 import type { TalentProfile, CandidateStatus, ClearanceLevel } from "@/types/talent"
 import {
   CANDIDATE_STATUSES,
@@ -124,10 +126,66 @@ function SortableHeader({
   )
 }
 
-function ProfileDetailPanel({ profile, onClose }: { profile: TalentProfile; onClose: () => void }) {
+function ProfileDetailPanel({ 
+  profile, 
+  onClose, 
+  onRefresh 
+}: { 
+  profile: TalentProfile
+  onClose: () => void
+  onRefresh: () => Promise<void>
+}) {
   const [resumeLoading, setResumeLoading] = useState(false)
   const [resumeUrl, setResumeUrl] = useState<string | null>(null)
   const [showResume, setShowResume] = useState(false)
+  
+  // Edit state
+  const [editStatus, setEditStatus] = useState<CandidateStatus>(profile.status)
+  const [editBillRate, setEditBillRate] = useState(profile.bill_rate?.toString() || '')
+  const [isSaving, setIsSaving] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  
+  const handleSave = async () => {
+    setIsSaving(true)
+    try {
+      const updates: { status?: CandidateStatus; bill_rate?: number | null } = {}
+      
+      if (editStatus !== profile.status) {
+        updates.status = editStatus
+      }
+      
+      const newBillRate = editBillRate ? parseFloat(editBillRate) : null
+      if (newBillRate !== profile.bill_rate) {
+        updates.bill_rate = newBillRate
+      }
+      
+      if (Object.keys(updates).length > 0) {
+        await updateTalent(profile.pk, updates)
+        await onRefresh()
+      }
+    } catch (error) {
+      console.error('Failed to save:', error)
+      alert('Failed to save changes. Please try again.')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+  
+  const handleDelete = async () => {
+    setIsDeleting(true)
+    try {
+      await deleteTalent(profile.pk)
+      await onRefresh()
+      onClose()
+    } catch (error) {
+      console.error('Failed to delete:', error)
+      alert('Failed to delete profile. Please try again.')
+    } finally {
+      setIsDeleting(false)
+      setShowDeleteConfirm(false)
+    }
+  }
   
   const handleViewResume = async () => {
     if (!profile.key) return
@@ -369,6 +427,80 @@ function ProfileDetailPanel({ profile, onClose }: { profile: TalentProfile; onCl
             <span className="text-white/60 font-mono text-xs">{profile.key}</span>
           </div>
         </div>
+
+        {/* Edit/Manage Section */}
+        <div className="pt-4 border-t border-white/10 space-y-4">
+          <h4 className="text-xs font-medium text-white/40 uppercase tracking-wider">Manage Profile</h4>
+          
+          {/* Status */}
+          <div className="space-y-2">
+            <Label className="text-white/60 text-xs">Status</Label>
+            <Select
+              value={editStatus}
+              onChange={(e) => setEditStatus(e.target.value as CandidateStatus)}
+              className="bg-white/5 border-white/10 text-white"
+              options={CANDIDATE_STATUSES}
+            />
+          </div>
+          
+          {/* Bill Rate */}
+          <div className="space-y-2">
+            <Label className="text-white/60 text-xs">Bill Rate ($/hr)</Label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={editBillRate}
+              onChange={(e) => setEditBillRate(e.target.value)}
+              placeholder="Enter bill rate"
+              className="w-full h-10 px-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
+            />
+          </div>
+          
+          {/* Save Button */}
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/30 transition-all disabled:opacity-50"
+          >
+            <Save className="h-4 w-4" />
+            {isSaving ? "Saving..." : "Save Changes"}
+          </button>
+          
+          {/* Delete Section */}
+          <div className="pt-4 border-t border-white/10">
+            {!showDeleteConfirm ? (
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-all"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete Profile
+              </button>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-red-400 text-sm text-center">
+                  Are you sure? This cannot be undone.
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="flex-1 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 hover:text-white transition-all text-sm"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDelete}
+                    disabled={isDeleting}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500/30 transition-all text-sm disabled:opacity-50"
+                  >
+                    {isDeleting ? "Deleting..." : "Confirm Delete"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -561,7 +693,7 @@ export function TalentDashboard() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
             <input
               type="text"
-              placeholder="Search by name, email, or skill..."
+              placeholder="Search by name..."
               value={filters.search}
               onChange={(e) => handleFilterChange("search", e.target.value)}
               className="w-full h-11 pl-10 pr-4 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
@@ -904,6 +1036,7 @@ export function TalentDashboard() {
           <ProfileDetailPanel
             profile={selectedProfile}
             onClose={() => setSelectedProfile(null)}
+            onRefresh={refreshTalents}
           />
         </>
       )}

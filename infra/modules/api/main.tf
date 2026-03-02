@@ -8,7 +8,7 @@ resource "aws_apigatewayv2_api" "talent_api" {
 
   cors_configuration {
     allow_origins     = var.cors_allowed_origins
-    allow_methods     = ["GET", "POST", "PATCH", "OPTIONS"]
+    allow_methods     = ["GET", "POST", "PATCH", "DELETE", "OPTIONS"]
     allow_headers     = ["Authorization", "Content-Type"]
     expose_headers    = ["X-Pagination-Cursor"]
     max_age           = 3600
@@ -125,7 +125,7 @@ resource "aws_iam_role_policy" "api_dynamodb_read" {
   })
 }
 
-# DynamoDB write access for updating status
+# DynamoDB write access for updating and deleting talents
 resource "aws_iam_role_policy" "api_dynamodb_write" {
   name = "${var.project_name}-${var.environment}-api-dynamodb-write"
   role = aws_iam_role.api_lambda_role.id
@@ -133,17 +133,18 @@ resource "aws_iam_role_policy" "api_dynamodb_write" {
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Sid    = "UpdateTalentStatus"
+      Sid    = "WriteTalentProfiles"
       Effect = "Allow"
       Action = [
-        "dynamodb:UpdateItem"
+        "dynamodb:UpdateItem",
+        "dynamodb:DeleteItem"
       ]
       Resource = var.talent_profiles_table_arn
     }]
   })
 }
 
-# S3 read access for generating presigned resume URLs
+# S3 read and delete access for resumes
 resource "aws_iam_role_policy" "api_s3_read" {
   name = "${var.project_name}-${var.environment}-api-s3-read"
   role = aws_iam_role.api_lambda_role.id
@@ -151,11 +152,12 @@ resource "aws_iam_role_policy" "api_s3_read" {
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Sid    = "ReadResumes"
+      Sid    = "ManageResumes"
       Effect = "Allow"
       Action = [
         "s3:GetObject",
-        "s3:HeadObject"
+        "s3:HeadObject",
+        "s3:DeleteObject"
       ]
       Resource = "${var.resume_bucket_arn}/*"
     }]

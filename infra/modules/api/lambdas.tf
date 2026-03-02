@@ -46,6 +46,23 @@ locals {
         RESUME_BUCKET = var.resume_bucket_name
       }
     }
+    update_talent = {
+      route   = "PATCH /talents/{pk}"
+      timeout = 10
+      memory  = 256
+      env = {
+        TALENT_PROFILES_TABLE = var.talent_profiles_table_name
+      }
+    }
+    delete_talent = {
+      route   = "DELETE /talents/{pk}"
+      timeout = 10
+      memory  = 256
+      env = {
+        TALENT_PROFILES_TABLE = var.talent_profiles_table_name
+        RESUME_BUCKET         = var.resume_bucket_name
+      }
+    }
   }
 }
 

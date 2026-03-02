@@ -103,7 +103,6 @@ export const TALENT_CATEGORIES: { value: TalentCategory; label: string }[] = [
 ]
 
 export const CLEARANCE_LEVELS: { value: string; label: string }[] = [
-  { value: "", label: "Any" },
   { value: "Secret", label: "Secret" },
   { value: "TS", label: "Top Secret" },
   { value: "TS/SCI", label: "TS/SCI" },

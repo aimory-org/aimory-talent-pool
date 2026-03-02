@@ -135,3 +135,27 @@ export async function getLookups(include?: ('skills' | 'certifications' | 'citie
 export async function getResumeUrl(s3Key: string): Promise<{ url: string; expiresIn: number }> {
   return apiFetch<{ url: string; expiresIn: number }>(`/resume-url?key=${encodeURIComponent(s3Key)}`)
 }
+
+/**
+ * Update talent profile fields (status and/or bill_rate).
+ */
+export interface UpdateTalentParams {
+  status?: CandidateStatus
+  bill_rate?: number | null
+}
+
+export async function updateTalent(pk: string, updates: UpdateTalentParams): Promise<void> {
+  await apiFetch(`/talents/${encodeURIComponent(pk)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(updates),
+  })
+}
+
+/**
+ * Delete a talent profile.
+ */
+export async function deleteTalent(pk: string): Promise<void> {
+  await apiFetch(`/talents/${encodeURIComponent(pk)}`, {
+    method: 'DELETE',
+  })
+}
