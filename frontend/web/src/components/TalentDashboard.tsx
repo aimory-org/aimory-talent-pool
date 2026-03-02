@@ -19,6 +19,13 @@ import {
   FileText,
   Trash2,
   Save,
+  Sparkles,
+  UserCheck,
+  Clock,
+  TrendingUp,
+  ChevronRight,
+  ExternalLink,
+  DollarSign,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Select } from "@/components/ui/select"
@@ -225,7 +232,7 @@ function ProfileDetailPanel({
             >
               <X className="h-5 w-5" />
             </button>
-            <h2 className="text-lg font-semibold text-white">{profile.name} - Resume</h2>
+            <h2 className="text-lg font-semibold text-white">{profile.name || 'Unknown'} - Resume</h2>
           </div>
           <button
             onClick={onClose}
@@ -238,7 +245,7 @@ function ProfileDetailPanel({
           <iframe
             src={resumeUrl}
             className="w-full h-full border-0"
-            title={`Resume - ${profile.name}`}
+            title={`Resume - ${profile.name || 'Unknown'}`}
           />
         </div>
       </div>
@@ -246,9 +253,20 @@ function ProfileDetailPanel({
   }
   
   return (
-    <div className="fixed inset-y-0 right-0 w-full max-w-md bg-slate-900/95 backdrop-blur-lg border-l border-white/10 shadow-2xl z-50 overflow-y-auto">
-      <div className="sticky top-0 bg-slate-900/95 backdrop-blur-lg border-b border-white/10 p-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-white">Profile Details</h2>
+    <div className="fixed inset-y-0 right-0 w-full max-w-md bg-slate-900/98 backdrop-blur-2xl border-l border-white/10 shadow-2xl z-50 overflow-y-auto animate-in slide-in-from-right duration-300">
+      {/* Gradient accent */}
+      <div className="absolute inset-y-0 left-0 w-px bg-gradient-to-b from-indigo-500/50 via-purple-500/50 to-transparent" />
+      
+      <div className="sticky top-0 bg-slate-900/95 backdrop-blur-xl border-b border-white/10 p-4 flex items-center justify-between z-10">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-500/30 to-purple-500/30 flex items-center justify-center border border-white/10 text-white font-semibold">
+            {(profile.name || '?').charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-white">Profile Details</h2>
+            <p className="text-xs text-white/40">{profile.talent_category}</p>
+          </div>
+        </div>
         <button
           onClick={onClose}
           className="p-2 rounded-lg hover:bg-white/10 transition-colors text-white/60 hover:text-white"
@@ -259,16 +277,19 @@ function ProfileDetailPanel({
       
       <div className="p-6 space-y-6">
         {/* Header */}
-        <div className="space-y-3">
-          <div className="flex items-start justify-between">
-            <div>
-              <h3 className="text-xl font-semibold text-white">{profile.name}</h3>
-              <p className="text-white/60 text-sm">{profile.talent_category}</p>
+        <div className="space-y-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <h3 className="text-xl font-bold text-white mb-1">{profile.name || 'Unknown'}</h3>
+              <div className="flex items-center gap-2">
+                <StatusBadge status={profile.status} />
+              </div>
             </div>
-            <StatusBadge status={profile.status} />
           </div>
           {profile.summary && (
-            <p className="text-white/70 text-sm leading-relaxed">{profile.summary}</p>
+            <div className="bg-white/5 rounded-xl p-4 border border-white/5">
+              <p className="text-white/70 text-sm leading-relaxed italic">&ldquo;{profile.summary}&rdquo;</p>
+            </div>
           )}
           
           {/* View Resume Button */}
@@ -276,101 +297,131 @@ function ProfileDetailPanel({
             <button
               onClick={handleViewResume}
               disabled={resumeLoading}
-              className="w-full mt-3 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/30 transition-all disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 text-indigo-300 hover:from-indigo-500/30 hover:to-purple-500/30 transition-all disabled:opacity-50 font-medium"
             >
               <FileText className="h-4 w-4" />
-              {resumeLoading ? "Loading..." : "View Resume"}
+              {resumeLoading ? "Loading Resume..." : "View Original Resume"}
+              <ExternalLink className="h-3.5 w-3.5 ml-1 opacity-50" />
             </button>
           )}
         </div>
 
-        {/* Contact */}
+        {/* Contact Section */}
         <div className="space-y-3">
-          <h4 className="text-xs font-medium text-white/40 uppercase tracking-wider">Contact</h4>
-          <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-blue-500/20 rounded-lg">
+              <Mail className="h-3.5 w-3.5 text-blue-400" />
+            </div>
+            <h4 className="text-xs font-semibold text-white/60 uppercase tracking-wider">Contact Information</h4>
+          </div>
+          <div className="bg-white/5 rounded-xl border border-white/5 divide-y divide-white/5">
             {profile.contact.email && (
-              <div className="flex items-center gap-2 text-white/80">
-                <Mail className="h-4 w-4 text-white/40" />
-                <a href={`mailto:${profile.contact.email}`} className="hover:text-indigo-400 transition-colors">
+              <div className="flex items-center gap-3 px-4 py-3">
+                <Mail className="h-4 w-4 text-white/30" />
+                <a href={`mailto:${profile.contact.email}`} className="text-white/80 hover:text-indigo-400 transition-colors flex-1 truncate">
                   {profile.contact.email}
                 </a>
               </div>
             )}
             {profile.contact.phone && (
-              <div className="flex items-center gap-2 text-white/80">
-                <Phone className="h-4 w-4 text-white/40" />
-                {profile.contact.phone}
+              <div className="flex items-center gap-3 px-4 py-3">
+                <Phone className="h-4 w-4 text-white/30" />
+                <span className="text-white/80">{profile.contact.phone}</span>
               </div>
             )}
             {profile.contact.linkedin && (
-              <div className="flex items-center gap-2 text-white/80">
-                <Linkedin className="h-4 w-4 text-white/40" />
-                <a href={`https://${profile.contact.linkedin}`} target="_blank" rel="noopener noreferrer" className="hover:text-indigo-400 transition-colors">
+              <div className="flex items-center gap-3 px-4 py-3">
+                <Linkedin className="h-4 w-4 text-white/30" />
+                <a href={`https://${profile.contact.linkedin}`} target="_blank" rel="noopener noreferrer" className="text-white/80 hover:text-indigo-400 transition-colors flex-1 truncate">
                   {profile.contact.linkedin}
                 </a>
               </div>
             )}
             {profile.contact.github && (
-              <div className="flex items-center gap-2 text-white/80">
-                <Github className="h-4 w-4 text-white/40" />
-                <a href={`https://${profile.contact.github}`} target="_blank" rel="noopener noreferrer" className="hover:text-indigo-400 transition-colors">
+              <div className="flex items-center gap-3 px-4 py-3">
+                <Github className="h-4 w-4 text-white/30" />
+                <a href={`https://${profile.contact.github}`} target="_blank" rel="noopener noreferrer" className="text-white/80 hover:text-indigo-400 transition-colors flex-1 truncate">
                   {profile.contact.github}
                 </a>
               </div>
             )}
-            <div className="flex items-center gap-2 text-white/80">
-              <MapPin className="h-4 w-4 text-white/40" />
-              {profile.location.city ? `${profile.location.city}, ` : ""}
-              {US_STATES.find((s) => s.value === profile.location_state)?.label || profile.location_state}
+            <div className="flex items-center gap-3 px-4 py-3">
+              <MapPin className="h-4 w-4 text-white/30" />
+              <span className="text-white/80">
+                {profile.location.city ? `${profile.location.city}, ` : ""}
+                {US_STATES.find((s) => s.value === profile.location_state)?.label || profile.location_state}
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Professional */}
+        {/* Professional Section */}
         <div className="space-y-3">
-          <h4 className="text-xs font-medium text-white/40 uppercase tracking-wider">Professional</h4>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white/5 rounded-lg p-3 border border-white/5">
-              <div className="flex items-center gap-2 text-white/60 text-xs mb-1">
-                <Briefcase className="h-3 w-3" />
-                Bucket
-              </div>
-              <p className="text-white font-medium text-sm">{profile.talent_bucket}</p>
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-purple-500/20 rounded-lg">
+              <Briefcase className="h-3.5 w-3.5 text-purple-400" />
             </div>
-            <div className="bg-white/5 rounded-lg p-3 border border-white/5">
-              <div className="flex items-center gap-2 text-white/60 text-xs mb-1">
-                <Calendar className="h-3 w-3" />
-                Experience
+            <h4 className="text-xs font-semibold text-white/60 uppercase tracking-wider">Professional Details</h4>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-white/5 rounded-xl p-4 border border-white/5">
+              <div className="flex items-center gap-2 text-white/50 text-xs mb-2">
+                <Briefcase className="h-3.5 w-3.5" />
+                <span>Talent Bucket</span>
               </div>
-              <p className="text-white font-medium text-sm">
+              <p className="text-white font-semibold">{profile.talent_bucket}</p>
+            </div>
+            <div className="bg-white/5 rounded-xl p-4 border border-white/5">
+              <div className="flex items-center gap-2 text-white/50 text-xs mb-2">
+                <Clock className="h-3.5 w-3.5" />
+                <span>Experience</span>
+              </div>
+              <p className="text-white font-semibold">
                 {profile.years_of_experience ? `${profile.years_of_experience} years` : "Not specified"}
               </p>
             </div>
           </div>
-          <div className="bg-white/5 rounded-lg p-3 border border-white/5">
-            <div className="flex items-center gap-2 text-white/60 text-xs mb-2">
-              <Shield className="h-3 w-3" />
-              Clearance
+          
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-white/5 rounded-xl p-4 border border-white/5">
+              <div className="flex items-center gap-2 text-white/50 text-xs mb-2">
+                <Shield className="h-3.5 w-3.5" />
+                <span>Clearance</span>
+              </div>
+              {profile.clearance_level ? (
+                <ClearanceBadge level={profile.clearance_level} />
+              ) : (
+                <span className="text-white/40 text-sm">None</span>
+              )}
             </div>
-            <ClearanceBadge level={profile.clearance_level} />
+            <div className="bg-white/5 rounded-xl p-4 border border-white/5">
+              <div className="flex items-center gap-2 text-white/50 text-xs mb-2">
+                <DollarSign className="h-3.5 w-3.5" />
+                <span>Bill Rate</span>
+              </div>
+              {profile.bill_rate ? (
+                <p className="text-emerald-400 font-semibold">${profile.bill_rate}<span className="text-white/40 font-normal">/hr</span></p>
+              ) : (
+                <span className="text-white/40 text-sm">Not set</span>
+              )}
+            </div>
           </div>
-          {profile.bill_rate && (
-            <div className="bg-white/5 rounded-lg p-3 border border-white/5">
-              <div className="text-white/60 text-xs mb-1">Bill Rate</div>
-              <p className="text-white font-medium text-sm">${profile.bill_rate}/hr</p>
-            </div>
-          )}
         </div>
 
         {/* Companies */}
         {profile.companies.length > 0 && (
           <div className="space-y-3">
-            <h4 className="text-xs font-medium text-white/40 uppercase tracking-wider">Companies</h4>
-            <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-amber-500/20 rounded-lg">
+                <Building className="h-3.5 w-3.5 text-amber-400" />
+              </div>
+              <h4 className="text-xs font-semibold text-white/60 uppercase tracking-wider">Work History</h4>
+            </div>
+            <div className="bg-white/5 rounded-xl border border-white/5 divide-y divide-white/5">
               {profile.companies.map((company, i) => (
-                <div key={i} className="flex items-start gap-2 text-white/80">
-                  <Building className="h-4 w-4 text-white/40 mt-0.5" />
-                  <span>{company.name}</span>
+                <div key={i} className="flex items-center gap-3 px-4 py-3">
+                  <Building className="h-4 w-4 text-white/30" />
+                  <span className="text-white/80">{company.name}</span>
                 </div>
               ))}
             </div>
@@ -379,30 +430,43 @@ function ProfileDetailPanel({
 
         {/* Skills */}
         <div className="space-y-3">
-          <h4 className="text-xs font-medium text-white/40 uppercase tracking-wider">Skills</h4>
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-indigo-500/20 rounded-lg">
+              <Award className="h-3.5 w-3.5 text-indigo-400" />
+            </div>
+            <h4 className="text-xs font-semibold text-white/60 uppercase tracking-wider">Skills & Expertise</h4>
+          </div>
           <div className="flex flex-wrap gap-2">
             {profile.skillsets.map((skill, i) => (
               <Badge
                 key={i}
                 variant="outline"
-                className="bg-indigo-500/10 text-indigo-300 border-indigo-500/30 text-xs"
+                className="bg-indigo-500/10 text-indigo-300 border-indigo-500/30 hover:bg-indigo-500/20 transition-colors"
               >
                 {skill.name}
               </Badge>
             ))}
+            {profile.skillsets.length === 0 && (
+              <span className="text-white/40 text-sm">No skills listed</span>
+            )}
           </div>
         </div>
 
         {/* Certifications */}
         {profile.certifications.length > 0 && (
           <div className="space-y-3">
-            <h4 className="text-xs font-medium text-white/40 uppercase tracking-wider">Certifications</h4>
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-amber-500/20 rounded-lg">
+                <Award className="h-3.5 w-3.5 text-amber-400" />
+              </div>
+              <h4 className="text-xs font-semibold text-white/60 uppercase tracking-wider">Certifications</h4>
+            </div>
             <div className="flex flex-wrap gap-2">
               {profile.certifications.map((cert, i) => (
                 <Badge
                   key={i}
                   variant="outline"
-                  className="bg-amber-500/10 text-amber-300 border-amber-500/30 text-xs"
+                  className="bg-amber-500/10 text-amber-300 border-amber-500/30 hover:bg-amber-500/20 transition-colors"
                 >
                   <Award className="h-3 w-3 mr-1" />
                   {cert}
@@ -413,28 +477,41 @@ function ProfileDetailPanel({
         )}
 
         {/* Metadata */}
-        <div className="pt-4 border-t border-white/10 space-y-2 text-sm">
-          <div className="flex justify-between text-white/40">
-            <span>Date received</span>
-            <span className="text-white/60">{new Date(profile.date_received).toLocaleDateString()}</span>
+        <div className="pt-4 border-t border-white/10 space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-slate-500/20 rounded-lg">
+              <Calendar className="h-3.5 w-3.5 text-slate-400" />
+            </div>
+            <h4 className="text-xs font-semibold text-white/60 uppercase tracking-wider">Record Info</h4>
           </div>
-          <div className="flex justify-between text-white/40">
-            <span>Last updated</span>
-            <span className="text-white/60">{new Date(profile.updated_at).toLocaleDateString()}</span>
-          </div>
-          <div className="flex justify-between text-white/40">
-            <span>Profile ID</span>
-            <span className="text-white/60 font-mono text-xs">{profile.key}</span>
+          <div className="bg-white/5 rounded-xl border border-white/5 divide-y divide-white/5 text-sm">
+            <div className="flex justify-between px-4 py-2.5">
+              <span className="text-white/40">Date received</span>
+              <span className="text-white/70">{new Date(profile.date_received).toLocaleDateString()}</span>
+            </div>
+            <div className="flex justify-between px-4 py-2.5">
+              <span className="text-white/40">Last updated</span>
+              <span className="text-white/70">{new Date(profile.updated_at).toLocaleDateString()}</span>
+            </div>
+            <div className="flex justify-between px-4 py-2.5">
+              <span className="text-white/40">Profile ID</span>
+              <span className="text-white/50 font-mono text-xs truncate max-w-[180px]">{profile.key}</span>
+            </div>
           </div>
         </div>
 
         {/* Edit/Manage Section */}
         <div className="pt-4 border-t border-white/10 space-y-4">
-          <h4 className="text-xs font-medium text-white/40 uppercase tracking-wider">Manage Profile</h4>
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-green-500/20 rounded-lg">
+              <Save className="h-3.5 w-3.5 text-green-400" />
+            </div>
+            <h4 className="text-xs font-semibold text-white/60 uppercase tracking-wider">Manage Profile</h4>
+          </div>
           
           {/* Status */}
           <div className="space-y-2">
-            <Label className="text-white/60 text-xs">Status</Label>
+            <Label className="text-white/60">Status</Label>
             <Select
               value={editStatus}
               onChange={(e) => setEditStatus(e.target.value as CandidateStatus)}
@@ -445,7 +522,7 @@ function ProfileDetailPanel({
           
           {/* Bill Rate */}
           <div className="space-y-2">
-            <Label className="text-white/60 text-xs">Bill Rate ($/hr)</Label>
+            <Label className="text-white/60">Bill Rate ($/hr)</Label>
             <input
               type="number"
               min="0"
@@ -461,10 +538,10 @@ function ProfileDetailPanel({
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/30 transition-all disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 text-green-400 hover:from-green-500/30 hover:to-emerald-500/30 transition-all disabled:opacity-50 font-medium"
           >
             <Save className="h-4 w-4" />
-            {isSaving ? "Saving..." : "Save Changes"}
+            {isSaving ? "Saving Changes..." : "Save Changes"}
           </button>
           
           {/* Delete Section */}
@@ -472,29 +549,33 @@ function ProfileDetailPanel({
             {!showDeleteConfirm ? (
               <button
                 onClick={() => setShowDeleteConfirm(true)}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-all"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400/80 hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-400 transition-all"
               >
                 <Trash2 className="h-4 w-4" />
                 Delete Profile
               </button>
             ) : (
-              <div className="space-y-3">
-                <p className="text-red-400 text-sm text-center">
-                  Are you sure? This cannot be undone.
+              <div className="space-y-3 p-4 bg-red-500/10 rounded-xl border border-red-500/20">
+                <div className="flex items-center gap-2 text-red-400">
+                  <Trash2 className="h-4 w-4" />
+                  <p className="text-sm font-medium">Delete this profile?</p>
+                </div>
+                <p className="text-red-300/70 text-sm">
+                  This action cannot be undone. The candidate record will be permanently removed.
                 </p>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setShowDeleteConfirm(false)}
-                    className="flex-1 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 hover:text-white transition-all text-sm"
+                    className="flex-1 px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 hover:text-white transition-all text-sm font-medium"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleDelete}
                     disabled={isDeleting}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500/30 transition-all text-sm disabled:opacity-50"
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-red-500/30 border border-red-500/40 text-red-300 hover:bg-red-500/40 transition-all text-sm font-medium disabled:opacity-50"
                   >
-                    {isDeleting ? "Deleting..." : "Confirm Delete"}
+                    {isDeleting ? "Deleting..." : "Yes, Delete"}
                   </button>
                 </div>
               </div>
@@ -646,39 +727,71 @@ export function TalentDashboard() {
   }, [talents])
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800">
+      {/* Animated gradient accent bar */}
+      <div className="h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 animate-gradient-x" />
+      
       {/* Header */}
-      <div className="border-b border-white/10 bg-slate-900/50 backdrop-blur-lg sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-indigo-500/20 rounded-lg">
-                <Users className="h-6 w-6 text-indigo-400" />
+      <div className="border-b border-white/10 bg-slate-900/80 backdrop-blur-xl sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            {/* Title Section */}
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl blur-lg opacity-50" />
+                <div className="relative p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg">
+                  <Users className="h-6 w-6 text-white" />
+                </div>
               </div>
               <div>
-                <h1 className="text-xl font-semibold text-white">Talent Pool</h1>
-                <p className="text-sm text-white/60">Search and filter candidate profiles</p>
+                <h1 className="text-2xl font-bold text-white tracking-tight">Talent Pool</h1>
+                <p className="text-sm text-white/50">Discover and manage your candidate pipeline</p>
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              {/* Quick Stats */}
-              <div className="hidden md:flex items-center gap-6 text-sm">
-                <div className="text-center">
-                  <p className="text-2xl font-semibold text-white">{stats.total}</p>
-                  <p className="text-white/40 text-xs">Total</p>
+            
+            {/* Stats Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="group relative bg-white/5 hover:bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-white/10 hover:border-white/20 transition-all duration-300 cursor-default">
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-500/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="relative">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Users className="h-4 w-4 text-slate-400" />
+                    <span className="text-xs font-medium text-white/40 uppercase tracking-wider">Total</span>
+                  </div>
+                  <p className="text-3xl font-bold text-white tabular-nums">{stats.total}</p>
                 </div>
-                <div className="h-8 w-px bg-white/10" />
-                <div className="text-center">
-                  <p className="text-2xl font-semibold text-emerald-400">{stats.potentialCount}</p>
-                  <p className="text-white/40 text-xs">Potential</p>
+              </div>
+              
+              <div className="group relative bg-emerald-500/10 hover:bg-emerald-500/20 backdrop-blur-lg rounded-xl p-4 border border-emerald-500/20 hover:border-emerald-500/40 transition-all duration-300 cursor-default">
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="relative">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Sparkles className="h-4 w-4 text-emerald-400" />
+                    <span className="text-xs font-medium text-emerald-400/70 uppercase tracking-wider">Potential</span>
+                  </div>
+                  <p className="text-3xl font-bold text-emerald-400 tabular-nums">{stats.potentialCount}</p>
                 </div>
-                <div className="text-center">
-                  <p className="text-2xl font-semibold text-blue-400">{stats.activeCount}</p>
-                  <p className="text-white/40 text-xs">Active</p>
+              </div>
+              
+              <div className="group relative bg-blue-500/10 hover:bg-blue-500/20 backdrop-blur-lg rounded-xl p-4 border border-blue-500/20 hover:border-blue-500/40 transition-all duration-300 cursor-default">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="relative">
+                  <div className="flex items-center gap-2 mb-1">
+                    <TrendingUp className="h-4 w-4 text-blue-400" />
+                    <span className="text-xs font-medium text-blue-400/70 uppercase tracking-wider">Active</span>
+                  </div>
+                  <p className="text-3xl font-bold text-blue-400 tabular-nums">{stats.activeCount}</p>
                 </div>
-                <div className="text-center">
-                  <p className="text-2xl font-semibold text-green-400">{stats.placedCount}</p>
-                  <p className="text-white/40 text-xs">Placed</p>
+              </div>
+              
+              <div className="group relative bg-green-500/10 hover:bg-green-500/20 backdrop-blur-lg rounded-xl p-4 border border-green-500/20 hover:border-green-500/40 transition-all duration-300 cursor-default">
+                <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="relative">
+                  <div className="flex items-center gap-2 mb-1">
+                    <UserCheck className="h-4 w-4 text-green-400" />
+                    <span className="text-xs font-medium text-green-400/70 uppercase tracking-wider">Placed</span>
+                  </div>
+                  <p className="text-3xl font-bold text-green-400 tabular-nums">{stats.placedCount}</p>
                 </div>
               </div>
             </div>
@@ -686,31 +799,34 @@ export function TalentDashboard() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Search & Filter Toggle */}
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
-            <input
-              type="text"
-              placeholder="Search by name..."
-              value={filters.search}
-              onChange={(e) => handleFilterChange("search", e.target.value)}
-              className="w-full h-11 pl-10 pr-4 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
-            />
+          <div className="relative flex-1 group">
+            <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 rounded-xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-300" />
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40 group-focus-within:text-indigo-400 transition-colors" />
+              <input
+                type="text"
+                placeholder="Search candidates by name, skills, or keywords..."
+                value={filters.search}
+                onChange={(e) => handleFilterChange("search", e.target.value)}
+                className="w-full h-12 pl-12 pr-4 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 focus:bg-white/10 transition-all duration-300"
+              />
+            </div>
           </div>
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${
+            className={`flex items-center gap-2 px-5 py-3 rounded-xl border transition-all duration-300 font-medium ${
               showFilters
-                ? "bg-indigo-500/20 border-indigo-500/30 text-indigo-300"
-                : "bg-white/5 border-white/10 text-white/60 hover:text-white hover:border-white/20"
+                ? "bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border-indigo-500/40 text-indigo-300 shadow-lg shadow-indigo-500/10"
+                : "bg-white/5 border-white/10 text-white/60 hover:text-white hover:border-white/20 hover:bg-white/10"
             }`}
           >
             <Filter className="h-4 w-4" />
-            <span className="font-medium">Filters</span>
+            <span>Filters</span>
             {activeFilterCount > 0 && (
-              <span className="flex items-center justify-center h-5 w-5 rounded-full bg-indigo-500 text-white text-xs font-medium">
+              <span className="flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-xs font-bold shadow-lg shadow-indigo-500/25">
                 {activeFilterCount}
               </span>
             )}
@@ -719,172 +835,189 @@ export function TalentDashboard() {
 
         {/* Filters Panel */}
         {showFilters && (
-          <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl border border-white/10 p-4 mb-6 animate-in slide-in-from-top-2 duration-200">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium text-white/80">Filter Candidates</h3>
-              {activeFilterCount > 0 && (
-                <button
-                  onClick={clearFilters}
-                  className="text-xs text-white/40 hover:text-white transition-colors flex items-center gap-1"
-                >
-                  <X className="h-3 w-3" />
-                  Clear all
-                </button>
-              )}
-            </div>
-            {/* Row 1: Basic filters */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
-              <div className="space-y-1.5">
-                <Label>Status</Label>
-                <Select
-                  value={filters.status}
-                  onChange={(e) => handleFilterChange("status", e.target.value)}
-                  options={CANDIDATE_STATUSES}
-                  placeholder="All statuses"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Talent Bucket</Label>
-                <Select
-                  value={filters.talent_bucket}
-                  onChange={(e) => handleFilterChange("talent_bucket", e.target.value)}
-                  options={TALENT_BUCKETS}
-                  placeholder="All buckets"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Category</Label>
-                <Select
-                  value={filters.talent_category}
-                  onChange={(e) => handleFilterChange("talent_category", e.target.value)}
-                  options={TALENT_CATEGORIES}
-                  placeholder="All categories"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Clearance</Label>
-                <Select
-                  value={filters.clearance_level}
-                  onChange={(e) => handleFilterChange("clearance_level", e.target.value)}
-                  options={CLEARANCE_LEVELS}
-                  placeholder="Any clearance"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>State</Label>
-                <Select
-                  value={filters.location_state}
-                  onChange={(e) => handleFilterChange("location_state", e.target.value)}
-                  options={US_STATES}
-                  placeholder="Any state"
-                />
-              </div>
-            </div>
-            {/* Row 2: Additional filters */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-              <div className="space-y-1.5">
-                <Label>City</Label>
-                <Select
-                  value={filters.city}
-                  onChange={(e) => handleFilterChange("city", e.target.value)}
-                  options={
-                    (filters.location_state 
-                      ? lookupCities.filter(c => c.state === filters.location_state)
-                      : lookupCities
-                    ).map(c => ({ value: c.city, label: filters.location_state ? c.city : `${c.city}, ${c.state}` }))
-                  }
-                  placeholder="Any city"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Skills {filters.skills.length > 0 && `(${filters.skills.length})`}</Label>
-                <div className="relative">
-                  <Select
-                    value=""
-                    onChange={(e) => {
-                      const skill = e.target.value
-                      if (skill && !filters.skills.includes(skill)) {
-                        setFilters(prev => ({ ...prev, skills: [...prev.skills, skill] }))
-                      }
-                    }}
-                    options={lookupSkills.filter(s => !filters.skills.includes(s)).map(s => ({ value: s, label: s }))}
-                    placeholder="Add skill..."
-                  />
-                </div>
-                {filters.skills.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {filters.skills.map(skill => (
-                      <span
-                        key={skill}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-xs border border-indigo-500/30"
-                      >
-                        {skill}
-                        <button
-                          onClick={() => setFilters(prev => ({ ...prev, skills: prev.skills.filter(s => s !== skill) }))}
-                          className="hover:text-white"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </span>
-                    ))}
+          <div className="relative bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-white/10 p-6 mb-6 animate-in slide-in-from-top-2 duration-300 shadow-xl shadow-black/20">
+            {/* Subtle gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-transparent to-purple-500/5 rounded-2xl pointer-events-none" />
+            
+            <div className="relative">
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-indigo-500/20 rounded-lg">
+                    <Filter className="h-4 w-4 text-indigo-400" />
                   </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-white">Filter Candidates</h3>
+                    <p className="text-xs text-white/40">Narrow down your search with specific criteria</p>
+                  </div>
+                </div>
+                {activeFilterCount > 0 && (
+                  <button
+                    onClick={clearFilters}
+                    className="text-sm text-white/50 hover:text-white transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-white/10"
+                  >
+                    <X className="h-4 w-4" />
+                    Clear all ({activeFilterCount})
+                  </button>
                 )}
               </div>
-              <div className="space-y-1.5">
-                <Label>Certifications {filters.certifications.length > 0 && `(${filters.certifications.length})`}</Label>
-                <div className="relative">
-                  <Select
-                    value=""
-                    onChange={(e) => {
-                      const cert = e.target.value
-                      if (cert && !filters.certifications.includes(cert)) {
-                        setFilters(prev => ({ ...prev, certifications: [...prev.certifications, cert] }))
-                      }
-                    }}
-                    options={lookupCertifications.filter(c => !filters.certifications.includes(c)).map(c => ({ value: c, label: c }))}
-                    placeholder="Add certification..."
-                  />
-                </div>
-                {filters.certifications.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {filters.certifications.map(cert => (
-                      <span
-                        key={cert}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-xs border border-amber-500/30"
-                      >
-                        {cert}
-                        <button
-                          onClick={() => setFilters(prev => ({ ...prev, certifications: prev.certifications.filter(c => c !== cert) }))}
-                          className="hover:text-white"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </span>
-                    ))}
+              
+              {/* Row 1: Basic filters */}
+              <div className="mb-4">
+                <p className="text-xs font-medium text-white/30 uppercase tracking-wider mb-3">Primary Filters</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-white/70">Status</Label>
+                    <Select
+                      value={filters.status}
+                      onChange={(e) => handleFilterChange("status", e.target.value)}
+                      options={CANDIDATE_STATUSES}
+                      placeholder="All statuses"
+                    />
                   </div>
-                )}
+                  <div className="space-y-2">
+                    <Label className="text-white/70">Talent Bucket</Label>
+                    <Select
+                      value={filters.talent_bucket}
+                      onChange={(e) => handleFilterChange("talent_bucket", e.target.value)}
+                      options={TALENT_BUCKETS}
+                      placeholder="All buckets"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-white/70">Category</Label>
+                    <Select
+                      value={filters.talent_category}
+                      onChange={(e) => handleFilterChange("talent_category", e.target.value)}
+                      options={TALENT_CATEGORIES}
+                      placeholder="All categories"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-white/70">Clearance</Label>
+                    <Select
+                      value={filters.clearance_level}
+                      onChange={(e) => handleFilterChange("clearance_level", e.target.value)}
+                      options={CLEARANCE_LEVELS}
+                      placeholder="Any clearance"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-white/70">State</Label>
+                    <Select
+                      value={filters.location_state}
+                      onChange={(e) => handleFilterChange("location_state", e.target.value)}
+                      options={US_STATES}
+                      placeholder="Any state"
+                    />
+                  </div>
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label>Min Years Exp</Label>
-                <input
-                  type="number"
-                  min="0"
-                  value={filters.minYears}
-                  onChange={(e) => handleFilterChange("minYears", e.target.value)}
-                  placeholder="0"
-                  className="flex h-9 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/90 placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Max Years Exp</Label>
-                <input
-                  type="number"
-                  min="0"
-                  value={filters.maxYears}
-                  onChange={(e) => handleFilterChange("maxYears", e.target.value)}
-                  placeholder="Any"
-                  className="flex h-9 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/90 placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50"
-                />
+              
+              {/* Row 2: Additional filters */}
+              <div>
+                <p className="text-xs font-medium text-white/30 uppercase tracking-wider mb-3">Additional Filters</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-white/70">City</Label>
+                    <Select
+                      value={filters.city}
+                      onChange={(e) => handleFilterChange("city", e.target.value)}
+                      options={
+                        (filters.location_state 
+                          ? lookupCities.filter(c => c.state === filters.location_state)
+                          : lookupCities
+                        ).map(c => ({ value: c.city, label: filters.location_state ? c.city : `${c.city}, ${c.state}` }))
+                      }
+                      placeholder="Any city"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-white/70">Skills {filters.skills.length > 0 && <span className="text-indigo-400">({filters.skills.length})</span>}</Label>
+                    <Select
+                      value=""
+                      onChange={(e) => {
+                        const skill = e.target.value
+                        if (skill && !filters.skills.includes(skill)) {
+                          setFilters(prev => ({ ...prev, skills: [...prev.skills, skill] }))
+                        }
+                      }}
+                      options={lookupSkills.filter(s => !filters.skills.includes(s)).map(s => ({ value: s, label: s }))}
+                      placeholder="Add skill..."
+                    />
+                    {filters.skills.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {filters.skills.map(skill => (
+                          <span
+                            key={skill}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs border border-indigo-500/30 hover:bg-indigo-500/30 transition-colors"
+                          >
+                            {skill}
+                            <button
+                              onClick={() => setFilters(prev => ({ ...prev, skills: prev.skills.filter(s => s !== skill) }))}
+                              className="hover:text-white ml-0.5"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-white/70">Certifications {filters.certifications.length > 0 && <span className="text-amber-400">({filters.certifications.length})</span>}</Label>
+                    <Select
+                      value=""
+                      onChange={(e) => {
+                        const cert = e.target.value
+                        if (cert && !filters.certifications.includes(cert)) {
+                          setFilters(prev => ({ ...prev, certifications: [...prev.certifications, cert] }))
+                        }
+                      }}
+                      options={lookupCertifications.filter(c => !filters.certifications.includes(c)).map(c => ({ value: c, label: c }))}
+                      placeholder="Add certification..."
+                    />
+                    {filters.certifications.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {filters.certifications.map(cert => (
+                          <span
+                            key={cert}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs border border-amber-500/30 hover:bg-amber-500/30 transition-colors"
+                          >
+                            {cert}
+                            <button
+                              onClick={() => setFilters(prev => ({ ...prev, certifications: prev.certifications.filter(c => c !== cert) }))}
+                              className="hover:text-white ml-0.5"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-white/70">Min Years</Label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={filters.minYears}
+                      onChange={(e) => handleFilterChange("minYears", e.target.value)}
+                      placeholder="0"
+                      className="flex h-9 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/90 placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 hover:border-white/20 hover:bg-white/8 transition-all"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-white/70">Max Years</Label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={filters.maxYears}
+                      onChange={(e) => handleFilterChange("maxYears", e.target.value)}
+                      placeholder="Any"
+                      className="flex h-9 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/90 placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 hover:border-white/20 hover:bg-white/8 transition-all"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -892,25 +1025,38 @@ export function TalentDashboard() {
 
         {/* Results Count */}
         <div className="flex items-center justify-between mb-4">
-          <p className="text-sm text-white/60">
+          <div className="flex items-center gap-3">
             {talentsLoading ? (
-              <span className="text-white/40">Loading...</span>
+              <div className="flex items-center gap-2 text-white/40">
+                <div className="h-4 w-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                <span className="text-sm">Loading candidates...</span>
+              </div>
             ) : (
               <>
-                Showing <span className="text-white font-medium">{sortedProfiles.length}</span> candidates
+                <p className="text-sm text-white/60">
+                  Showing <span className="text-white font-semibold">{sortedProfiles.length}</span> {sortedProfiles.length === 1 ? 'candidate' : 'candidates'}
+                </p>
+                {activeFilterCount > 0 && (
+                  <span className="text-xs bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/30">
+                    {activeFilterCount} {activeFilterCount === 1 ? 'filter' : 'filters'} active
+                  </span>
+                )}
               </>
             )}
-          </p>
+          </div>
           {talentsError && (
-            <p className="text-sm text-red-400">
+            <p className="text-sm text-red-400 flex items-center gap-2">
+              <span className="flex h-2 w-2 rounded-full bg-red-500" />
               Error: {talentsError.message}
-              <button onClick={refreshTalents} className="ml-2 underline">Retry</button>
+              <button onClick={refreshTalents} className="underline hover:text-red-300">Retry</button>
             </p>
           )}
         </div>
 
         {/* Results Table */}
-        <div className="bg-slate-800/50 backdrop-blur-lg rounded-2xl border border-white/10 overflow-hidden">
+        <div className="relative bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden shadow-xl shadow-black/20">
+          {/* Table gradient accent */}
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent" />
           <Table>
             <TableHeader>
               <TableRow className="border-white/10 hover:bg-transparent">
@@ -959,23 +1105,47 @@ export function TalentDashboard() {
             <TableBody>
               {sortedProfiles.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-12">
-                    <div className="flex flex-col items-center gap-2 text-white/40">
+                  <TableCell colSpan={8} className="text-center py-16">
+                    <div className="flex flex-col items-center gap-4">
                       {talentsLoading ? (
                         <>
-                          <div className="h-8 w-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-                          <p>Loading candidates...</p>
+                          <div className="relative">
+                            <div className="h-12 w-12 border-2 border-indigo-500/30 rounded-full" />
+                            <div className="absolute inset-0 h-12 w-12 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                          </div>
+                          <div className="text-center">
+                            <p className="text-white/60 font-medium">Loading candidates...</p>
+                            <p className="text-white/30 text-sm mt-1">This may take a moment</p>
+                          </div>
                         </>
                       ) : (
                         <>
-                          <Users className="h-8 w-8" />
-                          <p>No candidates match your filters</p>
-                          <button
-                            onClick={clearFilters}
-                            className="text-indigo-400 hover:underline text-sm"
-                          >
-                            Clear all filters
-                          </button>
+                          <div className="relative">
+                            <div className="p-4 bg-slate-700/50 rounded-2xl">
+                              <Users className="h-10 w-10 text-white/20" />
+                            </div>
+                            <div className="absolute -top-1 -right-1 p-1.5 bg-slate-700 rounded-full border border-white/10">
+                              <Search className="h-4 w-4 text-white/30" />
+                            </div>
+                          </div>
+                          <div className="text-center max-w-sm">
+                            <p className="text-white/70 font-medium text-lg mb-1">No candidates found</p>
+                            <p className="text-white/40 text-sm">
+                              {activeFilterCount > 0 
+                                ? "Try adjusting your filters to see more results"
+                                : "Add candidates to get started"
+                              }
+                            </p>
+                          </div>
+                          {activeFilterCount > 0 && (
+                            <button
+                              onClick={clearFilters}
+                              className="mt-2 px-4 py-2 rounded-lg bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/30 transition-all text-sm font-medium flex items-center gap-2"
+                            >
+                              <X className="h-4 w-4" />
+                              Clear all filters
+                            </button>
+                          )}
                         </>
                       )}
                     </div>
@@ -985,13 +1155,18 @@ export function TalentDashboard() {
                 sortedProfiles.map((profile) => (
                   <TableRow
                     key={profile.pk}
-                    className="border-white/5 cursor-pointer hover:bg-white/5 transition-colors"
+                    className="border-white/5 cursor-pointer hover:bg-white/5 hover:shadow-lg transition-all duration-200 group"
                     onClick={() => setSelectedProfile(profile)}
                   >
                     <TableCell>
-                      <div>
-                        <p className="font-medium text-white">{profile.name}</p>
-                        <p className="text-xs text-white/40">{profile.contact?.email || "—"}</p>
+                      <div className="flex items-center gap-3">
+                        <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-br from-indigo-500/30 to-purple-500/30 flex items-center justify-center border border-white/10 text-white font-medium text-sm">
+                          {(profile.name || '?').charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="font-medium text-white group-hover:text-indigo-300 transition-colors">{profile.name || 'Unknown'}</p>
+                          <p className="text-xs text-white/40">{profile.contact?.email || "—"}</p>
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -1001,26 +1176,36 @@ export function TalentDashboard() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1 text-white/70">
-                        <MapPin className="h-3 w-3" />
-                        {profile.location?.city ? `${profile.location.city}, ` : ""}
-                        {profile.location_state}
+                      <div className="flex items-center gap-1.5 text-white/70">
+                        <MapPin className="h-3.5 w-3.5 text-white/40" />
+                        <span>{profile.location?.city ? `${profile.location.city}, ` : ""}{profile.location_state}</span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <ClearanceBadge level={profile.clearance_level} />
                     </TableCell>
-                    <TableCell className="text-white/70">
-                      {profile.bill_rate ? `$${profile.bill_rate}/hr` : "—"}
+                    <TableCell className="text-white/70 font-medium">
+                      {profile.bill_rate ? (
+                        <span className="text-emerald-400">${profile.bill_rate}<span className="text-white/40 text-xs">/hr</span></span>
+                      ) : (
+                        <span className="text-white/30">—</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-white/70">
-                      {profile.years_of_experience ? `${profile.years_of_experience} yrs` : "—"}
+                      {profile.years_of_experience ? (
+                        <span>{profile.years_of_experience} <span className="text-white/40">yrs</span></span>
+                      ) : (
+                        <span className="text-white/30">—</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <StatusBadge status={profile.status} />
                     </TableCell>
-                    <TableCell className="text-white/50 text-sm">
-                      {new Date(profile.date_received).toLocaleDateString()}
+                    <TableCell>
+                      <div className="flex items-center justify-between">
+                        <span className="text-white/50 text-sm">{new Date(profile.date_received).toLocaleDateString()}</span>
+                        <ChevronRight className="h-4 w-4 text-white/20 group-hover:text-white/50 group-hover:translate-x-0.5 transition-all opacity-0 group-hover:opacity-100" />
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -1034,7 +1219,7 @@ export function TalentDashboard() {
       {selectedProfile && (
         <>
           <div
-            className="fixed inset-0 bg-black/50 z-40"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity"
             onClick={() => setSelectedProfile(null)}
           />
           <ProfileDetailPanel
