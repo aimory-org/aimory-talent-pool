@@ -98,7 +98,7 @@ TALENT_SCHEMA = {
     },
     "bill_rate": {
       "type": ["number", "null"],
-      "description": "Hourly bill rate in USD if mentioned in resume"
+      "description": "Hourly bill rate in USD. If rate is given per day, divide by 8. If per week, divide by 40. If per month, divide by 160. If per year, divide by 2080."
     }
   }
 }
@@ -142,7 +142,13 @@ Field guidance:
   - IMPORTANT: Only assign a clearance if the resume CLEARLY states one of these levels
   - If clearance is lower than Secret (e.g., Public Trust, Confidential, None) or unclear, use null
   - If no clearance mentioned, use null
-- bill_rate: hourly USD rate if mentioned, otherwise null
+- bill_rate: hourly USD rate. IMPORTANT: Convert to hourly if given in other units:
+  - Daily rate: divide by 8 (e.g., $1200/day = $150/hour)
+  - Weekly rate: divide by 40 (e.g., $4000/week = $100/hour)
+  - Monthly rate: divide by 160 (e.g., $16000/month = $100/hour)
+  - Yearly rate: divide by 2080 (e.g., $208000/year = $100/hour)
+  - If already hourly, use as-is
+  - If no rate mentioned, use null
 - If a field cannot be determined, use null (or empty array [] for lists)
 """
 
