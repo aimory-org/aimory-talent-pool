@@ -422,7 +422,17 @@ export function TalentDashboard() {
   } = useLookups()
 
   const handleFilterChange = (key: keyof Filters, value: string) => {
-    setFilters((prev) => ({ ...prev, [key]: value }))
+    if (key === "location_state") {
+      // Reset city when state changes, unless the city exists in the new state
+      const cityExistsInState = lookupCities.some(c => c.city === filters.city && c.state === value)
+      setFilters((prev) => ({ 
+        ...prev, 
+        [key]: value,
+        city: cityExistsInState ? prev.city : ""
+      }))
+    } else {
+      setFilters((prev) => ({ ...prev, [key]: value }))
+    }
   }
 
   const clearFilters = () => {
@@ -645,7 +655,12 @@ export function TalentDashboard() {
                 <Select
                   value={filters.city}
                   onChange={(e) => handleFilterChange("city", e.target.value)}
-                  options={lookupCities.map(c => ({ value: c.city, label: `${c.city}, ${c.state}` }))}
+                  options={
+                    (filters.location_state 
+                      ? lookupCities.filter(c => c.state === filters.location_state)
+                      : lookupCities
+                    ).map(c => ({ value: c.city, label: filters.location_state ? c.city : `${c.city}, ${c.state}` }))
+                  }
                   placeholder="Any city"
                 />
               </div>
