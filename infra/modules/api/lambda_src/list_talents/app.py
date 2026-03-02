@@ -30,8 +30,29 @@ class DecimalEncoder(json.JSONEncoder):
         return super().default(o)
 
 
-def matches_filters(item, params):
+def matches_filters(item, params, used_gsi_key=None):
     """Check if an item matches all the post-fetch filters."""
+    # Apply GSI-based filters that weren't used for the primary query
+    if used_gsi_key != "status" and params.get("status"):
+        if item.get("status") != params["status"]:
+            return False
+    
+    if used_gsi_key != "talent_bucket" and params.get("talent_bucket"):
+        if item.get("talent_bucket") != params["talent_bucket"]:
+            return False
+    
+    if used_gsi_key != "talent_category" and params.get("talent_category"):
+        if item.get("talent_category") != params["talent_category"]:
+            return False
+    
+    if used_gsi_key != "clearance_level" and params.get("clearance_level"):
+        if item.get("clearance_level") != params["clearance_level"]:
+            return False
+    
+    if used_gsi_key != "location_state" and params.get("location_state"):
+        if item.get("location_state") != params["location_state"]:
+            return False
+    
     # Text search on name
     if params.get("search"):
         search_lower = params["search"].lower()
@@ -116,7 +137,7 @@ def handler(event, context):
                 scan_params["ExclusiveStartKey"] = response["LastEvaluatedKey"]
         
         # Apply post-fetch filters
-        filtered_items = [item for item in items if matches_filters(item, params)]
+        filtered_items = [item for item in items if matches_filters(item, params, gsi_key)]
         
         # Sort by date_received descending
         filtered_items.sort(key=lambda x: x.get("date_received", ""), reverse=True)
