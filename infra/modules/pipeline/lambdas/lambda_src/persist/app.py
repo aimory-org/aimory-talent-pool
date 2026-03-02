@@ -215,11 +215,11 @@ def _populate_lookup_tables(profile):
     if CITIES_LOOKUP_TABLE and profile["location"]:
         city = profile["location"].get("city")
         state = profile["location"].get("state")
-        if city and city.strip():
+        if city and city.strip() and state and state.strip():
             cities_table = dynamodb.Table(CITIES_LOOKUP_TABLE)
             cities_table.put_item(Item={
                 "city": city.strip(),
-                "state": state.strip() if state else None,
+                "state": state.strip(),
                 "updated_at": now
             })
 
