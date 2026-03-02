@@ -926,6 +926,7 @@ export function TalentDashboard() {
                 <TableHead className="text-white/60">Category</TableHead>
                 <TableHead className="text-white/60">Location</TableHead>
                 <TableHead className="text-white/60">Clearance</TableHead>
+                <TableHead className="text-white/60">Rate</TableHead>
                 <TableHead className="text-white/60">
                   <SortableHeader
                     label="Experience"
@@ -958,7 +959,7 @@ export function TalentDashboard() {
             <TableBody>
               {sortedProfiles.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-12">
+                  <TableCell colSpan={8} className="text-center py-12">
                     <div className="flex flex-col items-center gap-2 text-white/40">
                       {talentsLoading ? (
                         <>
@@ -1008,6 +1009,9 @@ export function TalentDashboard() {
                     </TableCell>
                     <TableCell>
                       <ClearanceBadge level={profile.clearance_level} />
+                    </TableCell>
+                    <TableCell className="text-white/70">
+                      {profile.bill_rate ? `$${profile.bill_rate}/hr` : "—"}
                     </TableCell>
                     <TableCell className="text-white/70">
                       {profile.years_of_experience ? `${profile.years_of_experience} yrs` : "—"}
