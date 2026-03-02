@@ -47,7 +47,7 @@ locals {
       }
     }
     update_talent = {
-      route   = "PATCH /talents/{pk}"
+      route   = "PATCH /talents"
       timeout = 10
       memory  = 256
       env = {
@@ -55,7 +55,7 @@ locals {
       }
     }
     delete_talent = {
-      route   = "DELETE /talents/{pk}"
+      route   = "DELETE /talents"
       timeout = 10
       memory  = 256
       env = {

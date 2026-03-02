@@ -15,18 +15,18 @@ RESUME_BUCKET = os.environ.get("RESUME_BUCKET", "")
 
 def handler(event, context):
     try:
-        # Get pk from path parameters
-        pk = event.get("pathParameters", {}).get("pk")
+        # Get pk from query parameters (path params don't work with slashes in pk)
+        query_params = event.get("queryStringParameters") or {}
+        pk = query_params.get("pk")
         
         if not pk:
             return {
                 "statusCode": 400,
                 "headers": {"Content-Type": "application/json"},
-                "body": json.dumps({"error": "Missing pk parameter"}),
+                "body": json.dumps({"error": "Missing pk query parameter"}),
             }
         
-        # URL decode the pk
-        pk = urllib.parse.unquote(pk)
+        # pk is already decoded by API Gateway
         
         # Get the item first to extract the S3 key
         response = table.get_item(Key={"pk": pk})

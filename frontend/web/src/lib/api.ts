@@ -145,7 +145,7 @@ export interface UpdateTalentParams {
 }
 
 export async function updateTalent(pk: string, updates: UpdateTalentParams): Promise<void> {
-  await apiFetch(`/talents/${encodeURIComponent(pk)}`, {
+  await apiFetch(`/talents?pk=${encodeURIComponent(pk)}`, {
     method: 'PATCH',
     body: JSON.stringify(updates),
   })
@@ -155,7 +155,7 @@ export async function updateTalent(pk: string, updates: UpdateTalentParams): Pro
  * Delete a talent profile.
  */
 export async function deleteTalent(pk: string): Promise<void> {
-  await apiFetch(`/talents/${encodeURIComponent(pk)}`, {
+  await apiFetch(`/talents?pk=${encodeURIComponent(pk)}`, {
     method: 'DELETE',
   })
 }
