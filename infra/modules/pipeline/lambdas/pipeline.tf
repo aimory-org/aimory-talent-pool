@@ -27,7 +27,7 @@ locals {
     normalize = { timeout = 30, memory = 512, env = {} }
 
     llm_extract = {
-      timeout = 60
+      timeout = 120
       memory  = 1024
       env = {
         MODEL_ID = var.bedrock_model_id

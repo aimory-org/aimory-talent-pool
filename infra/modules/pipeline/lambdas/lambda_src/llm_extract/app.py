@@ -1,5 +1,7 @@
 import os
 import json
+import time
+import random
 import boto3
 from botocore.exceptions import ClientError
 
@@ -169,22 +171,39 @@ def handler(event, context):
   """
 
     # Note: boto3 Converse does not accept outputConfig; enforce JSON via prompt and validate on parse.
-    try:
-      resp = bedrock_client.converse(
-        modelId=MODEL_ID,
-        messages=[{
-          "role": "user",
-          "content": [{"text": user_prompt}]
-        }],
-        system=[{"text": SYSTEM_INSTRUCTIONS}],
-        inferenceConfig={
-          "maxTokens": 2500,
-          "temperature": 0.1,
-          "topP": 0.9
-        }
-      )
-    except ClientError as e:
-      raise RuntimeError(f"Bedrock converse failed: {e}")
+    # Retry with exponential backoff for throttling
+    max_retries = 5
+    base_delay = 2
+    resp = None
+    
+    for attempt in range(max_retries):
+      try:
+        resp = bedrock_client.converse(
+          modelId=MODEL_ID,
+          messages=[{
+            "role": "user",
+            "content": [{"text": user_prompt}]
+          }],
+          system=[{"text": SYSTEM_INSTRUCTIONS}],
+          inferenceConfig={
+            "maxTokens": 2500,
+            "temperature": 0.1,
+            "topP": 0.9
+          }
+        )
+        break  # Success, exit retry loop
+      except ClientError as e:
+        error_code = e.response.get("Error", {}).get("Code", "")
+        if error_code == "ThrottlingException" and attempt < max_retries - 1:
+          # Exponential backoff with jitter
+          delay = base_delay * (2 ** attempt) + random.uniform(0, 1)
+          print(f"Throttled, retrying in {delay:.1f}s (attempt {attempt + 1}/{max_retries})")
+          time.sleep(delay)
+        else:
+          raise RuntimeError(f"Bedrock converse failed: {e}")
+    
+    if resp is None:
+      raise RuntimeError("Bedrock converse failed after max retries")
 
     # Bedrock returns assistant message content blocks; the JSON will be in a text block
     content = resp["output"]["message"]["content"]
