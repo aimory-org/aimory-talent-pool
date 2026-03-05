@@ -5,7 +5,7 @@ module "storage" {
 }
 
 module "frontend_site" {
-  source          = "../../modules/frontend_site"
+  source          = "../../modules/frontend/site"
   project_name    = var.project_name
   environment     = var.environment
   domain_aliases  = var.frontend_domain_aliases
@@ -13,7 +13,7 @@ module "frontend_site" {
 }
 
 module "cognito" {
-  source       = "../../modules/cognito"
+  source       = "../../modules/frontend/cognito"
   project_name = var.project_name
   environment  = var.environment
 
@@ -27,12 +27,22 @@ module "cognito" {
   entra_tenant_id     = var.entra_tenant_id
 }
 
-module "lambdas" {
-  source       = "../../modules/lambdas"
+module "stale_checker" {
+  source       = "../../modules/frontend/lambdas/stale_checker"
+  project_name = var.project_name
+  environment  = var.environment
+
+  talent_profiles_table_name = module.storage.talent_profiles_table_name
+  talent_profiles_table_arn  = module.storage.talent_profiles_table_arn
+}
+
+module "pipeline_lambdas" {
+  source       = "../../modules/pipeline/lambdas"
   project_name = var.project_name
   environment  = var.environment
 
   resume_bucket              = module.storage.resume_bucket_name
+  resume_bucket_arn          = module.storage.resume_bucket_arn
   raw_prefix                 = var.raw_prefix
   extracted_prefix           = var.extracted_prefix
   presign_api_key            = var.presign_api_key
@@ -50,62 +60,54 @@ module "lambdas" {
 }
 
 module "step_functions" {
-  source       = "../../modules/step_functions"
+  source       = "../../modules/pipeline/step_functions"
   project_name = var.project_name
   environment  = var.environment
 
   lambda_arns = {
-    classify       = module.lambdas.pipeline_lambda_arns["classify"]
-    start_textract = module.lambdas.pipeline_lambda_arns["start_textract"]
-    check_textract = module.lambdas.pipeline_lambda_arns["check_textract"]
-    fetch_textract = module.lambdas.pipeline_lambda_arns["fetch_textract"]
-    normalize      = module.lambdas.pipeline_lambda_arns["normalize"]
-    llm_extract    = module.lambdas.pipeline_lambda_arns["llm_extract"]
-    persist        = module.lambdas.pipeline_lambda_arns["persist"]
-  }
-}
-
-# Store SFN ARN in SSM so starter can read it without terraform cycles
-resource "aws_ssm_parameter" "pipeline_sfn_arn" {
-  name  = var.sfn_arn_param_name
-  type  = "String"
-  value = module.step_functions.state_machine_arn
-}
-
-# Allow pipeline role to start executions
-resource "aws_iam_role_policy" "pipeline_can_start_sfn" {
-  name = "${var.project_name}-${var.environment}-pipeline-start-sfn"
-  role = module.lambdas.pipeline_lambda_role_name
-
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [{
-      Effect   = "Allow",
-      Action   = ["states:StartExecution"],
-      Resource = module.step_functions.state_machine_arn
-    }]
-  })
-}
-
-# Allow S3 to invoke starter
-resource "aws_lambda_permission" "allow_s3_invoke_starter" {
-  statement_id  = "AllowS3InvokeStarter"
-  action        = "lambda:InvokeFunction"
-  function_name = module.lambdas.pipeline_lambda_names["starter"]
-  principal     = "s3.amazonaws.com"
-  source_arn    = module.storage.resume_bucket_arn
-}
-
-resource "aws_s3_bucket_notification" "raw_uploads" {
-  bucket = module.storage.resume_bucket_name
-
-  lambda_function {
-    lambda_function_arn = module.lambdas.pipeline_lambda_arns["starter"]
-    events              = ["s3:ObjectCreated:*"]
-    filter_prefix       = "${var.raw_prefix}/"
+    classify       = module.pipeline_lambdas.pipeline_lambda_arns["classify"]
+    start_textract = module.pipeline_lambdas.pipeline_lambda_arns["start_textract"]
+    check_textract = module.pipeline_lambdas.pipeline_lambda_arns["check_textract"]
+    fetch_textract = module.pipeline_lambdas.pipeline_lambda_arns["fetch_textract"]
+    normalize      = module.pipeline_lambdas.pipeline_lambda_arns["normalize"]
+    llm_extract    = module.pipeline_lambdas.pipeline_lambda_arns["llm_extract"]
+    persist        = module.pipeline_lambdas.pipeline_lambda_arns["persist"]
   }
 
-  depends_on = [aws_lambda_permission.allow_s3_invoke_starter]
+  sfn_arn_param_name        = var.sfn_arn_param_name
+  pipeline_lambda_role_name = module.pipeline_lambdas.pipeline_lambda_role_name
+}
+
+# -----------------------------------------------------------------------------
+# API Gateway for frontend to query DynamoDB
+# -----------------------------------------------------------------------------
+
+module "api" {
+  source       = "../../modules/api"
+  project_name = var.project_name
+  environment  = var.environment
+
+  cognito_user_pool_arn       = module.cognito.user_pool_arn
+  cognito_user_pool_client_id = module.cognito.web_client_id
+
+  talent_profiles_table_name = module.storage.talent_profiles_table_name
+  talent_profiles_table_arn  = module.storage.talent_profiles_table_arn
+
+  skills_lookup_table_name         = module.storage.skills_lookup_table_name
+  skills_lookup_table_arn          = module.storage.skills_lookup_table_arn
+  certifications_lookup_table_name = module.storage.certifications_lookup_table_name
+  certifications_lookup_table_arn  = module.storage.certifications_lookup_table_arn
+  cities_lookup_table_name         = module.storage.cities_lookup_table_name
+  cities_lookup_table_arn          = module.storage.cities_lookup_table_arn
+
+  resume_bucket_name = module.storage.resume_bucket_name
+  resume_bucket_arn  = module.storage.resume_bucket_arn
+
+  cors_allowed_origins = concat(
+    ["http://localhost:5173"],
+    [for url in var.cognito_callback_urls : url if url != "http://localhost:5173"],
+    ["https://${module.frontend_site.distribution_domain_name}"]
+  )
 }
 
 # -----------------------------------------------------------------------------
@@ -123,8 +125,8 @@ locals {
   ]))
 }
 
-resource "null_resource" "frontend_deploy" {
-  triggers = {
+resource "terraform_data" "frontend_deploy" {
+  triggers_replace = {
     src_hash        = local.frontend_src_hash
     bucket_name     = module.frontend_site.bucket_name
     distribution_id = module.frontend_site.distribution_id

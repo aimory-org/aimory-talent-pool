@@ -14,12 +14,22 @@ variable "environment" {
   description = "Environment name (dev/staging/prod)"
   type        = string
   default     = "dev"
+
+  validation {
+    condition     = contains(["dev", "staging", "prod"], var.environment)
+    error_message = "Environment must be dev, staging, or prod."
+  }
 }
 
 variable "presign_api_key" {
   description = "Shared secret for the presign Lambda (x-api-key)"
   type        = string
   sensitive   = true
+
+  validation {
+    condition     = length(var.presign_api_key) >= 16
+    error_message = "presign_api_key must be at least 16 characters."
+  }
 }
 
 variable "raw_prefix" {
@@ -37,6 +47,11 @@ variable "extracted_prefix" {
 variable "sfn_arn_param_name" {
   description = "SSM Parameter name containing Step Functions state machine ARN"
   type        = string
+
+  validation {
+    condition     = startswith(var.sfn_arn_param_name, "/")
+    error_message = "SSM parameter name must start with /."
+  }
 }
 
 variable "frontend_domain_aliases" {
@@ -78,4 +93,9 @@ variable "entra_client_secret" {
 variable "entra_tenant_id" {
   description = "Microsoft Entra ID tenant ID"
   type        = string
+
+  validation {
+    condition     = can(regex("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", var.entra_tenant_id))
+    error_message = "entra_tenant_id must be a valid UUID."
+  }
 }

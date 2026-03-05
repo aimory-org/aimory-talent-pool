@@ -1,0 +1,29 @@
+# -----------------------------------------------------------------------------
+# terraform.tfvars.example
+# Copy this file to terraform.tfvars and fill in your values
+# -----------------------------------------------------------------------------
+
+# General
+aws_region   = "us-east-1"
+project_name = "aimory-talent-pool"
+environment  = "dev"  # dev, staging, or prod
+
+# Lambda module variables
+presign_api_key    = "your-secure-api-key-min-16-chars"  # Min 16 characters
+raw_prefix         = "raw/onedrive"
+extracted_prefix   = "extracted"
+sfn_arn_param_name = "/aimory-talent-pool/dev/resume-pipeline-arn"
+
+# Frontend hosting (optional custom domain)
+frontend_domain_aliases  = []  # e.g., ["talent.example.com"]
+frontend_certificate_arn = null  # ACM cert ARN if using custom domain
+
+# Cognito callback URLs (add CloudFront URL after first deploy)
+cognito_callback_urls = ["http://localhost:5173"]
+cognito_logout_urls   = ["http://localhost:5173"]
+
+# Microsoft Entra ID (Azure AD)
+# Create an app registration in Entra ID and fill these in
+entra_client_id     = "00000000-0000-0000-0000-000000000000"  # Application (client) ID
+entra_client_secret = "your-client-secret"                    # Client secret value
+entra_tenant_id     = "00000000-0000-0000-0000-000000000000"  # Directory (tenant) ID

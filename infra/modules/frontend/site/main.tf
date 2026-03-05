@@ -65,7 +65,7 @@ resource "aws_cloudfront_response_headers_policy" "site" {
   security_headers_config {
     content_security_policy {
       override                = true
-      content_security_policy = "default-src 'self'; connect-src 'self' https://cognito-idp.us-east-1.amazonaws.com https://*.auth.us-east-1.amazoncognito.com; img-src 'self' data: blob:; font-src 'self' https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self' 'unsafe-inline'; frame-src https://*.auth.us-east-1.amazoncognito.com https://login.microsoftonline.com;"
+      content_security_policy = "default-src 'self'; connect-src 'self' https://cognito-idp.us-east-1.amazonaws.com https://*.auth.us-east-1.amazoncognito.com https://*.execute-api.us-east-1.amazonaws.com https://*.s3.us-east-1.amazonaws.com https://*.s3.amazonaws.com; img-src 'self' data: blob:; font-src 'self' https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self' 'unsafe-inline'; frame-src 'self' https://*.auth.us-east-1.amazoncognito.com https://login.microsoftonline.com https://docs.google.com https://*.s3.amazonaws.com https://*.s3.us-east-1.amazonaws.com;"
     }
 
     strict_transport_security {

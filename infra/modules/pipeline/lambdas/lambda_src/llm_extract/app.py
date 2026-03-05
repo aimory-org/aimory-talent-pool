@@ -1,5 +1,7 @@
 import os
 import json
+import time
+import random
 import boto3
 from botocore.exceptions import ClientError
 
@@ -65,7 +67,8 @@ TALENT_SCHEMA = {
     "years_of_experience": {"type": ["number", "null"]},
     "clearance_level": {
       "type": ["string", "null"],
-      "description": "Security clearance level if mentioned (e.g. Secret, Top Secret, TS/SCI, Public Trust)"
+      "enum": ["Secret", "TS", "TS/SCI", "TS/SCI/FSP", "TS/SCI/CI", "Yankee White", None],
+      "description": "Security clearance level. Only use these exact values if CLEARLY stated in resume: Secret, TS (Top Secret without SCI), TS/SCI, TS/SCI/FSP (Full Scope Poly), TS/SCI/CI (CI Poly), Yankee White. Use null if no clearance mentioned OR if clearance is below Secret (e.g., Public Trust, Confidential)."
     },
     "certifications": {
       "type": "array",
@@ -95,7 +98,7 @@ TALENT_SCHEMA = {
     },
     "bill_rate": {
       "type": ["number", "null"],
-      "description": "Hourly bill rate in USD if mentioned in resume"
+      "description": "Hourly bill rate in USD. If rate is given per day, divide by 8. If per week, divide by 40. If per month, divide by 160. If per year, divide by 2080."
     }
   }
 }
@@ -127,8 +130,25 @@ Category options: Accounting, Finance, Data Analysis, Forensics, Developer, Netw
 Field guidance:
 - Evidence snippets: SHORT phrases from resume (not full sentences)
 - Certifications: list of strings like ["PMP", "AWS Solutions Architect"]
-- Clearance: Secret, Top Secret, TS/SCI, Public Trust, or null
-- bill_rate: hourly USD rate if mentioned, otherwise null
+- Clearance: Must be exactly one of: Secret, TS, TS/SCI, TS/SCI/FSP, TS/SCI/CI, Yankee White, or null
+  - Secret: Standard Secret clearance
+  - TS: Top Secret (no SCI)
+  - TS/SCI: Top Secret with Sensitive Compartmented Information
+  - TS/SCI/FSP: TS/SCI with Full Scope Polygraph (also called Lifestyle Poly)
+  - TS/SCI/CI: TS/SCI with Counterintelligence Polygraph (CI Poly)
+  - Yankee White: Presidential support clearance
+  - If "Top Secret" mentioned without SCI, use "TS"
+  - If polygraph mentioned, determine if Full Scope (FSP) or CI Poly
+  - IMPORTANT: Only assign a clearance if the resume CLEARLY states one of these levels
+  - If clearance is lower than Secret (e.g., Public Trust, Confidential, None) or unclear, use null
+  - If no clearance mentioned, use null
+- bill_rate: hourly USD rate. IMPORTANT: Convert to hourly if given in other units:
+  - Daily rate: divide by 8 (e.g., $1200/day = $150/hour)
+  - Weekly rate: divide by 40 (e.g., $4000/week = $100/hour)
+  - Monthly rate: divide by 160 (e.g., $16000/month = $100/hour)
+  - Yearly rate: divide by 2080 (e.g., $208000/year = $100/hour)
+  - If already hourly, use as-is
+  - If no rate mentioned, use null
 - If a field cannot be determined, use null (or empty array [] for lists)
 """
 
@@ -157,22 +177,39 @@ def handler(event, context):
   """
 
     # Note: boto3 Converse does not accept outputConfig; enforce JSON via prompt and validate on parse.
-    try:
-      resp = bedrock_client.converse(
-        modelId=MODEL_ID,
-        messages=[{
-          "role": "user",
-          "content": [{"text": user_prompt}]
-        }],
-        system=[{"text": SYSTEM_INSTRUCTIONS}],
-        inferenceConfig={
-          "maxTokens": 2500,
-          "temperature": 0.1,
-          "topP": 0.9
-        }
-      )
-    except ClientError as e:
-      raise RuntimeError(f"Bedrock converse failed: {e}")
+    # Retry with exponential backoff for throttling
+    max_retries = 5
+    base_delay = 2
+    resp = None
+    
+    for attempt in range(max_retries):
+      try:
+        resp = bedrock_client.converse(
+          modelId=MODEL_ID,
+          messages=[{
+            "role": "user",
+            "content": [{"text": user_prompt}]
+          }],
+          system=[{"text": SYSTEM_INSTRUCTIONS}],
+          inferenceConfig={
+            "maxTokens": 2500,
+            "temperature": 0.1,
+            "topP": 0.9
+          }
+        )
+        break  # Success, exit retry loop
+      except ClientError as e:
+        error_code = e.response.get("Error", {}).get("Code", "")
+        if error_code == "ThrottlingException" and attempt < max_retries - 1:
+          # Exponential backoff with jitter
+          delay = base_delay * (2 ** attempt) + random.uniform(0, 1)
+          print(f"Throttled, retrying in {delay:.1f}s (attempt {attempt + 1}/{max_retries})")
+          time.sleep(delay)
+        else:
+          raise RuntimeError(f"Bedrock converse failed: {e}")
+    
+    if resp is None:
+      raise RuntimeError("Bedrock converse failed after max retries")
 
     # Bedrock returns assistant message content blocks; the JSON will be in a text block
     content = resp["output"]["message"]["content"]

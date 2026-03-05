@@ -3,6 +3,7 @@ variable "environment" { type = string }
 
 # one bucket, different prefixes
 variable "resume_bucket" { type = string }
+variable "resume_bucket_arn" { type = string }
 
 variable "raw_prefix" {
   type    = string
@@ -31,3 +32,10 @@ variable "certifications_lookup_table_name" { type = string }
 variable "certifications_lookup_table_arn" { type = string }
 variable "cities_lookup_table_name" { type = string }
 variable "cities_lookup_table_arn" { type = string }
+
+# Bedrock model for LLM extraction
+variable "bedrock_model_id" {
+  type        = string
+  description = "Bedrock model ID for resume extraction"
+  default     = "anthropic.claude-3-5-sonnet-20240620-v1:0"
+}
