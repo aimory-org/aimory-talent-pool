@@ -1,5 +1,7 @@
 # AIMORY Talent Pool
 
+Contributors: Ben and Kyle
+
 Modern resume ingestion and enrichment pipeline for AIMORY. The project centers on an AWS-native workflow that accepts resumes in S3, pushes them through Textract + LLM enrichment, normalizes the profile, and stores structured records for downstream search. The repository currently focuses on infrastructure-as-code and Lambda handlers; a frontend will be introduced later.
 
 ## Architecture At A Glance
