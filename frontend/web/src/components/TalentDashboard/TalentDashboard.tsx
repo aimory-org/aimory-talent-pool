@@ -1,0 +1,284 @@
+/**
+ * TalentDashboard - Main component for viewing and managing talent profiles.
+ * 
+ * This component provides:
+ * - Searchable, filterable list of talent profiles
+ * - Statistics overview cards
+ * - Sortable table with profile details
+ * - Detail panel for viewing/editing individual profiles
+ */
+import { useState, useMemo, useCallback } from "react"
+import { Users, Search, Filter } from "lucide-react"
+import { useTalents } from "@/hooks/useTalents"
+import { useLookups } from "@/hooks/useLookups"
+import type { TalentProfile } from "@/types/talent"
+import type { Filters, SortField, SortDirection } from "./types"
+import { DEFAULT_FILTERS } from "./types"
+import { StatsCards } from "./components/StatsCards"
+import { FiltersPanel } from "./components/FiltersPanel"
+import { TalentTable } from "./components/TalentTable"
+import { ProfileDetailPanel } from "./ProfileDetailPanel"
+
+export function TalentDashboard() {
+  // Filter state
+  const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS)
+  
+  // UI state
+  const [sortField, setSortField] = useState<SortField>("date_received")
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc")
+  const [selectedProfile, setSelectedProfile] = useState<TalentProfile | null>(null)
+  const [showFilters, setShowFilters] = useState(true)
+
+  // Fetch data from API
+  const {
+    talents,
+    isLoading: talentsLoading,
+    error: talentsError,
+    refresh: refreshTalents,
+  } = useTalents({
+    status: filters.status || undefined,
+    talent_bucket: filters.talent_bucket || undefined,
+    talent_category: filters.talent_category || undefined,
+    clearance_level: filters.clearance_level || undefined,
+    location_state: filters.location_state || undefined,
+    search: filters.search || undefined,
+    skills: filters.skills.length > 0 ? filters.skills : undefined,
+    certifications: filters.certifications.length > 0 ? filters.certifications : undefined,
+    minYears: filters.minYears ? parseInt(filters.minYears, 10) : undefined,
+    maxYears: filters.maxYears ? parseInt(filters.maxYears, 10) : undefined,
+  })
+
+  const {
+    skills: lookupSkills,
+    certifications: lookupCertifications,
+    cities: lookupCities,
+  } = useLookups()
+
+  // Filter change handler with city reset logic
+  const handleFilterChange = useCallback((key: keyof Filters, value: string) => {
+    if (key === "location_state") {
+      // Reset city when state changes, unless the city exists in the new state
+      const cityExistsInState = lookupCities.some(c => c.city === filters.city && c.state === value)
+      setFilters((prev) => ({ 
+        ...prev, 
+        [key]: value,
+        city: cityExistsInState ? prev.city : ""
+      }))
+    } else {
+      setFilters((prev) => ({ ...prev, [key]: value }))
+    }
+  }, [lookupCities, filters.city])
+
+  const handleSkillsChange = useCallback((skills: string[]) => {
+    setFilters(prev => ({ ...prev, skills }))
+  }, [])
+
+  const handleCertificationsChange = useCallback((certifications: string[]) => {
+    setFilters(prev => ({ ...prev, certifications }))
+  }, [])
+
+  const clearFilters = useCallback(() => {
+    setFilters(DEFAULT_FILTERS)
+  }, [])
+
+  const handleSort = useCallback((field: SortField) => {
+    if (sortField === field) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"))
+    } else {
+      setSortField(field)
+      setSortDirection("asc")
+    }
+  }, [sortField])
+
+  // Client-side filtering and sorting
+  const sortedProfiles = useMemo(() => {
+    // City filtering is client-side since it's not a GSI key
+    let result = filters.city
+      ? talents.filter((p) => p.location?.city === filters.city)
+      : talents
+
+    // Apply sorting
+    result = [...result].sort((a, b) => {
+      let aVal: string | number = ""
+      let bVal: string | number = ""
+
+      switch (sortField) {
+        case "name":
+          aVal = a.name_lower
+          bVal = b.name_lower
+          break
+        case "date_received":
+          aVal = a.date_received
+          bVal = b.date_received
+          break
+        case "years_of_experience":
+          aVal = a.years_of_experience || 0
+          bVal = b.years_of_experience || 0
+          break
+        case "status":
+          aVal = a.status
+          bVal = b.status
+          break
+      }
+
+      if (aVal < bVal) return sortDirection === "asc" ? -1 : 1
+      if (aVal > bVal) return sortDirection === "asc" ? 1 : -1
+      return 0
+    })
+
+    return result
+  }, [talents, filters.city, sortField, sortDirection])
+
+  // Calculate active filter count
+  const activeFilterCount = useMemo(() => {
+    return Object.entries(filters).filter(([key, v]) => 
+      key === "skills" || key === "certifications" ? (v as string[]).length > 0 : v !== ""
+    ).length
+  }, [filters])
+
+  // Calculate stats from filtered data (including city filter)
+  const stats = useMemo(() => ({
+    total: sortedProfiles.length,
+    potentialCount: sortedProfiles.filter((p) => p.status === "Potential Candidate").length,
+    activeCount: sortedProfiles.filter((p) => p.status === "Active Candidate").length,
+    placedCount: sortedProfiles.filter((p) => p.status === "Placed Candidate").length,
+  }), [sortedProfiles])
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800">
+      {/* Animated gradient accent bar */}
+      <div className="h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 animate-gradient-x" />
+      
+      {/* Header */}
+      <div className="border-b border-white/10 bg-slate-900/80 backdrop-blur-xl sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            {/* Title Section */}
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl blur-lg opacity-50" />
+                <div className="relative p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg">
+                  <Users className="h-6 w-6 text-white" />
+                </div>
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-white tracking-tight">Talent Pool</h1>
+                <p className="text-sm text-white/50">Discover and manage your candidate pipeline</p>
+              </div>
+            </div>
+            
+            {/* Stats Cards */}
+            <StatsCards stats={stats} />
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Search & Filter Toggle */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <div className="relative flex-1 group">
+            <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 rounded-xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-300" />
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40 group-focus-within:text-indigo-400 transition-colors" />
+              <input
+                type="text"
+                placeholder="Search by name..."
+                value={filters.search}
+                onChange={(e) => handleFilterChange("search", e.target.value)}
+                className="w-full h-12 pl-12 pr-4 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 focus:bg-white/10 transition-all duration-300"
+              />
+            </div>
+          </div>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`flex items-center gap-2 px-5 py-3 rounded-xl border transition-all duration-300 font-medium ${
+              showFilters
+                ? "bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border-indigo-500/40 text-indigo-300 shadow-lg shadow-indigo-500/10"
+                : "bg-white/5 border-white/10 text-white/60 hover:text-white hover:border-white/20 hover:bg-white/10"
+            }`}
+          >
+            <Filter className="h-4 w-4" />
+            <span>Filters</span>
+            {activeFilterCount > 0 && (
+              <span className="flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-xs font-bold shadow-lg shadow-indigo-500/25">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* Filters Panel */}
+        {showFilters && (
+          <FiltersPanel
+            filters={filters}
+            onFilterChange={handleFilterChange}
+            onClearFilters={clearFilters}
+            onSkillsChange={handleSkillsChange}
+            onCertificationsChange={handleCertificationsChange}
+            activeFilterCount={activeFilterCount}
+            lookupSkills={lookupSkills}
+            lookupCertifications={lookupCertifications}
+            lookupCities={lookupCities}
+          />
+        )}
+
+        {/* Results Count */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            {talentsLoading ? (
+              <div className="flex items-center gap-2 text-white/40">
+                <div className="h-4 w-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                <span className="text-sm">Loading candidates...</span>
+              </div>
+            ) : (
+              <>
+                <p className="text-sm text-white/60">
+                  Showing <span className="text-white font-semibold">{sortedProfiles.length}</span> {sortedProfiles.length === 1 ? 'candidate' : 'candidates'}
+                </p>
+                {activeFilterCount > 0 && (
+                  <span className="text-xs bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/30">
+                    {activeFilterCount} {activeFilterCount === 1 ? 'filter' : 'filters'} active
+                  </span>
+                )}
+              </>
+            )}
+          </div>
+          {talentsError && (
+            <p className="text-sm text-red-400 flex items-center gap-2">
+              <span className="flex h-2 w-2 rounded-full bg-red-500" />
+              Error: {talentsError.message}
+              <button onClick={refreshTalents} className="underline hover:text-red-300">Retry</button>
+            </p>
+          )}
+        </div>
+
+        {/* Results Table */}
+        <TalentTable
+          profiles={sortedProfiles}
+          isLoading={talentsLoading}
+          sortField={sortField}
+          sortDirection={sortDirection}
+          onSort={handleSort}
+          onSelectProfile={setSelectedProfile}
+          activeFilterCount={activeFilterCount}
+          onClearFilters={clearFilters}
+        />
+      </div>
+
+      {/* Detail Panel */}
+      {selectedProfile && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity"
+            onClick={() => setSelectedProfile(null)}
+          />
+          <ProfileDetailPanel
+            profile={selectedProfile}
+            onClose={() => setSelectedProfile(null)}
+            onRefresh={refreshTalents}
+          />
+        </>
+      )}
+    </div>
+  )
+}
