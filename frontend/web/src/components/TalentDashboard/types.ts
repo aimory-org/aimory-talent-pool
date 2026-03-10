@@ -16,7 +16,15 @@ export interface Filters {
   maxYears: string
 }
 
-export type SortField = "name" | "date_received" | "years_of_experience" | "status"
+export type SortField = 
+  | "name" 
+  | "talent_category" 
+  | "location_state" 
+  | "clearance_level" 
+  | "bill_rate" 
+  | "years_of_experience" 
+  | "status" 
+  | "date_received"
 export type SortDirection = "asc" | "desc"
 
 export const DEFAULT_FILTERS: Filters = {

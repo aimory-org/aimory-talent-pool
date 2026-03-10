@@ -103,9 +103,21 @@ export function TalentDashboard() {
           aVal = a.name_lower
           bVal = b.name_lower
           break
-        case "date_received":
-          aVal = a.date_received
-          bVal = b.date_received
+        case "talent_category":
+          aVal = a.talent_category || ""
+          bVal = b.talent_category || ""
+          break
+        case "location_state":
+          aVal = a.location_state || ""
+          bVal = b.location_state || ""
+          break
+        case "clearance_level":
+          aVal = a.clearance_level || ""
+          bVal = b.clearance_level || ""
+          break
+        case "bill_rate":
+          aVal = a.bill_rate || 0
+          bVal = b.bill_rate || 0
           break
         case "years_of_experience":
           aVal = a.years_of_experience || 0
@@ -114,6 +126,10 @@ export function TalentDashboard() {
         case "status":
           aVal = a.status
           bVal = b.status
+          break
+        case "date_received":
+          aVal = a.date_received
+          bVal = b.date_received
           break
       }
 

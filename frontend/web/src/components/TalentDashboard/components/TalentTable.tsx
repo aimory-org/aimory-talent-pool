@@ -53,10 +53,42 @@ export function TalentTable({
                 onSort={onSort}
               />
             </TableHead>
-            <TableHead className="text-white/60">Category</TableHead>
-            <TableHead className="text-white/60">Location</TableHead>
-            <TableHead className="text-white/60">Clearance</TableHead>
-            <TableHead className="text-white/60">Rate</TableHead>
+            <TableHead className="text-white/60">
+              <SortableHeader
+                label="Category"
+                field="talent_category"
+                currentSort={sortField}
+                currentDirection={sortDirection}
+                onSort={onSort}
+              />
+            </TableHead>
+            <TableHead className="text-white/60">
+              <SortableHeader
+                label="Location"
+                field="location_state"
+                currentSort={sortField}
+                currentDirection={sortDirection}
+                onSort={onSort}
+              />
+            </TableHead>
+            <TableHead className="text-white/60">
+              <SortableHeader
+                label="Clearance"
+                field="clearance_level"
+                currentSort={sortField}
+                currentDirection={sortDirection}
+                onSort={onSort}
+              />
+            </TableHead>
+            <TableHead className="text-white/60">
+              <SortableHeader
+                label="Rate"
+                field="bill_rate"
+                currentSort={sortField}
+                currentDirection={sortDirection}
+                onSort={onSort}
+              />
+            </TableHead>
             <TableHead className="text-white/60">
               <SortableHeader
                 label="Experience"
