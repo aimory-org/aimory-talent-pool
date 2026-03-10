@@ -71,33 +71,33 @@ export type ClearanceLevel =
   | null
 
 export const CANDIDATE_STATUSES: { value: CandidateStatus; label: string }[] = [
-  { value: "Potential Candidate", label: "Potential Candidate" },
   { value: "Active Candidate", label: "Active Candidate" },
-  { value: "Placed Candidate", label: "Placed Candidate" },
-  { value: "Stale Candidate", label: "Stale Candidate" },
   { value: "Do Not Contact", label: "Do Not Contact" },
+  { value: "Placed Candidate", label: "Placed Candidate" },
+  { value: "Potential Candidate", label: "Potential Candidate" },
+  { value: "Stale Candidate", label: "Stale Candidate" },
 ]
 
 export const TALENT_BUCKETS: { value: TalentBucket; label: string }[] = [
-  { value: "IT Resources", label: "IT Resources" },
   { value: "Accounting and Finance Resources", label: "Accounting & Finance" },
-  { value: "HR Resources", label: "HR Resources" },
   { value: "Business Development/Sales Resources", label: "Business Dev/Sales" },
+  { value: "HR Resources", label: "HR Resources" },
+  { value: "IT Resources", label: "IT Resources" },
   { value: "Unclassified", label: "Unclassified" },
 ]
 
 export const TALENT_CATEGORIES: { value: TalentCategory; label: string }[] = [
   { value: "Accounting", label: "Accounting" },
-  { value: "Finance", label: "Finance" },
-  { value: "Data Analysis", label: "Data Analysis" },
-  { value: "Forensics", label: "Forensics" },
-  { value: "Developer", label: "Developer" },
-  { value: "Network Engineer", label: "Network Engineer" },
-  { value: "Database Analyst", label: "Database Analyst" },
-  { value: "Cloud Expert", label: "Cloud Expert" },
-  { value: "Project Manager", label: "Project Manager" },
-  { value: "HR", label: "HR" },
   { value: "Business Development", label: "Business Development" },
+  { value: "Cloud Expert", label: "Cloud Expert" },
+  { value: "Data Analysis", label: "Data Analysis" },
+  { value: "Database Analyst", label: "Database Analyst" },
+  { value: "Developer", label: "Developer" },
+  { value: "Finance", label: "Finance" },
+  { value: "Forensics", label: "Forensics" },
+  { value: "HR", label: "HR" },
+  { value: "Network Engineer", label: "Network Engineer" },
+  { value: "Project Manager", label: "Project Manager" },
   { value: "Sales", label: "Sales" },
   { value: "Unclassified", label: "Unclassified" },
 ]
@@ -106,8 +106,8 @@ export const CLEARANCE_LEVELS: { value: string; label: string }[] = [
   { value: "Secret", label: "Secret" },
   { value: "TS", label: "Top Secret" },
   { value: "TS/SCI", label: "TS/SCI" },
-  { value: "TS/SCI/FSP", label: "TS/SCI + Full Scope Poly" },
   { value: "TS/SCI/CI", label: "TS/SCI + CI Poly" },
+  { value: "TS/SCI/FSP", label: "TS/SCI + Full Scope Poly" },
   { value: "Yankee White", label: "Yankee White" },
 ]
 
@@ -120,7 +120,6 @@ export const US_STATES: { value: string; label: string }[] = [
   { value: "CO", label: "Colorado" },
   { value: "CT", label: "Connecticut" },
   { value: "DE", label: "Delaware" },
-  { value: "DC", label: "Washington DC" },
   { value: "FL", label: "Florida" },
   { value: "GA", label: "Georgia" },
   { value: "HI", label: "Hawaii" },
@@ -160,6 +159,7 @@ export const US_STATES: { value: string; label: string }[] = [
   { value: "VT", label: "Vermont" },
   { value: "VA", label: "Virginia" },
   { value: "WA", label: "Washington" },
+  { value: "DC", label: "Washington DC" },
   { value: "WV", label: "West Virginia" },
   { value: "WI", label: "Wisconsin" },
   { value: "WY", label: "Wyoming" },

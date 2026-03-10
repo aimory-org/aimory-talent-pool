@@ -32,7 +32,14 @@ export function useLookups(): UseLookupsResult {
     
     try {
       const response = await getLookups()
-      setData(response)
+      // Sort all lookups alphabetically
+      setData({
+        skills: [...response.skills].sort((a, b) => a.localeCompare(b)),
+        certifications: [...response.certifications].sort((a, b) => a.localeCompare(b)),
+        cities: [...response.cities].sort((a, b) => 
+          `${a.city}, ${a.state}`.localeCompare(`${b.city}, ${b.state}`)
+        ),
+      })
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to fetch lookups'))
     } finally {
