@@ -41,6 +41,7 @@ export function TalentDashboard() {
     talent_category: filters.talent_category || undefined,
     clearance_level: filters.clearance_level || undefined,
     location_state: filters.location_state || undefined,
+    city: filters.city || undefined,
     search: filters.search || undefined,
     skills: filters.skills.length > 0 ? filters.skills : undefined,
     certifications: filters.certifications.length > 0 ? filters.certifications : undefined,
@@ -90,15 +91,10 @@ export function TalentDashboard() {
     }
   }, [sortField])
 
-  // Client-side filtering and sorting
+  // Client-side sorting (all filtering is now server-side)
   const sortedProfiles = useMemo(() => {
-    // City filtering is client-side since it's not a GSI key
-    let result = filters.city
-      ? talents.filter((p) => p.location?.city === filters.city)
-      : talents
-
     // Apply sorting
-    result = [...result].sort((a, b) => {
+    const result = [...talents].sort((a, b) => {
       let aVal: string | number = ""
       let bVal: string | number = ""
 
@@ -127,7 +123,7 @@ export function TalentDashboard() {
     })
 
     return result
-  }, [talents, filters.city, sortField, sortDirection])
+  }, [talents, sortField, sortDirection])
 
   // Calculate active filter count
   const activeFilterCount = useMemo(() => {
@@ -136,7 +132,7 @@ export function TalentDashboard() {
     ).length
   }, [filters])
 
-  // Calculate stats from filtered data (including city filter)
+  // Calculate stats from filtered data
   const stats = useMemo(() => ({
     total: sortedProfiles.length,
     potentialCount: sortedProfiles.filter((p) => p.status === "Potential Candidate").length,

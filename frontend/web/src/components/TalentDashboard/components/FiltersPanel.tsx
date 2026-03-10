@@ -70,7 +70,7 @@ export function FiltersPanel({
         
         {/* Row 1: Basic filters */}
         <div className="mb-4">
-          <p className="text-xs font-medium text-white/30 uppercase tracking-wider mb-3">Primary Filters</p>
+          <p className="text-xs font-medium text-white/30 uppercase tracking-wider mb-3">Basic Filters</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <div className="space-y-2">
               <Label className="text-white/70">Status</Label>
@@ -122,7 +122,7 @@ export function FiltersPanel({
         
         {/* Row 2: Additional filters */}
         <div>
-          <p className="text-xs font-medium text-white/30 uppercase tracking-wider mb-3">Additional Filters</p>
+          <p className="text-xs font-medium text-white/30 uppercase tracking-wider mb-3">Advanced Filters</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <div className="space-y-2">
               <Label className="text-white/70">City</Label>
