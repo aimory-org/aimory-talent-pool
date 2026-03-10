@@ -12,6 +12,136 @@ CITIES_LOOKUP_TABLE = os.environ.get("CITIES_LOOKUP_TABLE", "")
 dynamodb = boto3.resource("dynamodb")
 table = dynamodb.Table(TABLE_NAME)
 
+# State name to abbreviation mapping
+_STATE_ABBREVS = {
+    "alabama": "AL", "alaska": "AK", "arizona": "AZ", "arkansas": "AR", "california": "CA",
+    "colorado": "CO", "connecticut": "CT", "delaware": "DE", "florida": "FL", "georgia": "GA",
+    "hawaii": "HI", "idaho": "ID", "illinois": "IL", "indiana": "IN", "iowa": "IA",
+    "kansas": "KS", "kentucky": "KY", "louisiana": "LA", "maine": "ME", "maryland": "MD",
+    "massachusetts": "MA", "michigan": "MI", "minnesota": "MN", "mississippi": "MS",
+    "missouri": "MO", "montana": "MT", "nebraska": "NE", "nevada": "NV", "new hampshire": "NH",
+    "new jersey": "NJ", "new mexico": "NM", "new york": "NY", "north carolina": "NC",
+    "north dakota": "ND", "ohio": "OH", "oklahoma": "OK", "oregon": "OR", "pennsylvania": "PA",
+    "rhode island": "RI", "south carolina": "SC", "south dakota": "SD", "tennessee": "TN",
+    "texas": "TX", "utah": "UT", "vermont": "VT", "virginia": "VA", "washington": "WA",
+    "west virginia": "WV", "wisconsin": "WI", "wyoming": "WY", "washington dc": "DC",
+    "district of columbia": "DC",
+}
+_VALID_ABBREVS = set(_STATE_ABBREVS.values())
+
+
+def _normalize_state(state: str) -> str:
+    """Normalize state to 2-letter abbreviation (e.g., 'Virginia' -> 'VA', 'va' -> 'VA')."""
+    if not state:
+        return state
+    state_clean = state.strip()
+    state_upper = state_clean.upper()
+    # Already a valid abbreviation
+    if state_upper in _VALID_ABBREVS:
+        return state_upper
+    # Look up by full name
+    abbrev = _STATE_ABBREVS.get(state_clean.lower())
+    return abbrev if abbrev else state_clean
+
+
+def _normalize_city(city: str) -> str:
+    """Normalize city to title case (e.g., 'HERNDON' -> 'Herndon', 'herndon' -> 'Herndon')."""
+    if not city:
+        return city
+    return city.strip().title()
+
+
+def _normalize_name(name: str) -> str:
+    """Normalize name to title case."""
+    if not name:
+        return name
+    return name.strip().title()
+
+
+def _normalize_email(email: str) -> str:
+    """Normalize email to lowercase."""
+    if not email:
+        return email
+    return email.strip().lower()
+
+
+def _normalize_phone(phone: str) -> str:
+    """Normalize phone to (XXX) XXX-XXXX format."""
+    if not phone:
+        return phone
+    # Extract only digits
+    digits = ''.join(c for c in phone if c.isdigit())
+    # Handle US numbers with country code
+    if len(digits) == 11 and digits.startswith('1'):
+        digits = digits[1:]
+    # Format as (XXX) XXX-XXXX if we have 10 digits
+    if len(digits) == 10:
+        return f"({digits[:3]}) {digits[3:6]}-{digits[6:]}"
+    # Return cleaned version for other formats
+    return phone.strip()
+
+
+def _normalize_skill(skill: str) -> str:
+    """Normalize skill name - title case but preserve common acronyms."""
+    if not skill:
+        return skill
+    skill = skill.strip()
+    # Common tech acronyms to preserve
+    acronyms = {'AWS', 'GCP', 'API', 'REST', 'SQL', 'NoSQL', 'HTML', 'CSS', 'JSON', 'XML', 
+                'CI/CD', 'DevOps', 'AI', 'ML', 'NLP', 'ETL', 'SaaS', 'PaaS', 'IaaS', 'IAM',
+                'VPN', 'DNS', 'TCP', 'UDP', 'HTTP', 'HTTPS', 'SSH', 'SSL', 'TLS', 'OAuth',
+                'JWT', 'LDAP', 'AD', 'SSO', 'MFA', 'SIEM', 'SOC', 'NIST', 'ISO', 'PCI',
+                'HIPAA', 'SOX', 'GDPR', 'FedRAMP', 'FISMA', 'RMF', 'SCRUM', 'SAFe', 'PMI',
+                'ITIL', 'COBIT', 'TOGAF', 'UML', 'OOP', 'TDD', 'BDD', 'DDD', 'UI', 'UX'}
+    # Check if it's an acronym (all uppercase and short)
+    if skill.upper() in acronyms:
+        return skill.upper()
+    # Title case for regular skills
+    return skill.title()
+
+
+def _normalize_company(company: str) -> str:
+    """Normalize company name to title case, preserving common suffixes."""
+    if not company:
+        return company
+    return company.strip().title()
+
+
+def _normalize_profile(profile: dict) -> dict:
+    """Apply all normalizations to a profile before persisting."""
+    # Normalize name
+    if profile.get("name"):
+        profile["name"] = _normalize_name(profile["name"])
+    
+    # Normalize contact info
+    if profile.get("contact"):
+        if profile["contact"].get("email"):
+            profile["contact"]["email"] = _normalize_email(profile["contact"]["email"])
+        if profile["contact"].get("phone"):
+            profile["contact"]["phone"] = _normalize_phone(profile["contact"]["phone"])
+    
+    # Normalize location
+    if profile.get("location"):
+        if profile["location"].get("city"):
+            profile["location"]["city"] = _normalize_city(profile["location"]["city"])
+        if profile["location"].get("state"):
+            profile["location"]["state"] = _normalize_state(profile["location"]["state"])
+    
+    # Normalize skills
+    if profile.get("skillsets"):
+        for skill in profile["skillsets"]:
+            if skill.get("name"):
+                skill["name"] = _normalize_skill(skill["name"])
+    
+    # Normalize companies
+    if profile.get("companies"):
+        for company in profile["companies"]:
+            if company.get("name"):
+                company["name"] = _normalize_company(company["name"])
+    
+    return profile
+
+
 _TALENT_BUCKETS = {
     "IT Resources",
     "Accounting and Finance Resources",
@@ -189,11 +319,11 @@ def _populate_lookup_tables(profile):
     """Populate lookup tables with skills, certifications, and cities for dropdown menus."""
     now = datetime.now(timezone.utc).isoformat()
     
-    # Populate skills lookup
+    # Populate skills lookup (using already-normalized profile data)
     if SKILLS_LOOKUP_TABLE and profile["skillsets"]:
         skills_table = dynamodb.Table(SKILLS_LOOKUP_TABLE)
         for skill in profile["skillsets"]:
-            skill_name = skill["name"].strip()
+            skill_name = skill.get("name", "").strip()
             if skill_name:
                 skills_table.put_item(Item={
                     "skill": skill_name,
@@ -204,22 +334,22 @@ def _populate_lookup_tables(profile):
     if CERTIFICATIONS_LOOKUP_TABLE and profile["certifications"]:
         certs_table = dynamodb.Table(CERTIFICATIONS_LOOKUP_TABLE)
         for cert in profile["certifications"]:
-            cert_name = cert.strip()
+            cert_name = cert.strip() if cert else ""
             if cert_name:
                 certs_table.put_item(Item={
                     "certification": cert_name,
                     "updated_at": now
                 })
     
-    # Populate cities lookup
+    # Populate cities lookup (using already-normalized profile data)
     if CITIES_LOOKUP_TABLE and profile["location"]:
-        city = profile["location"].get("city")
-        state = profile["location"].get("state")
-        if city and city.strip() and state and state.strip():
+        city = profile["location"].get("city", "")
+        state = profile["location"].get("state", "")
+        if city and state:
             cities_table = dynamodb.Table(CITIES_LOOKUP_TABLE)
             cities_table.put_item(Item={
-                "city": city.strip(),
-                "state": state.strip(),
+                "city": city,
+                "state": state,
                 "updated_at": now
             })
 
@@ -230,6 +360,9 @@ def handler(event, context):
         raise ValueError("Missing extracted profile in event")
 
     _validate_profile(profile)
+    
+    # Normalize profile data for consistency
+    profile = _normalize_profile(profile)
 
     bucket = event.get("bucket")
     key = event.get("key")

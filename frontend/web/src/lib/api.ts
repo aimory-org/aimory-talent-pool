@@ -137,11 +137,30 @@ export async function getResumeUrl(s3Key: string): Promise<{ url: string; expire
 }
 
 /**
- * Update talent profile fields (status and/or bill_rate).
+ * Update talent profile fields.
  */
 export interface UpdateTalentParams {
   status?: CandidateStatus
   bill_rate?: number | null
+  name?: string
+  contact?: {
+    email?: string | null
+    phone?: string | null
+    linkedin?: string | null
+    github?: string | null
+  }
+  summary?: string | null
+  talent_bucket?: string
+  talent_category?: string
+  clearance_level?: string | null
+  skillsets?: { name: string; evidence?: string[] }[]
+  certifications?: string[]
+  companies?: { name: string; evidence?: string[] }[]
+  location?: {
+    city?: string | null
+    state?: string | null
+  }
+  years_of_experience?: number | null
 }
 
 export async function updateTalent(pk: string, updates: UpdateTalentParams): Promise<void> {
