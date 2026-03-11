@@ -1,0 +1,20 @@
+# =============================================================================
+# Python Development Dependencies
+# =============================================================================
+# Install with: pip install -r requirements-dev.txt
+
+# AWS SDK - matches Lambda runtime
+boto3>=1.34.0
+
+# Testing
+pytest>=8.0.0
+pytest-cov>=4.1.0        # Coverage reports
+moto[all]>=5.0.0         # AWS service mocking
+
+# Code quality
+black>=24.0.0            # Formatter
+ruff>=0.3.0              # Linter (replaces flake8, isort, etc.)
+
+# Type checking
+mypy>=1.8.0
+boto3-stubs[essential]   # Type hints for boto3

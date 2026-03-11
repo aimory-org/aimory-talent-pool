@@ -1,0 +1,88 @@
+{
+  "name": "Aimory Talent Pool",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+
+  // ===========================================================================
+  // Tools & Runtimes
+  // ===========================================================================
+  "features": {
+    // Frontend
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "22"
+    },
+    // Backend (Lambda functions)
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.12"
+    },
+    // Infrastructure
+    "ghcr.io/devcontainers/features/terraform:1": {
+      "version": "1.9"
+    },
+    // AWS
+    "ghcr.io/devcontainers/features/aws-cli:1": {},
+    // Docker-in-Docker (for building Lambda layers)
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+
+  // ===========================================================================
+  // AWS Credentials
+  // ===========================================================================
+  // Mounts your local ~/.aws folder so you don't need to reconfigure credentials
+  // On Windows: uses %USERPROFILE%\.aws | On Mac/Linux: uses $HOME/.aws
+  "mounts": [
+    "source=${localEnv:USERPROFILE}${localEnv:HOME}/.aws,target=/home/vscode/.aws,type=bind,consistency=cached"
+  ],
+
+  // ===========================================================================
+  // VS Code Extensions & Settings
+  // ===========================================================================
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        // Frontend
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        // Python
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+        // Infrastructure
+        "hashicorp.terraform",
+        "amazonwebservices.aws-toolkit-vscode"
+      ],
+      "settings": {
+        // Python
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.languageServer": "Pylance",
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff",
+          "editor.formatOnSave": true
+        },
+        // Terraform
+        "[terraform]": {
+          "editor.defaultFormatter": "hashicorp.terraform",
+          "editor.formatOnSave": true
+        },
+        // Frontend (JS/TS/JSON)
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "[javascript][typescript][typescriptreact][json]": {
+          "editor.formatOnSave": true
+        }
+      }
+    }
+  },
+
+  // ===========================================================================
+  // Lifecycle
+  // ===========================================================================
+  // Runs once when container is created - installs all dependencies
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+
+  // Ports to forward to host
+  "forwardPorts": [
+    5173  // Vite dev server
+  ],
+
+  "remoteUser": "vscode"
+}
