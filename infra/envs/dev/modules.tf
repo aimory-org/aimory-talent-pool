@@ -120,7 +120,7 @@ locals {
     filesha256("${local.frontend_src_dir}/package.json"),
     filesha256("${local.frontend_src_dir}/src/main.tsx"),
     filesha256("${local.frontend_src_dir}/src/App.tsx"),
-    filesha256("${local.frontend_src_dir}/src/authConfig.ts"),
+    filesha256("${local.frontend_src_dir}/src/lib/auth.ts"),
     filesha256("${local.frontend_src_dir}/.env"),
   ]))
 }
