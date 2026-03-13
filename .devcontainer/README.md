@@ -1,74 +1,249 @@
 # Dev Container
 
-This folder contains the development container configuration for consistent environments across all developers.
+This folder contains the VS Code dev container configuration, providing a consistent, pre-configured development environment with all required tools and dependencies.
 
 ## What's Included
 
 | Tool | Version | Purpose |
 |------|---------|---------|
-| Node.js | 22 | Frontend (React + Vite) |
-| Python | 3.12 | Lambda functions |
-| Terraform | 1.9 | Infrastructure as Code |
-| AWS CLI | latest | AWS deployments |
-| Docker | latest | Building Lambda layers |
+| **Node.js** | 22 | Frontend development (React + Vite) |
+| **Python** | 3.12 | Lambda functions and testing |
+| **Terraform** | 1.9 | Infrastructure as Code |
+| **AWS CLI** | Latest | AWS deployments and operations |
+| **Docker** | Latest | Building Lambda layers |
+
+### VS Code Extensions (Auto-installed)
+
+| Extension | Purpose |
+|-----------|---------|
+| ESLint | JavaScript/TypeScript linting |
+| Prettier | Code formatting |
+| Tailwind CSS IntelliSense | CSS class autocomplete |
+| Python | Python language support |
+| Pylance | Python IntelliSense |
+| Ruff | Python linting/formatting |
+| Terraform | HCL syntax and validation |
+| AWS Toolkit | AWS resource explorer |
 
 ## Getting Started
 
 ### Prerequisites
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) running
-- [VS Code](https://code.visualstudio.com/) with [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
-- AWS credentials configured locally (`~/.aws/credentials`)
+
+Before opening the dev container, ensure you have:
+
+1. **Docker Desktop** — [Download](https://www.docker.com/products/docker-desktop/) and ensure it's running
+2. **VS Code** — [Download](https://code.visualstudio.com/)
+3. **Dev Containers Extension** — Install from [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
+4. **AWS Credentials** — Configured locally at `~/.aws/credentials`
 
 ### Open in Container
-1. Open this repo in VS Code
-2. Press `F1` → **Dev Containers: Reopen in Container**
-3. Wait for the container to build and setup to complete
 
-The setup script automatically installs:
-- Frontend npm packages
-- Python dev dependencies (pytest, moto, boto3, etc.)
+1. Clone this repository
+2. Open the folder in VS Code
+3. Press `F1` → **Dev Containers: Reopen in Container**
+4. Wait for the container to build (~2-3 minutes first time)
+
+The `postCreateCommand` automatically:
+- Installs frontend npm packages
+- Installs Python dev dependencies (pytest, moto, boto3, etc.)
+
+## Configuration Required
+
+After the container starts, you'll need to configure:
+
+### 1. Terraform Variables (for infrastructure deployment)
+
+```bash
+cd infra/envs/dev
+cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars with your values
+```
+
+Required values:
+- `entra_client_id` — Microsoft Entra ID app client ID
+- `entra_client_secret` — Microsoft Entra ID app secret
+- `entra_tenant_id` — Your Azure AD tenant ID
+- `presign_api_key` — Secure API key (generate with `openssl rand -hex 16`)
+
+See [infra/README.md](../infra/README.md) for complete setup instructions.
+
+### 2. Frontend Environment (for local development)
+
+```bash
+cd frontend/web
+cp .env.example .env
+# Edit .env with values from terraform output
+```
+
+Get values after running `terraform apply`:
+```bash
+cd infra/envs/dev
+terraform output cognito_frontend_config
+```
+
+See [frontend/web/README.md](../frontend/web/README.md) for details.
 
 ## Daily Workflow
 
+### Start Frontend Dev Server
+
 ```bash
-# Start frontend dev server
 cd frontend/web
 npm run dev
-
-# Run Python tests
-pytest
-
-# Deploy infrastructure
-cd infra/envs/dev
-terraform init    # first time only
-terraform plan
-terraform apply
+# Opens at http://localhost:5173
 ```
 
-## Building Lambda Layers
+### Run Python Tests
 
-Before `terraform apply`, build the pdfminer layer:
+```bash
+pytest
+# Or with coverage
+pytest --cov=infra/modules
+```
+
+### Deploy Infrastructure
+
+```bash
+cd infra/envs/dev
+terraform init    # First time only
+terraform plan    # Preview changes
+terraform apply   # Deploy
+```
+
+### Build Lambda Layer (Before First Deploy)
 
 ```bash
 ./infra/modules/pipeline/lambdas/layers/pdfminer/build_layer_docker.sh
 ```
 
-This uses Docker to ensure the layer is compatible with the Lambda runtime.
-
 ## AWS Credentials
 
-Your host machine's `~/.aws` folder is automatically mounted into the container. No additional configuration needed if you already have AWS CLI configured locally.
+Your host machine's `~/.aws` folder is automatically mounted into the container. This means:
+
+- ✅ No need to run `aws configure` inside the container
+- ✅ All profiles from your host are available
+- ✅ SSO sessions work if configured
+
+**Verify credentials:**
+```bash
+aws sts get-caller-identity
+```
+
+**List available profiles:**
+```bash
+aws configure list-profiles
+```
+
+**Use a specific profile:**
+```bash
+export AWS_PROFILE=my-profile
+# Or for one command
+AWS_PROFILE=my-profile terraform plan
+```
+
+## Port Forwarding
+
+The container automatically forwards:
+
+| Port | Service |
+|------|---------|
+| 5173 | Vite dev server |
+
+VS Code will prompt to open forwarded ports in your browser.
+
+## Common Tasks
+
+### Update npm Dependencies
+
+```bash
+cd frontend/web
+npm update
+```
+
+### Add a shadcn/ui Component
+
+```bash
+cd frontend/web
+npx shadcn@latest add [component-name]
+```
+
+### Format Python Code
+
+```bash
+ruff format .
+```
+
+### Lint Python Code
+
+```bash
+ruff check . --fix
+```
 
 ## Troubleshooting
 
-**Container won't start?**
-- Ensure Docker Desktop is running
-- Try "Dev Containers: Rebuild Container" to start fresh
+### Container Won't Start
 
-**AWS commands fail?**
-- Check that `~/.aws/credentials` exists on your host machine
-- Run `aws sts get-caller-identity` to verify credentials
+1. Ensure Docker Desktop is running
+2. Try **Dev Containers: Rebuild Container** from the command palette
+3. Check Docker has enough memory (4GB+ recommended)
 
-**Layer build fails?**
-- Ensure Docker-in-Docker is working: `docker ps`
-- Try rebuilding the container if Docker isn't available
+### AWS Commands Fail with Credentials Error
+
+1. Verify `~/.aws/credentials` exists on your host
+2. Check file permissions: `ls -la ~/.aws/`
+3. Test credentials: `aws sts get-caller-identity`
+4. For SSO: run `aws sso login --profile <profile>` on your host first
+
+### npm install Fails
+
+```bash
+rm -rf node_modules package-lock.json
+npm install
+```
+
+### Layer Build Fails
+
+1. Ensure Docker-in-Docker is working: `docker ps`
+2. Rebuild the container if Docker isn't available
+3. Check disk space: `df -h`
+
+### Terraform State Lock Error
+
+Someone else may have a lock, or a previous run crashed:
+```bash
+terraform force-unlock <lock-id>
+```
+
+### Python Import Errors
+
+The Python path may not include the project root:
+```bash
+export PYTHONPATH="${PYTHONPATH}:/workspaces/aimory-talent-pool"
+```
+
+## Customizing the Container
+
+### Add a Tool
+
+Edit `devcontainer.json` and add to `features`:
+```json
+"features": {
+  "ghcr.io/devcontainers/features/go:1": {}
+}
+```
+
+### Add a VS Code Extension
+
+Edit `devcontainer.json` and add to `customizations.vscode.extensions`:
+```json
+"extensions": [
+  "existing-extensions...",
+  "publisher.extension-name"
+]
+```
+
+### Change Default Settings
+
+Edit `customizations.vscode.settings` in `devcontainer.json`.
+
+After changes, run **Dev Containers: Rebuild Container**.

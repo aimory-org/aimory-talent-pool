@@ -1,71 +1,119 @@
 # AIMORY Talent Pool
 
-Contributors: Ben and Kyle
+**Contributors:** Ben and Kyle
 
-Modern resume ingestion and enrichment pipeline for AIMORY. The project centers on an AWS-native workflow that accepts resumes in S3, pushes them through Textract + LLM enrichment, normalizes the profile, and stores structured records for downstream search. The repository currently focuses on infrastructure-as-code and Lambda handlers; a frontend will be introduced later.
+A modern resume ingestion and talent management platform for AIMORY. The system automatically processes uploaded resumes through AWS Textract and LLM enrichment, storing structured candidate profiles for search and management via a React-based dashboard.
 
-## Architecture At A Glance
-- **Storage** – [infra/modules/storage](infra/modules/storage) provisions the raw/extracted resume bucket and the DynamoDB `talent_profiles` table.
-- **Pipeline Lambdas** – [infra/modules/lambdas](infra/modules/lambdas) packages nine Python functions (starter, classify, start_textract, check_textract, fetch_textract, normalize, llm_extract, persist, presign). A shared IAM role/layer system handles S3, Textract, Bedrock, and DynamoDB access.
-- **Step Functions Orchestration** – [infra/modules/step_functions](infra/modules/step_functions) defines the state machine that calls each Lambda in sequence and exposes its ARN via SSM for the starter to read.
-- **Event Flow** – S3 `raw/` uploads trigger the `starter` Lambda → Step Functions → downstream Lambdas → DynamoDB + extracted files.
-- **Terraform Driven** – [infra/envs/dev](infra/envs/dev) wires the modules together, sets prefixes, stores the state machine ARN in SSM, and configures S3 event notifications.
+## What This Repository Contains
+
+| Directory | Description | Documentation |
+|-----------|-------------|---------------|
+| [frontend/](frontend/) | React + TypeScript web application for talent management | [Frontend README](frontend/web/README.md) |
+| [infra/](infra/) | Terraform infrastructure-as-code for AWS deployment | [Infrastructure README](infra/README.md) |
+| [.devcontainer/](.devcontainer/) | VS Code dev container for consistent development environments | [Dev Container README](.devcontainer/README.md) |
+| [.github/](.github/) | GitHub Actions workflows for CI/CD | — |
+
+## Architecture Overview
 
 ```
-raw resume upload ─▶ starter (Lambda) ─▶ Step Functions pipeline ─▶ Textract/LLM ─▶ normalized profile ─▶ DynamoDB + extracted text
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              AIMORY Talent Pool                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌──────────────┐     ┌──────────────┐     ┌──────────────────────────────┐ │
+│  │   Frontend   │────▶│  API Gateway │────▶│        DynamoDB Tables       │ │
+│  │  React SPA   │     │  + Cognito   │     │  (talent_profiles, lookups)  │ │
+│  └──────────────┘     └──────────────┘     └──────────────────────────────┘ │
+│         │                                              ▲                    │
+│         │                                              │                    │
+│         ▼                                              │                    │
+│  ┌──────────────┐     ┌──────────────────────────────────────────────────┐ │
+│  │  CloudFront  │     │              Resume Processing Pipeline           │ │
+│  │   + S3 Site  │     │  S3 Upload → Starter → Step Functions → Persist  │ │
+│  └──────────────┘     │      (Textract + Bedrock LLM Enrichment)         │ │
+│                       └──────────────────────────────────────────────────┘ │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-## Repository Layout
+**Resume Flow:** Upload PDF to S3 `raw/` → triggers Starter Lambda → Step Functions orchestration → Textract OCR → LLM extraction (Claude via Bedrock) → normalized profile persisted to DynamoDB
 
-| Path | Purpose |
-| --- | --- |
-| [infra/](infra) | Terraform modules, env wiring, Terraform lock/state files. |
-| [infra/modules/lambdas/lambda_src](infra/modules/lambdas/lambda_src) | Source for each Lambda function (`app.py`). |
-| [infra/modules/lambdas/layers/pdfminer](infra/modules/lambdas/layers/pdfminer) | Custom PDFMiner layer with build scripts for PowerShell/Bash. |
-| [frontend/](frontend) | Placeholder for the future web UI (no app scaffolded yet). |
-| [.github/workflows](.github/workflows) | CI helpers such as the layer build workflow. |
+**User Flow:** Sign in via Microsoft Entra ID (federated through Cognito) → browse/search/filter talent → view details → download original resumes
 
-## Prerequisites
-- Terraform 1.8+
-- AWS CLI v2 with credentials that can manage the target account
-- Python 3.12 (to run/build Lambda bundles)
-- Docker (optional, but required if you rebuild Lambda layers inside containers)
+## Quick Start
 
-## Bootstrapping A Dev Environment
-1. Ensure the backend state bucket/table referenced in [infra/providers.tf](infra/providers.tf) exist (or update as needed).
-2. Build the PDFMiner layer once (creates `layers/pdfminer/python`):
-	- Windows: `./infra/modules/lambdas/layers/pdfminer/build_layer.ps1`
-	- macOS/Linux: `./infra/modules/lambdas/layers/pdfminer/build_layer.sh`
-3. Deploy the dev stack:
-	```bash
-	cd infra/envs/dev
-	terraform init
-	terraform plan
-	terraform apply
-	```
-4. Upload a PDF into the raw S3 prefix (default `raw/`) to trigger the end-to-end pipeline.
+### Option 1: Dev Container (Recommended)
 
-## Runtime Walkthrough
-1. **starter** – fired by S3 notifications, looks up the state machine ARN from SSM and kicks off an execution.
-2. **classify** – checks if the document is searchable and chooses the Textract route.
-3. **start/check/fetch textract** – handles asynchronous Textract text detection and writes extracted text to `extracted/` in S3.
-4. **normalize** – cleans up text blocks for downstream consumption.
-5. **llm_extract** – uses Bedrock (Claude Sonnet) to turn text into a structured profile payload with schema validation.
-6. **persist** – upserts the final record into DynamoDB to maintain idempotency.
+1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) and [VS Code](https://code.visualstudio.com/)
+2. Install the [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
+3. Clone this repo and open in VS Code
+4. Press `F1` → **Dev Containers: Reopen in Container**
+5. Wait for setup to complete — all dependencies install automatically
 
-## Adding/Updating Lambdas
-1. Create a new folder under [infra/modules/lambdas/lambda_src](infra/modules/lambdas/lambda_src) with an `app.py` exposing `handler(event, context)`.
-2. Update `locals.pipeline_lambdas` inside [pipeline.tf](infra/modules/lambdas/pipeline.tf) to set memory, timeout, and environment variables.
-3. Wire the Lambda into the Step Functions definition (`state_machine.asl.json`) if it participates in the pipeline.
+See [.devcontainer/README.md](.devcontainer/README.md) for details.
 
-## Testing & CI Status
-- Unit/contract/integration test scaffolding is tracked in [issue #7](https://github.com/bencas21/aimory-talent-pool/issues/7).
-- A GitHub Actions workflow for Lambda layer builds lives in [.github/workflows](.github/workflows); broader CI (lint, tests, Terraform plan/apply) is part of the backlog.
+### Option 2: Manual Setup
 
-- Frontend search UI (fields TBD) – [issue #15](https://github.com/bencas21/aimory-talent-pool/issues/15)
-- OpenSearch integration for advanced search – [issue #16](https://github.com/bencas21/aimory-talent-pool/issues/16)
-- Production environment & Terraform CD – [issues #17](https://github.com/bencas21/aimory-talent-pool/issues/17) and [#12](https://github.com/bencas21/aimory-talent-pool/issues/12)
-- Repository + Power Automate documentation – [issues #11](https://github.com/bencas21/aimory-talent-pool/issues/11) and [#10](https://github.com/bencas21/aimory-talent-pool/issues/10)
-- LLM-driven non-resume cleanup and containerized Lambdas – [issues #8](https://github.com/bencas21/aimory-talent-pool/issues/8) and [#14](https://github.com/bencas21/aimory-talent-pool/issues/14)
+**Prerequisites:**
+- Node.js 22+
+- Python 3.12+
+- Terraform 1.9+
+- AWS CLI v2 with configured credentials
+- Docker (for building Lambda layers)
 
-See the GitHub Issues board for the up-to-date backlog and acceptance criteria for each initiative.
+**Install dependencies:**
+```bash
+# Frontend
+cd frontend/web && npm install
+
+# Python (for Lambda development/testing)
+pip install -r requirements-dev.txt
+```
+
+## Development Workflow
+
+```bash
+# Start the frontend dev server
+cd frontend/web
+npm run dev                    # http://localhost:5173
+
+# Run Python tests
+pytest
+
+# Deploy infrastructure changes
+cd infra/envs/dev
+terraform init                 # first time only
+terraform plan
+terraform apply
+```
+
+## Documentation Index
+
+| Topic | Location |
+|-------|----------|
+| Development environment setup | [.devcontainer/README.md](.devcontainer/README.md) |
+| Frontend architecture & components | [frontend/web/README.md](frontend/web/README.md) |
+| Infrastructure modules & deployment | [infra/README.md](infra/README.md) |
+| Environment variables | Each README contains relevant env vars |
+
+## Tech Stack
+
+| Layer | Technologies |
+|-------|-------------|
+| **Frontend** | React 19, TypeScript, Vite, Tailwind CSS, Radix UI, AWS Amplify |
+| **Authentication** | AWS Cognito + Microsoft Entra ID (Azure AD) federation |
+| **API** | API Gateway (HTTP API) + Lambda |
+| **Processing** | Step Functions, Lambda (Python 3.12), Textract, Bedrock (Claude) |
+| **Storage** | S3 (resumes), DynamoDB (profiles + lookups), SSM Parameter Store |
+| **Infrastructure** | Terraform, CloudFront, IAM |
+
+## Contributing
+
+1. Create a feature branch from `main`
+2. Make changes and test locally
+3. Run `terraform plan` to preview infrastructure changes
+4. Submit a pull request
+
+## License
+
+Proprietary — AIMORY internal use only.
