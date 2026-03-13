@@ -13,7 +13,7 @@ export function ThemeToggle() {
   return (
     <button
       onClick={cycleTheme}
-      className="flex items-center justify-center w-9 h-9 rounded-lg bg-white/5 dark:bg-white/5 light:bg-black/5 border border-white/10 dark:border-white/10 light:border-black/10 text-white/60 dark:text-white/60 light:text-black/60 hover:bg-white/10 dark:hover:bg-white/10 light:hover:bg-black/10 hover:text-white dark:hover:text-white light:hover:text-black transition-all duration-200"
+      className="flex items-center justify-center w-9 h-9 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground/60 hover:bg-black/10 dark:hover:bg-white/10 hover:text-foreground transition-all duration-200"
       title={`Theme: ${theme} (click to cycle)`}
     >
       {theme === "dark" && <Moon className="w-4 h-4" />}

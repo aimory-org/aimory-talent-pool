@@ -42,7 +42,7 @@ export function FiltersPanel({
   lookupCities,
 }: FiltersPanelProps) {
   return (
-    <div className="relative bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-white/10 p-6 mb-6 animate-in slide-in-from-top-2 duration-300 shadow-xl shadow-black/20">
+    <div className="relative bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-black/10 dark:border-white/10 p-6 mb-6 animate-in slide-in-from-top-2 duration-300 shadow-xl shadow-black/20">
       {/* Subtle gradient overlay */}
       <div className="absolute inset-0 bg-linear-to-br from-indigo-500/5 via-transparent to-purple-500/5 rounded-2xl pointer-events-none" />
 
@@ -53,10 +53,10 @@ export function FiltersPanel({
               <Filter className="h-4 w-4 text-indigo-400" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-white">
+              <h3 className="text-sm font-semibold text-foreground">
                 Filter Candidates
               </h3>
-              <p className="text-xs text-white/40">
+              <p className="text-xs text-foreground/40">
                 Narrow down your search with specific criteria
               </p>
             </div>
@@ -64,7 +64,7 @@ export function FiltersPanel({
           {activeFilterCount > 0 && (
             <button
               onClick={onClearFilters}
-              className="text-sm text-white/50 hover:text-white transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-white/10"
+              className="text-sm text-foreground/50 hover:text-foreground transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-black/10 dark:hover:bg-white/10"
             >
               <X className="h-4 w-4" />
               Clear all ({activeFilterCount})
@@ -74,12 +74,12 @@ export function FiltersPanel({
 
         {/* Row 1: Basic filters */}
         <div className="mb-4">
-          <p className="text-xs font-medium text-white/30 uppercase tracking-wider mb-3">
+          <p className="text-xs font-medium text-foreground/30 uppercase tracking-wider mb-3">
             Basic Filters
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <div className="space-y-2">
-              <Label className="text-white/70">Status</Label>
+              <Label className="text-foreground/70">Status</Label>
               <Select
                 value={filters.status}
                 onChange={(e) => onFilterChange("status", e.target.value)}
@@ -88,7 +88,7 @@ export function FiltersPanel({
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-white/70">Talent Bucket</Label>
+              <Label className="text-foreground/70">Talent Bucket</Label>
               <Select
                 value={filters.talent_bucket}
                 onChange={(e) =>
@@ -99,7 +99,7 @@ export function FiltersPanel({
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-white/70">Category</Label>
+              <Label className="text-foreground/70">Category</Label>
               <Select
                 value={filters.talent_category}
                 onChange={(e) =>
@@ -110,7 +110,7 @@ export function FiltersPanel({
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-white/70">Clearance</Label>
+              <Label className="text-foreground/70">Clearance</Label>
               <Select
                 value={filters.clearance_level}
                 onChange={(e) =>
@@ -121,7 +121,7 @@ export function FiltersPanel({
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-white/70">State</Label>
+              <Label className="text-foreground/70">State</Label>
               <Select
                 value={filters.location_state}
                 onChange={(e) =>
@@ -136,12 +136,12 @@ export function FiltersPanel({
 
         {/* Row 2: Additional filters */}
         <div>
-          <p className="text-xs font-medium text-white/30 uppercase tracking-wider mb-3">
+          <p className="text-xs font-medium text-foreground/30 uppercase tracking-wider mb-3">
             Advanced Filters
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <div className="space-y-2">
-              <Label className="text-white/70">City</Label>
+              <Label className="text-foreground/70">City</Label>
               <Select
                 value={filters.city}
                 onChange={(e) => onFilterChange("city", e.target.value)}
@@ -160,7 +160,7 @@ export function FiltersPanel({
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-white/70">
+              <Label className="text-foreground/70">
                 Skills{" "}
                 {filters.skills.length > 0 && (
                   <span className="text-indigo-400">
@@ -195,9 +195,10 @@ export function FiltersPanel({
                             filters.skills.filter((s) => s !== skill),
                           )
                         }
-                        className="hover:text-white ml-0.5"
+                        className="hover:text-foreground ml-0.5"
                       >
                         <X className="h-3 w-3" />
+                      </button>
                       </button>
                     </span>
                   ))}
@@ -205,7 +206,7 @@ export function FiltersPanel({
               )}
             </div>
             <div className="space-y-2">
-              <Label className="text-white/70">
+              <Label className="text-foreground/70">
                 Certifications{" "}
                 {filters.certifications.length > 0 && (
                   <span className="text-amber-400">
@@ -240,7 +241,7 @@ export function FiltersPanel({
                             filters.certifications.filter((c) => c !== cert),
                           )
                         }
-                        className="hover:text-white ml-0.5"
+                        className="hover:text-foreground ml-0.5"
                       >
                         <X className="h-3 w-3" />
                       </button>
@@ -250,25 +251,25 @@ export function FiltersPanel({
               )}
             </div>
             <div className="space-y-2">
-              <Label className="text-white/70">Min Years</Label>
+              <Label className="text-foreground/70">Min Years</Label>
               <input
                 type="number"
                 min="0"
                 value={filters.minYears}
                 onChange={(e) => onFilterChange("minYears", e.target.value)}
                 placeholder="0"
-                className="flex h-9 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/90 placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 hover:border-white/20 hover:bg-white/8 transition-all"
+                className="flex h-9 w-full rounded-lg border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 px-3 py-2 text-sm text-foreground/90 placeholder-foreground/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 hover:border-black/20 dark:hover:border-white/20 hover:bg-black/8 dark:hover:bg-white/8 transition-all"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-white/70">Max Years</Label>
+              <Label className="text-foreground/70">Max Years</Label>
               <input
                 type="number"
                 min="0"
                 value={filters.maxYears}
                 onChange={(e) => onFilterChange("maxYears", e.target.value)}
                 placeholder="Any"
-                className="flex h-9 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/90 placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 hover:border-white/20 hover:bg-white/8 transition-all"
+                className="flex h-9 w-full rounded-lg border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 px-3 py-2 text-sm text-foreground/90 placeholder-foreground/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 hover:border-black/20 dark:hover:border-white/20 hover:bg-black/8 dark:hover:bg-white/8 transition-all"
               />
             </div>
           </div>

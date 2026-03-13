@@ -177,12 +177,12 @@ export function TalentDashboard() {
   );
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-900 via-slate-900 to-slate-800">
+    <div className="min-h-screen bg-background">
       {/* Animated gradient accent bar */}
       <div className="h-1 bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500 animate-gradient-x" />
 
       {/* Header */}
-      <div className="border-b border-white/10 bg-slate-900/80 backdrop-blur-xl sticky top-0 z-40">
+      <div className="border-b border-black/10 dark:border-white/10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             {/* Title Section */}
@@ -194,10 +194,10 @@ export function TalentDashboard() {
                 </div>
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-white tracking-tight">
+                <h1 className="text-2xl font-bold text-foreground tracking-tight">
                   Talent Pool
                 </h1>
-                <p className="text-sm text-white/50">
+                <p className="text-sm text-foreground/50">
                   Discover and manage your candidate pipeline
                 </p>
               </div>
@@ -215,13 +215,13 @@ export function TalentDashboard() {
           <div className="relative flex-1 group">
             <div className="absolute inset-0 bg-linear-to-r from-indigo-500/20 to-purple-500/20 rounded-xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-300" />
             <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40 group-focus-within:text-indigo-400 transition-colors" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-foreground/40 group-focus-within:text-indigo-400 transition-colors" />
               <input
                 type="text"
                 placeholder="Search by name..."
                 value={filters.search}
                 onChange={(e) => handleFilterChange("search", e.target.value)}
-                className="w-full h-12 pl-12 pr-4 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 focus:bg-white/10 transition-all duration-300"
+                className="w-full h-12 pl-12 pr-4 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground placeholder-foreground/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 focus:bg-black/10 dark:focus:bg-white/10 transition-all duration-300"
               />
             </div>
           </div>
@@ -229,8 +229,8 @@ export function TalentDashboard() {
             onClick={() => setShowFilters(!showFilters)}
             className={`flex items-center gap-2 px-5 py-3 rounded-xl border transition-all duration-300 font-medium ${
               showFilters
-                ? "bg-linear-to-r from-indigo-500/20 to-purple-500/20 border-indigo-500/40 text-indigo-300 shadow-lg shadow-indigo-500/10"
-                : "bg-white/5 border-white/10 text-white/60 hover:text-white hover:border-white/20 hover:bg-white/10"
+                ? "bg-linear-to-r from-indigo-500/20 to-purple-500/20 border-indigo-500/40 text-indigo-600 dark:text-indigo-300 shadow-lg shadow-indigo-500/10"
+                : "bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground/60 hover:text-foreground hover:border-black/20 dark:hover:border-white/20 hover:bg-black/10 dark:hover:bg-white/10"
             }`}
           >
             <Filter className="h-4 w-4" />
@@ -262,21 +262,21 @@ export function TalentDashboard() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             {talentsLoading ? (
-              <div className="flex items-center gap-2 text-white/40">
+              <div className="flex items-center gap-2 text-foreground/40">
                 <div className="h-4 w-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
                 <span className="text-sm">Loading candidates...</span>
               </div>
             ) : (
               <>
-                <p className="text-sm text-white/60">
+                <p className="text-sm text-foreground/60">
                   Showing{" "}
-                  <span className="text-white font-semibold">
+                  <span className="text-foreground font-semibold">
                     {sortedProfiles.length}
                   </span>{" "}
                   {sortedProfiles.length === 1 ? "candidate" : "candidates"}
                 </p>
                 {activeFilterCount > 0 && (
-                  <span className="text-xs bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/30">
+                  <span className="text-xs bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/30">
                     {activeFilterCount}{" "}
                     {activeFilterCount === 1 ? "filter" : "filters"} active
                   </span>
