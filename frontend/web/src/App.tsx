@@ -11,6 +11,7 @@ import "./App.css";
 import { allowedEmailSuffixes, microsoftProvider } from "@/lib/auth";
 import { TalentDashboard } from "./components/TalentDashboard";
 import { HowItWorks } from "./components/HowItWorks";
+import { ThemeToggle } from "./components/ui/theme-toggle";
 
 interface UserInfo {
   username: string;
@@ -29,7 +30,7 @@ const SignOutButton = () => {
 
   return (
     <button
-      className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 hover:text-white hover:border-white/20 transition-all duration-200 text-sm font-medium"
+      className="px-4 py-2 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground/60 hover:bg-black/10 dark:hover:bg-white/10 hover:text-foreground hover:border-black/20 dark:hover:border-white/20 transition-all duration-200 text-sm font-medium"
       onClick={handleClick}
     >
       Sign out
@@ -113,25 +114,28 @@ const InsightsGrid = ({ user }: { user: UserInfo }) => {
   return (
     <div className="w-full">
       {/* User Info Bar */}
-      <div className="bg-slate-900/80 backdrop-blur-xl border-b border-white/10 px-6 py-3">
+      <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-black/10 dark:border-white/10 px-6 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-full bg-linear-to-br from-indigo-500/30 to-purple-500/30 flex items-center justify-center border border-white/10 text-white font-semibold text-sm shadow-lg shadow-indigo-500/10">
+            <div className="h-9 w-9 rounded-full bg-linear-to-br from-indigo-500/30 to-purple-500/30 flex items-center justify-center border border-black/10 dark:border-white/10 text-foreground font-semibold text-sm shadow-lg shadow-indigo-500/10">
               {safeName.charAt(0).toUpperCase()}
             </div>
             <div>
-              <p className="text-sm font-semibold text-white">{safeName}</p>
-              <p className="text-xs text-white/40">{user.email}</p>
+              <p className="text-sm font-semibold text-foreground">
+                {safeName}
+              </p>
+              <p className="text-xs text-foreground/40">{user.email}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <Link
               to="/how-it-works"
-              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 hover:text-white hover:border-white/20 transition-all duration-200 text-sm"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground/60 hover:bg-black/10 dark:hover:bg-white/10 hover:text-foreground hover:border-black/20 dark:hover:border-white/20 transition-all duration-200 text-sm"
             >
               <HelpCircle className="w-4 h-4" />
               <span className="hidden sm:inline">How It Works</span>
             </Link>
+            <ThemeToggle />
             <SignOutButton />
           </div>
         </div>
@@ -165,16 +169,16 @@ function AppContent() {
           <div className="absolute bottom-1/3 -right-20 w-96 h-96 bg-purple-500/15 rounded-full blur-3xl" />
         </div>
 
-        <div className="relative bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-white/10 p-10 text-center max-w-sm shadow-2xl">
+        <div className="relative bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-black/10 dark:border-white/10 p-10 text-center max-w-sm shadow-2xl">
           <div className="relative mx-auto mb-6 w-16 h-16">
             <div className="absolute inset-0 rounded-full border-2 border-indigo-500/30" />
             <div className="absolute inset-0 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin" />
             <div className="absolute inset-3 rounded-full bg-linear-to-br from-indigo-500/20 to-purple-500/20" />
           </div>
-          <p className="text-white/70 font-medium mb-1">
+          <p className="text-foreground/70 font-medium mb-1">
             Checking your session
           </p>
-          <p className="text-white/40 text-sm">Please wait a moment...</p>
+          <p className="text-foreground/40 text-sm">Please wait a moment...</p>
         </div>
       </div>
     );
@@ -211,7 +215,7 @@ const AccessDeniedPanel = ({ user }: { user: UserInfo }) => {
 
       <div className="relative max-w-md w-full">
         <div className="absolute -inset-0.5 bg-linear-to-r from-red-500/50 to-pink-500/50 rounded-2xl opacity-30 blur" />
-        <div className="relative bg-slate-800/80 backdrop-blur-xl rounded-2xl border border-red-500/20 p-8 shadow-2xl">
+        <div className="relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl border border-red-500/20 p-8 shadow-2xl">
           <div className="flex items-center gap-3 mb-6">
             <div className="p-2 bg-red-500/20 rounded-lg">
               <svg
@@ -232,17 +236,17 @@ const AccessDeniedPanel = ({ user }: { user: UserInfo }) => {
               <p className="text-xs font-semibold text-red-400/70 uppercase tracking-wider">
                 Access Restricted
               </p>
-              <h3 className="text-lg font-semibold text-white">
+              <h3 className="text-lg font-semibold text-foreground">
                 Company Account Required
               </h3>
             </div>
           </div>
 
-          <p className="text-white/60 text-sm leading-relaxed mb-6">
+          <p className="text-foreground/60 text-sm leading-relaxed mb-6">
             You signed in as{" "}
-            <span className="text-white font-medium">{user.email}</span>. Only
-            accounts ending with{" "}
-            <span className="text-white font-medium">
+            <span className="text-foreground font-medium">{user.email}</span>.
+            Only accounts ending with{" "}
+            <span className="text-foreground font-medium">
               {allowedEmailSuffixes
                 .map((suffix: string) => suffix.replace(/^@?/, "@"))
                 .join(" or ")}
@@ -252,7 +256,7 @@ const AccessDeniedPanel = ({ user }: { user: UserInfo }) => {
 
           <div className="flex flex-col gap-3">
             <SignOutButton />
-            <p className="text-center text-white/30 text-xs">
+            <p className="text-center text-foreground/30 text-xs">
               Sign out and try again with your company account
             </p>
           </div>
@@ -301,10 +305,12 @@ const LoginPage = () => {
               </svg>
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">
+          <h1 className="text-3xl font-bold text-foreground mb-2 tracking-tight">
             Talent Pool
           </h1>
-          <p className="text-white/40 text-sm font-medium">Aimory Consulting</p>
+          <p className="text-foreground/40 text-sm font-medium">
+            Aimory Consulting
+          </p>
         </div>
 
         {/* Login Card */}
@@ -312,12 +318,12 @@ const LoginPage = () => {
           {/* Gradient border effect */}
           <div className="absolute -inset-0.5 bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl opacity-30 blur group-hover:opacity-50 transition-opacity duration-500" />
 
-          <div className="relative bg-slate-800/80 backdrop-blur-xl rounded-2xl border border-white/10 p-8 shadow-2xl">
+          <div className="relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl border border-black/10 dark:border-white/10 p-8 shadow-2xl">
             <div className="text-center mb-8">
-              <h2 className="text-xl font-semibold text-white mb-2">
+              <h2 className="text-xl font-semibold text-foreground mb-2">
                 Welcome back
               </h2>
-              <p className="text-white/50 text-sm leading-relaxed">
+              <p className="text-foreground/50 text-sm leading-relaxed">
                 Sign in to access the candidate resume database and manage your
                 talent pipeline
               </p>
@@ -336,7 +342,7 @@ const LoginPage = () => {
                 }
                 await signInWithRedirect({ provider: microsoftProvider });
               }}
-              className="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-50 text-slate-800 font-semibold py-3.5 px-4 rounded-xl transition-all duration-300 hover:shadow-xl hover:shadow-white/20 hover:scale-[1.02] active:scale-[0.98] group/btn"
+              className="w-full flex items-center justify-center gap-3 bg-indigo-600 hover:bg-indigo-700 dark:bg-white dark:hover:bg-gray-100 text-white dark:text-slate-800 font-semibold py-3.5 px-4 rounded-xl transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/20 dark:hover:shadow-white/20 hover:scale-[1.02] active:scale-[0.98] group/btn"
             >
               <svg
                 className="w-5 h-5 transition-transform group-hover/btn:scale-110"
@@ -351,8 +357,8 @@ const LoginPage = () => {
               Sign in with Microsoft
             </button>
 
-            <div className="mt-6 pt-6 border-t border-white/10">
-              <p className="text-center text-white/30 text-xs">
+            <div className="mt-6 pt-6 border-t border-black/10 dark:border-white/10">
+              <p className="text-center text-foreground/30 text-xs">
                 🔒 Secured with Microsoft Entra ID
               </p>
             </div>
@@ -361,10 +367,10 @@ const LoginPage = () => {
 
         {/* Footer */}
         <div className="text-center mt-10 space-y-2">
-          <p className="text-white/20 text-xs">
+          <p className="text-foreground/20 text-xs">
             Internal use only • Use your company Microsoft account
           </p>
-          <p className="text-white/10 text-xs">© 2026 Aimory Consulting</p>
+          <p className="text-foreground/10 text-xs">© 2026 Aimory Consulting</p>
         </div>
       </div>
     </div>

@@ -14,13 +14,13 @@ import {
 
 export function HowItWorks() {
   return (
-    <div className="min-h-screen bg-slate-900">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-slate-900/80 backdrop-blur-xl border-b border-white/10 px-6 py-4 sticky top-0 z-10">
+      <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-black/10 dark:border-white/10 px-6 py-4 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto flex items-center gap-4">
           <Link
             to="/"
-            className="flex items-center gap-2 text-white/60 hover:text-white transition-colors"
+            className="flex items-center gap-2 text-foreground/60 hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             <span className="text-sm">Back to Dashboard</span>
@@ -31,10 +31,10 @@ export function HowItWorks() {
       {/* Content */}
       <div className="max-w-4xl mx-auto px-6 py-12">
         <div className="mb-12">
-          <h1 className="text-4xl font-bold text-white mb-4">
+          <h1 className="text-4xl font-bold text-foreground mb-4">
             How the Talent Pool Works
           </h1>
-          <p className="text-xl text-white/60">
+          <p className="text-xl text-foreground/60">
             A simple guide to understanding how resumes become searchable
             candidate profiles.
           </p>
@@ -78,7 +78,7 @@ export function HowItWorks() {
               We're planning to add more ways to get resumes into the system,
               such as:
             </p>
-            <ul className="list-disc list-inside text-white/70 space-y-1 ml-4">
+            <ul className="list-disc list-inside text-foreground/70 space-y-1 ml-4">
               <li>Drag-and-drop upload directly from this website</li>
               <li>
                 Email forwarding — send resumes to a special email address
@@ -122,7 +122,7 @@ export function HowItWorks() {
             <TimelineStep number={3} title="AI Analysis">
               An AI assistant (Claude, made by Anthropic) reads the extracted
               text and identifies key information:
-              <ul className="list-disc list-inside text-white/60 mt-2 ml-4 space-y-1">
+              <ul className="list-disc list-inside text-foreground/60 mt-2 ml-4 space-y-1">
                 <li>Name and contact information</li>
                 <li>Skills and technologies</li>
                 <li>Years of experience</li>
@@ -166,7 +166,7 @@ export function HowItWorks() {
           </p>
 
           <SubSection title="What the AI Does Well">
-            <ul className="list-disc list-inside text-white/70 space-y-1 ml-4">
+            <ul className="list-disc list-inside text-foreground/70 space-y-1 ml-4">
               <li>Finds contact information even when formatted unusually</li>
               <li>
                 Recognizes skills by different names (e.g., "AWS" vs "Amazon Web
@@ -181,7 +181,7 @@ export function HowItWorks() {
           </SubSection>
 
           <SubSection title="What the AI Might Miss">
-            <ul className="list-disc list-inside text-white/70 space-y-1 ml-4">
+            <ul className="list-disc list-inside text-foreground/70 space-y-1 ml-4">
               <li>Information in images or graphics within the PDF</li>
               <li>Very unusual abbreviations or internal company jargon</li>
               <li>Details that are implied but not explicitly stated</li>
@@ -216,7 +216,7 @@ export function HowItWorks() {
 
           <SubSection title="Filters">
             <p>Narrow down results using the filter panel:</p>
-            <ul className="list-disc list-inside text-white/70 space-y-1 ml-4">
+            <ul className="list-disc list-inside text-foreground/70 space-y-1 ml-4">
               <li>
                 <strong>Status</strong> — Active, Potential, Placed, Stale, or
                 Do Not Contact
@@ -333,8 +333,8 @@ export function HowItWorks() {
             actually running behind the scenes:
           </p>
 
-          <div className="bg-slate-800/50 rounded-xl p-6 mt-4 font-mono text-sm">
-            <pre className="text-white/70 whitespace-pre-wrap">
+          <div className="bg-black/5 dark:bg-slate-800/50 rounded-xl p-6 mt-4 font-mono text-sm">
+            <pre className="text-foreground/70 whitespace-pre-wrap">
               {`Resume Upload (OneDrive/Power Automate)
          ↓
     S3 Storage (Amazon cloud file storage)
@@ -351,7 +351,7 @@ export function HowItWorks() {
             </pre>
           </div>
 
-          <p className="mt-4 text-white/50 text-sm">
+          <p className="mt-4 text-foreground/50 text-sm">
             Everything runs on Amazon Web Services (AWS) and scales
             automatically. Whether we have 10 resumes or 10,000, the system
             handles it the same way.
@@ -401,13 +401,13 @@ export function HowItWorks() {
         </Section>
 
         {/* Footer */}
-        <div className="mt-16 pt-8 border-t border-white/10 text-center">
-          <p className="text-white/40 text-sm">
+        <div className="mt-16 pt-8 border-t border-black/10 dark:border-white/10 text-center">
+          <p className="text-foreground/40 text-sm">
             Questions or feedback? Reach out to the development team.
           </p>
           <Link
             to="/"
-            className="inline-flex items-center gap-2 mt-4 text-indigo-400 hover:text-indigo-300 transition-colors"
+            className="inline-flex items-center gap-2 mt-4 text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Dashboard
@@ -432,12 +432,14 @@ function Section({
   return (
     <section className="mb-12">
       <div className="flex items-center gap-3 mb-4">
-        <div className="p-2 bg-indigo-500/20 rounded-lg text-indigo-400">
+        <div className="p-2 bg-indigo-500/20 rounded-lg text-indigo-600 dark:text-indigo-400">
           {icon}
         </div>
-        <h2 className="text-2xl font-semibold text-white">{title}</h2>
+        <h2 className="text-2xl font-semibold text-foreground">{title}</h2>
       </div>
-      <div className="text-white/70 space-y-4 leading-relaxed">{children}</div>
+      <div className="text-foreground/70 space-y-4 leading-relaxed">
+        {children}
+      </div>
     </section>
   );
 }
@@ -451,15 +453,15 @@ function SubSection({
 }) {
   return (
     <div className="mt-4">
-      <h3 className="text-lg font-medium text-white/90 mb-2">{title}</h3>
-      <div className="text-white/70">{children}</div>
+      <h3 className="text-lg font-medium text-foreground/90 mb-2">{title}</h3>
+      <div className="text-foreground/70">{children}</div>
     </div>
   );
 }
 
 function Callout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mt-4 p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-white/80">
+    <div className="mt-4 p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-foreground/80">
       {children}
     </div>
   );
@@ -467,7 +469,7 @@ function Callout({ children }: { children: React.ReactNode }) {
 
 function Timeline({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mt-6 space-y-4 relative before:absolute before:left-4 before:top-2 before:bottom-2 before:w-0.5 before:bg-white/10">
+    <div className="mt-6 space-y-4 relative before:absolute before:left-4 before:top-2 before:bottom-2 before:w-0.5 before:bg-black/10 dark:before:bg-white/10">
       {children}
     </div>
   );
@@ -484,12 +486,12 @@ function TimelineStep({
 }) {
   return (
     <div className="flex gap-4 relative">
-      <div className="w-8 h-8 rounded-full bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400 font-semibold text-sm shrink-0">
+      <div className="w-8 h-8 rounded-full bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-semibold text-sm shrink-0">
         {number}
       </div>
       <div className="pb-4">
-        <h4 className="font-medium text-white mb-1">{title}</h4>
-        <p className="text-white/60">{children}</p>
+        <h4 className="font-medium text-foreground mb-1">{title}</h4>
+        <p className="text-foreground/60">{children}</p>
       </div>
     </div>
   );
@@ -505,17 +507,20 @@ function StatusCard({
   description: string;
 }) {
   const colorClasses: Record<string, string> = {
-    blue: "bg-blue-500/20 border-blue-500/30 text-blue-400",
-    green: "bg-emerald-500/20 border-emerald-500/30 text-emerald-400",
-    purple: "bg-purple-500/20 border-purple-500/30 text-purple-400",
-    yellow: "bg-amber-500/20 border-amber-500/30 text-amber-400",
-    red: "bg-red-500/20 border-red-500/30 text-red-400",
+    blue: "bg-blue-500/20 border-blue-500/30 text-blue-600 dark:text-blue-400",
+    green:
+      "bg-emerald-500/20 border-emerald-500/30 text-emerald-600 dark:text-emerald-400",
+    purple:
+      "bg-purple-500/20 border-purple-500/30 text-purple-600 dark:text-purple-400",
+    yellow:
+      "bg-amber-500/20 border-amber-500/30 text-amber-600 dark:text-amber-400",
+    red: "bg-red-500/20 border-red-500/30 text-red-600 dark:text-red-400",
   };
 
   return (
     <div className={`p-4 rounded-lg border ${colorClasses[color]}`}>
       <div className="font-medium mb-1">{status}</div>
-      <div className="text-white/60 text-sm">{description}</div>
+      <div className="text-foreground/60 text-sm">{description}</div>
     </div>
   );
 }
@@ -528,9 +533,9 @@ function FAQ({
   children: React.ReactNode;
 }) {
   return (
-    <div className="mt-4 p-4 bg-slate-800/50 rounded-lg">
-      <h4 className="font-medium text-white mb-2">{question}</h4>
-      <p className="text-white/60">{children}</p>
+    <div className="mt-4 p-4 bg-black/5 dark:bg-slate-800/50 rounded-lg">
+      <h4 className="font-medium text-foreground mb-2">{question}</h4>
+      <p className="text-foreground/60">{children}</p>
     </div>
   );
 }
