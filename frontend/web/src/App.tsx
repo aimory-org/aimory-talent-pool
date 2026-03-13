@@ -121,7 +121,7 @@ const AccessControlledPanel = ({ user }: { user: UserInfo }) => {
         </div>
 
         <div className="relative max-w-md w-full">
-          <div className="absolute -inset-0.5 bg-gradient-to-r from-red-500/50 to-pink-500/50 rounded-2xl opacity-30 blur" />
+          <div className="absolute -inset-0.5 bg-linear-to-r from-red-500/50 to-pink-500/50 rounded-2xl opacity-30 blur" />
           <div className="relative bg-slate-800/80 backdrop-blur-xl rounded-2xl border border-red-500/20 p-8 shadow-2xl">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-2 bg-red-500/20 rounded-lg">
@@ -185,7 +185,7 @@ const InsightsGrid = ({ user }: { user: UserInfo }) => {
       <div className="bg-slate-900/80 backdrop-blur-xl border-b border-white/10 px-6 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-full bg-gradient-to-br from-indigo-500/30 to-purple-500/30 flex items-center justify-center border border-white/10 text-white font-semibold text-sm shadow-lg shadow-indigo-500/10">
+            <div className="h-9 w-9 rounded-full bg-linear-to-br from-indigo-500/30 to-purple-500/30 flex items-center justify-center border border-white/10 text-white font-semibold text-sm shadow-lg shadow-indigo-500/10">
               {safeName.charAt(0).toUpperCase()}
             </div>
             <div>
@@ -219,7 +219,7 @@ function App() {
           <div className="relative mx-auto mb-6 w-16 h-16">
             <div className="absolute inset-0 rounded-full border-2 border-indigo-500/30" />
             <div className="absolute inset-0 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin" />
-            <div className="absolute inset-3 rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-500/20" />
+            <div className="absolute inset-3 rounded-full bg-linear-to-br from-indigo-500/20 to-purple-500/20" />
           </div>
           <p className="text-white/70 font-medium mb-1">
             Checking your session
@@ -245,19 +245,19 @@ function App() {
           className="absolute bottom-1/4 -right-20 w-96 h-96 bg-purple-500/15 rounded-full blur-3xl animate-pulse-glow"
           style={{ animationDelay: "1s" }}
         />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-br from-indigo-500/10 via-transparent to-purple-500/10 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-150 h-150 bg-linear-to-br from-indigo-500/10 via-transparent to-purple-500/10 rounded-full blur-3xl" />
       </div>
 
       {/* Gradient line at top */}
-      <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 animate-gradient-x" />
+      <div className="absolute top-0 inset-x-0 h-1 bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500 animate-gradient-x" />
 
       <div className="w-full max-w-md relative z-10">
         {/* Logo/Brand */}
         <div className="text-center mb-10">
           <div className="relative inline-block mb-6">
             {/* Glow effect */}
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl blur-xl opacity-50 animate-pulse-glow" />
-            <div className="relative inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-2xl shadow-indigo-500/30">
+            <div className="absolute inset-0 bg-linear-to-br from-indigo-500 to-purple-600 rounded-2xl blur-xl opacity-50 animate-pulse-glow" />
+            <div className="relative inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-linear-to-br from-indigo-500 to-purple-600 shadow-2xl shadow-indigo-500/30">
               <svg
                 className="w-10 h-10 text-white"
                 fill="none"
@@ -282,7 +282,7 @@ function App() {
         {/* Login Card */}
         <div className="relative group">
           {/* Gradient border effect */}
-          <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl opacity-30 blur group-hover:opacity-50 transition-opacity duration-500" />
+          <div className="absolute -inset-0.5 bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl opacity-30 blur group-hover:opacity-50 transition-opacity duration-500" />
 
           <div className="relative bg-slate-800/80 backdrop-blur-xl rounded-2xl border border-white/10 p-8 shadow-2xl">
             <div className="text-center mb-8">
@@ -303,7 +303,9 @@ function App() {
                     window.location.reload();
                     return;
                   }
-                } catch {}
+                } catch {
+                  // No session - proceed to sign in
+                }
                 await signInWithRedirect({ provider: microsoftProvider });
               }}
               className="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-50 text-slate-800 font-semibold py-3.5 px-4 rounded-xl transition-all duration-300 hover:shadow-xl hover:shadow-white/20 hover:scale-[1.02] active:scale-[0.98] group/btn"

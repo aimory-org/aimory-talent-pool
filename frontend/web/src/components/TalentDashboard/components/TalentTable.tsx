@@ -1,7 +1,7 @@
 /**
  * Table component for displaying talent profiles.
  */
-import { Users, Search, MapPin, ChevronRight, X } from "lucide-react"
+import { Users, Search, MapPin, ChevronRight, X } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -9,22 +9,22 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import type { TalentProfile } from "@/types/talent"
-import type { SortField, SortDirection } from "../types"
-import { StatusBadge } from "./StatusBadge"
-import { ClearanceBadge } from "./ClearanceBadge"
-import { SortableHeader } from "./SortableHeader"
+} from "@/components/ui/table";
+import type { TalentProfile } from "@/types/talent";
+import type { SortField, SortDirection } from "../types";
+import { StatusBadge } from "./StatusBadge";
+import { ClearanceBadge } from "./ClearanceBadge";
+import { SortableHeader } from "./SortableHeader";
 
 interface TalentTableProps {
-  profiles: TalentProfile[]
-  isLoading: boolean
-  sortField: SortField
-  sortDirection: SortDirection
-  onSort: (field: SortField) => void
-  onSelectProfile: (profile: TalentProfile) => void
-  activeFilterCount: number
-  onClearFilters: () => void
+  profiles: TalentProfile[];
+  isLoading: boolean;
+  sortField: SortField;
+  sortDirection: SortDirection;
+  onSort: (field: SortField) => void;
+  onSelectProfile: (profile: TalentProfile) => void;
+  activeFilterCount: number;
+  onClearFilters: () => void;
 }
 
 export function TalentTable({
@@ -40,7 +40,7 @@ export function TalentTable({
   return (
     <div className="relative bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden shadow-xl shadow-black/20">
       {/* Table gradient accent */}
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent" />
+      <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-indigo-500/50 to-transparent" />
       <Table>
         <TableHeader>
           <TableRow className="border-white/10 hover:bg-transparent">
@@ -130,8 +130,12 @@ export function TalentTable({
                         <div className="absolute inset-0 h-12 w-12 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
                       </div>
                       <div className="text-center">
-                        <p className="text-white/60 font-medium">Loading candidates...</p>
-                        <p className="text-white/30 text-sm mt-1">This may take a moment</p>
+                        <p className="text-white/60 font-medium">
+                          Loading candidates...
+                        </p>
+                        <p className="text-white/30 text-sm mt-1">
+                          This may take a moment
+                        </p>
                       </div>
                     </>
                   ) : (
@@ -145,12 +149,13 @@ export function TalentTable({
                         </div>
                       </div>
                       <div className="text-center max-w-sm">
-                        <p className="text-white/70 font-medium text-lg mb-1">No candidates found</p>
+                        <p className="text-white/70 font-medium text-lg mb-1">
+                          No candidates found
+                        </p>
                         <p className="text-white/40 text-sm">
-                          {activeFilterCount > 0 
+                          {activeFilterCount > 0
                             ? "Try adjusting your filters to see more results"
-                            : "Add candidates to get started"
-                          }
+                            : "Add candidates to get started"}
                         </p>
                       </div>
                       {activeFilterCount > 0 && (
@@ -176,25 +181,36 @@ export function TalentTable({
               >
                 <TableCell>
                   <div className="flex items-center gap-3">
-                    <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-br from-indigo-500/30 to-purple-500/30 flex items-center justify-center border border-white/10 text-white font-medium text-sm">
-                      {(profile.name || '?').charAt(0).toUpperCase()}
+                    <div className="shrink-0 h-10 w-10 rounded-full bg-linear-to-br from-indigo-500/30 to-purple-500/30 flex items-center justify-center border border-white/10 text-white font-medium text-sm">
+                      {(profile.name || "?").charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <p className="font-medium text-white group-hover:text-indigo-300 transition-colors">{profile.name || 'Unknown'}</p>
-                      <p className="text-xs text-white/40">{profile.contact?.email || "—"}</p>
+                      <p className="font-medium text-white group-hover:text-indigo-300 transition-colors">
+                        {profile.name || "Unknown"}
+                      </p>
+                      <p className="text-xs text-white/40">
+                        {profile.contact?.email || "—"}
+                      </p>
                     </div>
                   </div>
                 </TableCell>
                 <TableCell>
                   <div>
                     <p className="text-white/80">{profile.talent_category}</p>
-                    <p className="text-xs text-white/40">{profile.talent_bucket}</p>
+                    <p className="text-xs text-white/40">
+                      {profile.talent_bucket}
+                    </p>
                   </div>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1.5 text-white/70">
                     <MapPin className="h-3.5 w-3.5 text-white/40" />
-                    <span>{profile.location?.city ? `${profile.location.city}, ` : ""}{profile.location_state}</span>
+                    <span>
+                      {profile.location?.city
+                        ? `${profile.location.city}, `
+                        : ""}
+                      {profile.location_state}
+                    </span>
                   </div>
                 </TableCell>
                 <TableCell>
@@ -202,14 +218,20 @@ export function TalentTable({
                 </TableCell>
                 <TableCell className="text-white/70 font-medium">
                   {profile.bill_rate ? (
-                    <span className="text-emerald-400">${profile.bill_rate}<span className="text-white/40 text-xs">/hr</span></span>
+                    <span className="text-emerald-400">
+                      ${profile.bill_rate}
+                      <span className="text-white/40 text-xs">/hr</span>
+                    </span>
                   ) : (
                     <span className="text-white/30">—</span>
                   )}
                 </TableCell>
                 <TableCell className="text-white/70">
                   {profile.years_of_experience ? (
-                    <span>{profile.years_of_experience} <span className="text-white/40">yrs</span></span>
+                    <span>
+                      {profile.years_of_experience}{" "}
+                      <span className="text-white/40">yrs</span>
+                    </span>
                   ) : (
                     <span className="text-white/30">—</span>
                   )}
@@ -219,7 +241,9 @@ export function TalentTable({
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center justify-between">
-                    <span className="text-white/50 text-sm">{new Date(profile.date_received).toLocaleDateString()}</span>
+                    <span className="text-white/50 text-sm">
+                      {new Date(profile.date_received).toLocaleDateString()}
+                    </span>
                     <ChevronRight className="h-4 w-4 text-white/20 group-hover:text-white/50 group-hover:translate-x-0.5 transition-all opacity-0 group-hover:opacity-100" />
                   </div>
                 </TableCell>
@@ -229,5 +253,5 @@ export function TalentTable({
         </TableBody>
       </Table>
     </div>
-  )
+  );
 }

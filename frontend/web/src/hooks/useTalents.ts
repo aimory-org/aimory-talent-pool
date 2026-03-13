@@ -54,6 +54,7 @@ export function useTalents(options: UseTalentsOptions = {}): UseTalentsResult {
     } finally {
       setIsLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, filtersKey]);
 
   // Refetch when filters change
@@ -69,6 +70,7 @@ export function useTalents(options: UseTalentsOptions = {}): UseTalentsResult {
       filtersRef.current = filters;
       fetchTalents();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtersKey, enabled, fetchTalents]);
 
   const refresh = useCallback(async () => {

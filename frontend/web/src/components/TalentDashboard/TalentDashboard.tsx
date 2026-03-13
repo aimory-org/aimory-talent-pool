@@ -1,33 +1,35 @@
 /**
  * TalentDashboard - Main component for viewing and managing talent profiles.
- * 
+ *
  * This component provides:
  * - Searchable, filterable list of talent profiles
  * - Statistics overview cards
  * - Sortable table with profile details
  * - Detail panel for viewing/editing individual profiles
  */
-import { useState, useMemo, useCallback } from "react"
-import { Users, Search, Filter } from "lucide-react"
-import { useTalents } from "@/hooks/useTalents"
-import { useLookups } from "@/hooks/useLookups"
-import type { TalentProfile } from "@/types/talent"
-import type { Filters, SortField, SortDirection } from "./types"
-import { DEFAULT_FILTERS } from "./types"
-import { StatsCards } from "./components/StatsCards"
-import { FiltersPanel } from "./components/FiltersPanel"
-import { TalentTable } from "./components/TalentTable"
-import { ProfileDetailPanel } from "./ProfileDetailPanel"
+import { useState, useMemo, useCallback } from "react";
+import { Users, Search, Filter } from "lucide-react";
+import { useTalents } from "@/hooks/useTalents";
+import { useLookups } from "@/hooks/useLookups";
+import type { TalentProfile } from "@/types/talent";
+import type { Filters, SortField, SortDirection } from "./types";
+import { DEFAULT_FILTERS } from "./types";
+import { StatsCards } from "./components/StatsCards";
+import { FiltersPanel } from "./components/FiltersPanel";
+import { TalentTable } from "./components/TalentTable";
+import { ProfileDetailPanel } from "./ProfileDetailPanel";
 
 export function TalentDashboard() {
   // Filter state
-  const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS)
-  
+  const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
+
   // UI state
-  const [sortField, setSortField] = useState<SortField>("date_received")
-  const [sortDirection, setSortDirection] = useState<SortDirection>("desc")
-  const [selectedProfile, setSelectedProfile] = useState<TalentProfile | null>(null)
-  const [showFilters, setShowFilters] = useState(true)
+  const [sortField, setSortField] = useState<SortField>("date_received");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [selectedProfile, setSelectedProfile] = useState<TalentProfile | null>(
+    null,
+  );
+  const [showFilters, setShowFilters] = useState(true);
 
   // Fetch data from API
   const {
@@ -44,123 +46,141 @@ export function TalentDashboard() {
     city: filters.city || undefined,
     search: filters.search || undefined,
     skills: filters.skills.length > 0 ? filters.skills : undefined,
-    certifications: filters.certifications.length > 0 ? filters.certifications : undefined,
+    certifications:
+      filters.certifications.length > 0 ? filters.certifications : undefined,
     minYears: filters.minYears ? parseInt(filters.minYears, 10) : undefined,
     maxYears: filters.maxYears ? parseInt(filters.maxYears, 10) : undefined,
-  })
+  });
 
   const {
     skills: lookupSkills,
     certifications: lookupCertifications,
     cities: lookupCities,
-  } = useLookups()
+  } = useLookups();
 
   // Filter change handler with city reset logic
-  const handleFilterChange = useCallback((key: keyof Filters, value: string) => {
-    if (key === "location_state") {
-      // Reset city when state changes, unless the city exists in the new state
-      const cityExistsInState = lookupCities.some(c => c.city === filters.city && c.state === value)
-      setFilters((prev) => ({ 
-        ...prev, 
-        [key]: value,
-        city: cityExistsInState ? prev.city : ""
-      }))
-    } else {
-      setFilters((prev) => ({ ...prev, [key]: value }))
-    }
-  }, [lookupCities, filters.city])
+  const handleFilterChange = useCallback(
+    (key: keyof Filters, value: string) => {
+      if (key === "location_state") {
+        // Reset city when state changes, unless the city exists in the new state
+        const cityExistsInState = lookupCities.some(
+          (c) => c.city === filters.city && c.state === value,
+        );
+        setFilters((prev) => ({
+          ...prev,
+          [key]: value,
+          city: cityExistsInState ? prev.city : "",
+        }));
+      } else {
+        setFilters((prev) => ({ ...prev, [key]: value }));
+      }
+    },
+    [lookupCities, filters.city],
+  );
 
   const handleSkillsChange = useCallback((skills: string[]) => {
-    setFilters(prev => ({ ...prev, skills }))
-  }, [])
+    setFilters((prev) => ({ ...prev, skills }));
+  }, []);
 
   const handleCertificationsChange = useCallback((certifications: string[]) => {
-    setFilters(prev => ({ ...prev, certifications }))
-  }, [])
+    setFilters((prev) => ({ ...prev, certifications }));
+  }, []);
 
   const clearFilters = useCallback(() => {
-    setFilters(DEFAULT_FILTERS)
-  }, [])
+    setFilters(DEFAULT_FILTERS);
+  }, []);
 
-  const handleSort = useCallback((field: SortField) => {
-    if (sortField === field) {
-      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"))
-    } else {
-      setSortField(field)
-      setSortDirection("asc")
-    }
-  }, [sortField])
+  const handleSort = useCallback(
+    (field: SortField) => {
+      if (sortField === field) {
+        setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+      } else {
+        setSortField(field);
+        setSortDirection("asc");
+      }
+    },
+    [sortField],
+  );
 
   // Client-side sorting (all filtering is now server-side)
   const sortedProfiles = useMemo(() => {
     // Apply sorting
     const result = [...talents].sort((a, b) => {
-      let aVal: string | number = ""
-      let bVal: string | number = ""
+      let aVal: string | number = "";
+      let bVal: string | number = "";
 
       switch (sortField) {
         case "name":
-          aVal = a.name_lower
-          bVal = b.name_lower
-          break
+          aVal = a.name_lower;
+          bVal = b.name_lower;
+          break;
         case "talent_category":
-          aVal = a.talent_category || ""
-          bVal = b.talent_category || ""
-          break
+          aVal = a.talent_category || "";
+          bVal = b.talent_category || "";
+          break;
         case "location_state":
-          aVal = a.location_state || ""
-          bVal = b.location_state || ""
-          break
+          aVal = a.location_state || "";
+          bVal = b.location_state || "";
+          break;
         case "clearance_level":
-          aVal = a.clearance_level || ""
-          bVal = b.clearance_level || ""
-          break
+          aVal = a.clearance_level || "";
+          bVal = b.clearance_level || "";
+          break;
         case "bill_rate":
-          aVal = a.bill_rate || 0
-          bVal = b.bill_rate || 0
-          break
+          aVal = a.bill_rate || 0;
+          bVal = b.bill_rate || 0;
+          break;
         case "years_of_experience":
-          aVal = a.years_of_experience || 0
-          bVal = b.years_of_experience || 0
-          break
+          aVal = a.years_of_experience || 0;
+          bVal = b.years_of_experience || 0;
+          break;
         case "status":
-          aVal = a.status
-          bVal = b.status
-          break
+          aVal = a.status;
+          bVal = b.status;
+          break;
         case "date_received":
-          aVal = a.date_received
-          bVal = b.date_received
-          break
+          aVal = a.date_received;
+          bVal = b.date_received;
+          break;
       }
 
-      if (aVal < bVal) return sortDirection === "asc" ? -1 : 1
-      if (aVal > bVal) return sortDirection === "asc" ? 1 : -1
-      return 0
-    })
+      if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
+      if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+      return 0;
+    });
 
-    return result
-  }, [talents, sortField, sortDirection])
+    return result;
+  }, [talents, sortField, sortDirection]);
 
   // Calculate active filter count
   const activeFilterCount = useMemo(() => {
-    return Object.entries(filters).filter(([key, v]) => 
-      key === "skills" || key === "certifications" ? (v as string[]).length > 0 : v !== ""
-    ).length
-  }, [filters])
+    return Object.entries(filters).filter(([key, v]) =>
+      key === "skills" || key === "certifications"
+        ? (v as string[]).length > 0
+        : v !== "",
+    ).length;
+  }, [filters]);
 
   // Calculate stats from filtered data
-  const stats = useMemo(() => ({
-    total: sortedProfiles.length,
-    potentialCount: sortedProfiles.filter((p) => p.status === "Potential Candidate").length,
-    activeCount: sortedProfiles.filter((p) => p.status === "Active Candidate").length,
-    placedCount: sortedProfiles.filter((p) => p.status === "Placed Candidate").length,
-  }), [sortedProfiles])
+  const stats = useMemo(
+    () => ({
+      total: sortedProfiles.length,
+      potentialCount: sortedProfiles.filter(
+        (p) => p.status === "Potential Candidate",
+      ).length,
+      activeCount: sortedProfiles.filter((p) => p.status === "Active Candidate")
+        .length,
+      placedCount: sortedProfiles.filter((p) => p.status === "Placed Candidate")
+        .length,
+    }),
+    [sortedProfiles],
+  );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800">
+    <div className="min-h-screen bg-linear-to-br from-slate-900 via-slate-900 to-slate-800">
       {/* Animated gradient accent bar */}
-      <div className="h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 animate-gradient-x" />
-      
+      <div className="h-1 bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500 animate-gradient-x" />
+
       {/* Header */}
       <div className="border-b border-white/10 bg-slate-900/80 backdrop-blur-xl sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
@@ -168,17 +188,21 @@ export function TalentDashboard() {
             {/* Title Section */}
             <div className="flex items-center gap-4">
               <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl blur-lg opacity-50" />
-                <div className="relative p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg">
+                <div className="absolute inset-0 bg-linear-to-br from-indigo-500 to-purple-600 rounded-xl blur-lg opacity-50" />
+                <div className="relative p-3 bg-linear-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg">
                   <Users className="h-6 w-6 text-white" />
                 </div>
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-white tracking-tight">Talent Pool</h1>
-                <p className="text-sm text-white/50">Discover and manage your candidate pipeline</p>
+                <h1 className="text-2xl font-bold text-white tracking-tight">
+                  Talent Pool
+                </h1>
+                <p className="text-sm text-white/50">
+                  Discover and manage your candidate pipeline
+                </p>
               </div>
             </div>
-            
+
             {/* Stats Cards */}
             <StatsCards stats={stats} />
           </div>
@@ -189,7 +213,7 @@ export function TalentDashboard() {
         {/* Search & Filter Toggle */}
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
           <div className="relative flex-1 group">
-            <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 rounded-xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-300" />
+            <div className="absolute inset-0 bg-linear-to-r from-indigo-500/20 to-purple-500/20 rounded-xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-300" />
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40 group-focus-within:text-indigo-400 transition-colors" />
               <input
@@ -205,14 +229,14 @@ export function TalentDashboard() {
             onClick={() => setShowFilters(!showFilters)}
             className={`flex items-center gap-2 px-5 py-3 rounded-xl border transition-all duration-300 font-medium ${
               showFilters
-                ? "bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border-indigo-500/40 text-indigo-300 shadow-lg shadow-indigo-500/10"
+                ? "bg-linear-to-r from-indigo-500/20 to-purple-500/20 border-indigo-500/40 text-indigo-300 shadow-lg shadow-indigo-500/10"
                 : "bg-white/5 border-white/10 text-white/60 hover:text-white hover:border-white/20 hover:bg-white/10"
             }`}
           >
             <Filter className="h-4 w-4" />
             <span>Filters</span>
             {activeFilterCount > 0 && (
-              <span className="flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-xs font-bold shadow-lg shadow-indigo-500/25">
+              <span className="flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-linear-to-r from-indigo-500 to-purple-500 text-white text-xs font-bold shadow-lg shadow-indigo-500/25">
                 {activeFilterCount}
               </span>
             )}
@@ -245,11 +269,16 @@ export function TalentDashboard() {
             ) : (
               <>
                 <p className="text-sm text-white/60">
-                  Showing <span className="text-white font-semibold">{sortedProfiles.length}</span> {sortedProfiles.length === 1 ? 'candidate' : 'candidates'}
+                  Showing{" "}
+                  <span className="text-white font-semibold">
+                    {sortedProfiles.length}
+                  </span>{" "}
+                  {sortedProfiles.length === 1 ? "candidate" : "candidates"}
                 </p>
                 {activeFilterCount > 0 && (
                   <span className="text-xs bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/30">
-                    {activeFilterCount} {activeFilterCount === 1 ? 'filter' : 'filters'} active
+                    {activeFilterCount}{" "}
+                    {activeFilterCount === 1 ? "filter" : "filters"} active
                   </span>
                 )}
               </>
@@ -259,7 +288,12 @@ export function TalentDashboard() {
             <p className="text-sm text-red-400 flex items-center gap-2">
               <span className="flex h-2 w-2 rounded-full bg-red-500" />
               Error: {talentsError.message}
-              <button onClick={refreshTalents} className="underline hover:text-red-300">Retry</button>
+              <button
+                onClick={refreshTalents}
+                className="underline hover:text-red-300"
+              >
+                Retry
+              </button>
             </p>
           )}
         </div>
@@ -292,5 +326,5 @@ export function TalentDashboard() {
         </>
       )}
     </div>
-  )
+  );
 }
