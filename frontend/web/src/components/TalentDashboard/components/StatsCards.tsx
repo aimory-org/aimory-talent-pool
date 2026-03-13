@@ -21,7 +21,7 @@ export function StatsCards({ stats }: StatsCardsProps) {
         <div className="absolute inset-0 bg-linear-to-br from-slate-500/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
         <div className="relative">
           <div className="flex items-center gap-2 mb-1">
-            <Users className="h-4 w-4 text-slate-400" />
+            <Users className="h-4 w-4 text-slate-500 dark:text-slate-400" />
             <span className="text-xs font-medium text-foreground/40 uppercase tracking-wider">
               Total
             </span>
@@ -36,12 +36,12 @@ export function StatsCards({ stats }: StatsCardsProps) {
         <div className="absolute inset-0 bg-linear-to-br from-emerald-500/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
         <div className="relative">
           <div className="flex items-center gap-2 mb-1">
-            <Sparkles className="h-4 w-4 text-emerald-400" />
-            <span className="text-xs font-medium text-emerald-400/70 uppercase tracking-wider">
+            <Sparkles className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+            <span className="text-xs font-medium text-emerald-600/70 dark:text-emerald-400/70 uppercase tracking-wider">
               Potential
             </span>
           </div>
-          <p className="text-3xl font-bold text-emerald-400 tabular-nums">
+          <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
             {stats.potentialCount}
           </p>
         </div>
@@ -51,12 +51,12 @@ export function StatsCards({ stats }: StatsCardsProps) {
         <div className="absolute inset-0 bg-linear-to-br from-blue-500/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
         <div className="relative">
           <div className="flex items-center gap-2 mb-1">
-            <TrendingUp className="h-4 w-4 text-blue-400" />
-            <span className="text-xs font-medium text-blue-400/70 uppercase tracking-wider">
+            <TrendingUp className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <span className="text-xs font-medium text-blue-600/70 dark:text-blue-400/70 uppercase tracking-wider">
               Active
             </span>
           </div>
-          <p className="text-3xl font-bold text-blue-400 tabular-nums">
+          <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 tabular-nums">
             {stats.activeCount}
           </p>
         </div>
@@ -66,12 +66,12 @@ export function StatsCards({ stats }: StatsCardsProps) {
         <div className="absolute inset-0 bg-linear-to-br from-green-500/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
         <div className="relative">
           <div className="flex items-center gap-2 mb-1">
-            <UserCheck className="h-4 w-4 text-green-400" />
-            <span className="text-xs font-medium text-green-400/70 uppercase tracking-wider">
+            <UserCheck className="h-4 w-4 text-green-600 dark:text-green-400" />
+            <span className="text-xs font-medium text-green-600/70 dark:text-green-400/70 uppercase tracking-wider">
               Placed
             </span>
           </div>
-          <p className="text-3xl font-bold text-green-400 tabular-nums">
+          <p className="text-3xl font-bold text-green-600 dark:text-green-400 tabular-nums">
             {stats.placedCount}
           </p>
         </div>

@@ -163,7 +163,7 @@ export function FiltersPanel({
               <Label className="text-foreground/70">
                 Skills{" "}
                 {filters.skills.length > 0 && (
-                  <span className="text-indigo-400">
+                  <span className="text-indigo-600 dark:text-indigo-400">
                     ({filters.skills.length})
                   </span>
                 )}
@@ -186,7 +186,7 @@ export function FiltersPanel({
                   {filters.skills.map((skill) => (
                     <span
                       key={skill}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs border border-indigo-500/30 hover:bg-indigo-500/30 transition-colors"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 text-xs border border-indigo-500/30 hover:bg-indigo-500/30 transition-colors"
                     >
                       {skill}
                       <button
@@ -208,7 +208,7 @@ export function FiltersPanel({
               <Label className="text-foreground/70">
                 Certifications{" "}
                 {filters.certifications.length > 0 && (
-                  <span className="text-amber-400">
+                  <span className="text-amber-600 dark:text-amber-400">
                     ({filters.certifications.length})
                   </span>
                 )}
@@ -231,7 +231,7 @@ export function FiltersPanel({
                   {filters.certifications.map((cert) => (
                     <span
                       key={cert}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs border border-amber-500/30 hover:bg-amber-500/30 transition-colors"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 text-xs border border-amber-500/30 hover:bg-amber-500/30 transition-colors"
                     >
                       {cert}
                       <button

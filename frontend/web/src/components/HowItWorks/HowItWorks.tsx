@@ -407,7 +407,7 @@ export function HowItWorks() {
           </p>
           <Link
             to="/"
-            className="inline-flex items-center gap-2 mt-4 text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 transition-colors"
+            className="inline-flex items-center gap-2 mt-4 text-indigo-600 dark:text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Dashboard
@@ -432,7 +432,7 @@ function Section({
   return (
     <section className="mb-12">
       <div className="flex items-center gap-3 mb-4">
-        <div className="p-2 bg-indigo-500/20 rounded-lg text-indigo-600 dark:text-indigo-400">
+        <div className="p-2 bg-indigo-500/20 rounded-lg text-indigo-600 dark:text-indigo-600 dark:text-indigo-400">
           {icon}
         </div>
         <h2 className="text-2xl font-semibold text-foreground">{title}</h2>
@@ -486,7 +486,7 @@ function TimelineStep({
 }) {
   return (
     <div className="flex gap-4 relative">
-      <div className="w-8 h-8 rounded-full bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-semibold text-sm shrink-0">
+      <div className="w-8 h-8 rounded-full bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-600 dark:text-indigo-600 dark:text-indigo-400 font-semibold text-sm shrink-0">
         {number}
       </div>
       <div className="pb-4">
@@ -513,7 +513,7 @@ function StatusCard({
     purple:
       "bg-purple-500/20 border-purple-500/30 text-purple-600 dark:text-purple-400",
     yellow:
-      "bg-amber-500/20 border-amber-500/30 text-amber-600 dark:text-amber-400",
+      "bg-amber-500/20 border-amber-500/30 text-amber-600 dark:text-amber-600 dark:text-amber-400",
     red: "bg-red-500/20 border-red-500/30 text-red-600 dark:text-red-400",
   };
 

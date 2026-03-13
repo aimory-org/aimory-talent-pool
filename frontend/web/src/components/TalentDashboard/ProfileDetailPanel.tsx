@@ -426,7 +426,7 @@ export function ProfileDetailPanel({
           {!isEditMode && (
             <button
               onClick={() => setIsEditMode(true)}
-              className="p-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors text-foreground/60 hover:text-indigo-400"
+              className="p-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors text-foreground/60 hover:text-indigo-600 dark:text-indigo-400"
               title="Edit profile"
             >
               <Edit3 className="h-5 w-5" />
@@ -448,7 +448,7 @@ export function ProfileDetailPanel({
             <button
               onClick={handleSave}
               disabled={isSaving}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 text-green-400 hover:from-green-500/30 hover:to-emerald-500/30 transition-all disabled:opacity-50 font-medium"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 text-green-600 dark:text-green-400 hover:from-green-500/30 hover:to-emerald-500/30 transition-all disabled:opacity-50 font-medium"
             >
               <Save className="h-4 w-4" />
               {isSaving ? "Saving..." : "Save Changes"}
@@ -537,7 +537,7 @@ export function ProfileDetailPanel({
             <button
               onClick={handleViewResume}
               disabled={resumeLoading}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 text-indigo-300 hover:from-indigo-500/30 hover:to-purple-500/30 transition-all disabled:opacity-50 font-medium"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 text-indigo-700 dark:text-indigo-300 hover:from-indigo-500/30 hover:to-purple-500/30 transition-all disabled:opacity-50 font-medium"
             >
               <FileText className="h-4 w-4" />
               {resumeLoading ? "Loading Resume..." : "View Original Resume"}
@@ -658,7 +658,7 @@ export function ProfileDetailPanel({
                   <Mail className="h-4 w-4 text-foreground/30" />
                   <a
                     href={`mailto:${profile.contact.email}`}
-                    className="text-foreground/80 hover:text-indigo-400 transition-colors flex-1 truncate"
+                    className="text-foreground/80 hover:text-indigo-600 dark:text-indigo-400 transition-colors flex-1 truncate"
                   >
                     {profile.contact.email}
                   </a>
@@ -677,7 +677,7 @@ export function ProfileDetailPanel({
                     href={`https://${profile.contact.linkedin}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-foreground/80 hover:text-indigo-400 transition-colors flex-1 truncate"
+                    className="text-foreground/80 hover:text-indigo-600 dark:text-indigo-400 transition-colors flex-1 truncate"
                   >
                     {profile.contact.linkedin}
                   </a>
@@ -690,7 +690,7 @@ export function ProfileDetailPanel({
                     href={`https://${profile.contact.github}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-foreground/80 hover:text-indigo-400 transition-colors flex-1 truncate"
+                    className="text-foreground/80 hover:text-indigo-600 dark:text-indigo-400 transition-colors flex-1 truncate"
                   >
                     {profile.contact.github}
                   </a>
@@ -863,7 +863,7 @@ export function ProfileDetailPanel({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="p-1.5 bg-amber-500/20 rounded-lg">
-                <Building className="h-3.5 w-3.5 text-amber-400" />
+                <Building className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
               </div>
               <h4 className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
                 Work History
@@ -872,7 +872,7 @@ export function ProfileDetailPanel({
             {isEditMode && (
               <button
                 onClick={addCompany}
-                className="p-1.5 rounded-lg bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 transition-colors"
+                className="p-1.5 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 hover:bg-amber-500/30 transition-colors"
               >
                 <Plus className="h-3.5 w-3.5" />
               </button>
@@ -891,7 +891,7 @@ export function ProfileDetailPanel({
                   />
                   <button
                     onClick={() => removeCompany(i)}
-                    className="p-2 rounded-lg text-red-400/60 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                    className="p-2 rounded-lg text-red-600 dark:text-red-400/60 hover:text-red-600 dark:text-red-400 hover:bg-red-500/10 transition-colors"
                   >
                     <Minus className="h-4 w-4" />
                   </button>
@@ -920,7 +920,7 @@ export function ProfileDetailPanel({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="p-1.5 bg-indigo-500/20 rounded-lg">
-                <Award className="h-3.5 w-3.5 text-indigo-400" />
+                <Award className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
               </div>
               <h4 className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
                 Skills & Expertise
@@ -929,7 +929,7 @@ export function ProfileDetailPanel({
             {isEditMode && (
               <button
                 onClick={addSkill}
-                className="p-1.5 rounded-lg bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30 transition-colors"
+                className="p-1.5 rounded-lg bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/30 transition-colors"
               >
                 <Plus className="h-3.5 w-3.5" />
               </button>
@@ -948,7 +948,7 @@ export function ProfileDetailPanel({
                   />
                   <button
                     onClick={() => removeSkill(i)}
-                    className="p-2 rounded-lg text-red-400/60 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                    className="p-2 rounded-lg text-red-600 dark:text-red-400/60 hover:text-red-600 dark:text-red-400 hover:bg-red-500/10 transition-colors"
                   >
                     <Minus className="h-4 w-4" />
                   </button>
@@ -964,7 +964,7 @@ export function ProfileDetailPanel({
                 <Badge
                   key={i}
                   variant="outline"
-                  className="bg-indigo-500/10 text-indigo-300 border-indigo-500/30 hover:bg-indigo-500/20 transition-colors"
+                  className="bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/30 hover:bg-indigo-500/20 transition-colors"
                 >
                   {skill.name}
                 </Badge>
@@ -981,7 +981,7 @@ export function ProfileDetailPanel({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="p-1.5 bg-amber-500/20 rounded-lg">
-                <Award className="h-3.5 w-3.5 text-amber-400" />
+                <Award className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
               </div>
               <h4 className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
                 Certifications
@@ -990,7 +990,7 @@ export function ProfileDetailPanel({
             {isEditMode && (
               <button
                 onClick={addCertification}
-                className="p-1.5 rounded-lg bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 transition-colors"
+                className="p-1.5 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 hover:bg-amber-500/30 transition-colors"
               >
                 <Plus className="h-3.5 w-3.5" />
               </button>
@@ -1009,7 +1009,7 @@ export function ProfileDetailPanel({
                   />
                   <button
                     onClick={() => removeCertification(i)}
-                    className="p-2 rounded-lg text-red-400/60 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                    className="p-2 rounded-lg text-red-600 dark:text-red-400/60 hover:text-red-600 dark:text-red-400 hover:bg-red-500/10 transition-colors"
                   >
                     <Minus className="h-4 w-4" />
                   </button>
@@ -1025,7 +1025,7 @@ export function ProfileDetailPanel({
                 <Badge
                   key={i}
                   variant="outline"
-                  className="bg-amber-500/10 text-amber-300 border-amber-500/30 hover:bg-amber-500/20 transition-colors"
+                  className="bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30 hover:bg-amber-500/20 transition-colors"
                 >
                   <Award className="h-3 w-3 mr-1" />
                   {cert}
@@ -1077,14 +1077,14 @@ export function ProfileDetailPanel({
             {!showDeleteConfirm ? (
               <button
                 onClick={() => setShowDeleteConfirm(true)}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400/80 hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-400 transition-all"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400/80 hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-600 dark:text-red-400 transition-all"
               >
                 <Trash2 className="h-4 w-4" />
                 Delete Profile
               </button>
             ) : (
               <div className="space-y-3 p-4 bg-red-500/10 rounded-xl border border-red-500/20">
-                <div className="flex items-center gap-2 text-red-400">
+                <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
                   <Trash2 className="h-4 w-4" />
                   <p className="text-sm font-medium">Delete this profile?</p>
                 </div>
