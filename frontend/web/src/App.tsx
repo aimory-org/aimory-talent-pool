@@ -5,9 +5,12 @@ import {
   fetchAuthSession,
 } from "aws-amplify/auth";
 import { Hub } from "aws-amplify/utils";
+import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
+import { HelpCircle } from "lucide-react";
 import "./App.css";
 import { allowedEmailSuffixes, microsoftProvider } from "@/lib/auth";
 import { TalentDashboard } from "./components/TalentDashboard";
+import { HowItWorks } from "./components/HowItWorks";
 
 interface UserInfo {
   username: string;
@@ -104,78 +107,6 @@ const useAuth = () => {
   return { user, isLoading };
 };
 
-const AccessControlledPanel = ({ user }: { user: UserInfo }) => {
-  const accountAllowed =
-    allowedEmailSuffixes.length === 0 ||
-    allowedEmailSuffixes.some((suffix: string) =>
-      user.email.toLowerCase().endsWith(suffix),
-    );
-
-  if (!accountAllowed) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
-        {/* Background effects */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/3 -left-20 w-72 h-72 bg-red-500/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-1/3 -right-20 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl" />
-        </div>
-
-        <div className="relative max-w-md w-full">
-          <div className="absolute -inset-0.5 bg-linear-to-r from-red-500/50 to-pink-500/50 rounded-2xl opacity-30 blur" />
-          <div className="relative bg-slate-800/80 backdrop-blur-xl rounded-2xl border border-red-500/20 p-8 shadow-2xl">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-red-500/20 rounded-lg">
-                <svg
-                  className="w-5 h-5 text-red-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                  />
-                </svg>
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-red-400/70 uppercase tracking-wider">
-                  Access Restricted
-                </p>
-                <h3 className="text-lg font-semibold text-white">
-                  Company Account Required
-                </h3>
-              </div>
-            </div>
-
-            <p className="text-white/60 text-sm leading-relaxed mb-6">
-              You signed in as{" "}
-              <span className="text-white font-medium">{user.email}</span>. Only
-              accounts ending with{" "}
-              <span className="text-white font-medium">
-                {allowedEmailSuffixes
-                  .map((suffix: string) => suffix.replace(/^@?/, "@"))
-                  .join(" or ")}
-              </span>{" "}
-              have access to this environment.
-            </p>
-
-            <div className="flex flex-col gap-3">
-              <SignOutButton />
-              <p className="text-center text-white/30 text-xs">
-                Sign out and try again with your company account
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return <InsightsGrid user={user} />;
-};
-
 const InsightsGrid = ({ user }: { user: UserInfo }) => {
   const safeName = user.name || user.email;
 
@@ -193,7 +124,16 @@ const InsightsGrid = ({ user }: { user: UserInfo }) => {
               <p className="text-xs text-white/40">{user.email}</p>
             </div>
           </div>
-          <SignOutButton />
+          <div className="flex items-center gap-3">
+            <Link
+              to="/how-it-works"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 hover:text-white hover:border-white/20 transition-all duration-200 text-sm"
+            >
+              <HelpCircle className="w-4 h-4" />
+              <span className="hidden sm:inline">How It Works</span>
+            </Link>
+            <SignOutButton />
+          </div>
         </div>
       </div>
 
@@ -203,7 +143,17 @@ const InsightsGrid = ({ user }: { user: UserInfo }) => {
   );
 };
 
-function App() {
+// Authenticated routes wrapper
+const AuthenticatedRoutes = ({ user }: { user: UserInfo }) => {
+  return (
+    <Routes>
+      <Route path="/how-it-works" element={<HowItWorks />} />
+      <Route path="*" element={<InsightsGrid user={user} />} />
+    </Routes>
+  );
+};
+
+function AppContent() {
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
@@ -230,12 +180,90 @@ function App() {
     );
   }
 
-  // Signed in - show full dashboard
+  // Signed in - check access and show routes
   if (user) {
-    return <AccessControlledPanel user={user} />;
+    const accountAllowed =
+      allowedEmailSuffixes.length === 0 ||
+      allowedEmailSuffixes.some((suffix: string) =>
+        user.email.toLowerCase().endsWith(suffix),
+      );
+
+    if (!accountAllowed) {
+      return <AccessDeniedPanel user={user} />;
+    }
+
+    return <AuthenticatedRoutes user={user} />;
   }
 
   // Not signed in - show landing
+  return <LoginPage />;
+}
+
+// Access denied panel (extracted for clarity)
+const AccessDeniedPanel = ({ user }: { user: UserInfo }) => {
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background effects */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/3 -left-20 w-72 h-72 bg-red-500/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/3 -right-20 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl" />
+      </div>
+
+      <div className="relative max-w-md w-full">
+        <div className="absolute -inset-0.5 bg-linear-to-r from-red-500/50 to-pink-500/50 rounded-2xl opacity-30 blur" />
+        <div className="relative bg-slate-800/80 backdrop-blur-xl rounded-2xl border border-red-500/20 p-8 shadow-2xl">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-red-500/20 rounded-lg">
+              <svg
+                className="w-5 h-5 text-red-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-red-400/70 uppercase tracking-wider">
+                Access Restricted
+              </p>
+              <h3 className="text-lg font-semibold text-white">
+                Company Account Required
+              </h3>
+            </div>
+          </div>
+
+          <p className="text-white/60 text-sm leading-relaxed mb-6">
+            You signed in as{" "}
+            <span className="text-white font-medium">{user.email}</span>. Only
+            accounts ending with{" "}
+            <span className="text-white font-medium">
+              {allowedEmailSuffixes
+                .map((suffix: string) => suffix.replace(/^@?/, "@"))
+                .join(" or ")}
+            </span>{" "}
+            have access to this environment.
+          </p>
+
+          <div className="flex flex-col gap-3">
+            <SignOutButton />
+            <p className="text-center text-white/30 text-xs">
+              Sign out and try again with your company account
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Login page (extracted for clarity)
+const LoginPage = () => {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
       {/* Animated background elements */}
@@ -340,6 +368,14 @@ function App() {
         </div>
       </div>
     </div>
+  );
+};
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
+    </BrowserRouter>
   );
 }
 
