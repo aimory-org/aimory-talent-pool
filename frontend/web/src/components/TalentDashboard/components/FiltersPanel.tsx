@@ -42,7 +42,7 @@ export function FiltersPanel({
   lookupCities,
 }: FiltersPanelProps) {
   return (
-    <div className="relative bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-black/10 dark:border-white/10 p-6 mb-6 animate-in slide-in-from-top-2 duration-300 shadow-xl shadow-black/20">
+    <div className="relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl border border-black/10 dark:border-white/15 p-6 mb-6 shadow-xl shadow-black/5">
       {/* Subtle gradient overlay */}
       <div className="absolute inset-0 bg-linear-to-br from-indigo-500/5 via-transparent to-purple-500/5 rounded-2xl pointer-events-none" />
 
@@ -64,7 +64,7 @@ export function FiltersPanel({
           {activeFilterCount > 0 && (
             <button
               onClick={onClearFilters}
-              className="text-sm text-foreground/50 hover:text-foreground transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-black/10 dark:hover:bg-white/10"
+              className="text-sm text-foreground/50 hover:text-foreground transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-accent"
             >
               <X className="h-4 w-4" />
               Clear all ({activeFilterCount})
@@ -199,7 +199,6 @@ export function FiltersPanel({
                       >
                         <X className="h-3 w-3" />
                       </button>
-                      </button>
                     </span>
                   ))}
                 </div>
@@ -258,7 +257,7 @@ export function FiltersPanel({
                 value={filters.minYears}
                 onChange={(e) => onFilterChange("minYears", e.target.value)}
                 placeholder="0"
-                className="flex h-9 w-full rounded-lg border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 px-3 py-2 text-sm text-foreground/90 placeholder-foreground/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 hover:border-black/20 dark:hover:border-white/20 hover:bg-black/8 dark:hover:bg-white/8 transition-all"
+                className="flex h-9 w-full rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground/90 placeholder-foreground/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 hover:border-border hover:bg-secondary transition-all"
               />
             </div>
             <div className="space-y-2">
@@ -269,7 +268,7 @@ export function FiltersPanel({
                 value={filters.maxYears}
                 onChange={(e) => onFilterChange("maxYears", e.target.value)}
                 placeholder="Any"
-                className="flex h-9 w-full rounded-lg border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 px-3 py-2 text-sm text-foreground/90 placeholder-foreground/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 hover:border-black/20 dark:hover:border-white/20 hover:bg-black/8 dark:hover:bg-white/8 transition-all"
+                className="flex h-9 w-full rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground/90 placeholder-foreground/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 hover:border-border hover:bg-secondary transition-all"
               />
             </div>
           </div>

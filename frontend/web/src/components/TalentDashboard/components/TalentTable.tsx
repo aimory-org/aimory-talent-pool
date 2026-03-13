@@ -38,7 +38,7 @@ export function TalentTable({
   onClearFilters,
 }: TalentTableProps) {
   return (
-    <div className="relative bg-white/50 dark:bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-black/10 dark:border-white/10 overflow-hidden shadow-xl shadow-black/20">
+    <div className="relative bg-white/50 dark:bg-slate-700/50 backdrop-blur-xl rounded-2xl border border-black/10 dark:border-white/10 overflow-hidden shadow-xl shadow-black/20">
       {/* Table gradient accent */}
       <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-indigo-500/50 to-transparent" />
       <Table>
@@ -141,10 +141,10 @@ export function TalentTable({
                   ) : (
                     <>
                       <div className="relative">
-                        <div className="p-4 bg-gray-200/50 dark:bg-slate-700/50 rounded-2xl">
+                        <div className="p-4 bg-gray-200/50 dark:bg-slate-800/50 rounded-2xl">
                           <Users className="h-10 w-10 text-foreground/20" />
                         </div>
-                        <div className="absolute -top-1 -right-1 p-1.5 bg-gray-200 dark:bg-slate-700 rounded-full border border-black/10 dark:border-white/10">
+                        <div className="absolute -top-1 -right-1 p-1.5 bg-gray-200 dark:bg-slate-800 rounded-full border border-black/10 dark:border-white/10">
                           <Search className="h-4 w-4 text-foreground/30" />
                         </div>
                       </div>

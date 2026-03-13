@@ -16,7 +16,7 @@ export function HowItWorks() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-black/10 dark:border-white/10 px-6 py-4 sticky top-0 z-10">
+      <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border-b border-black/10 dark:border-white/10 px-6 py-4 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto flex items-center gap-4">
           <Link
             to="/"
@@ -333,7 +333,7 @@ export function HowItWorks() {
             actually running behind the scenes:
           </p>
 
-          <div className="bg-black/5 dark:bg-slate-800/50 rounded-xl p-6 mt-4 font-mono text-sm">
+          <div className="bg-black/5 dark:bg-slate-700/50 rounded-xl p-6 mt-4 font-mono text-sm">
             <pre className="text-foreground/70 whitespace-pre-wrap">
               {`Resume Upload (OneDrive/Power Automate)
          ↓
@@ -533,7 +533,7 @@ function FAQ({
   children: React.ReactNode;
 }) {
   return (
-    <div className="mt-4 p-4 bg-black/5 dark:bg-slate-800/50 rounded-lg">
+    <div className="mt-4 p-4 bg-black/5 dark:bg-slate-700/50 rounded-lg">
       <h4 className="font-medium text-foreground mb-2">{question}</h4>
       <p className="text-foreground/60">{children}</p>
     </div>

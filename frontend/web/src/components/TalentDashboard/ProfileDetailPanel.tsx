@@ -371,8 +371,8 @@ export function ProfileDetailPanel({
   // Resume viewer
   if (showResume && resumeUrl) {
     return (
-      <div className="fixed inset-y-0 right-0 w-full max-w-4xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-l border-black/10 dark:border-white/10 shadow-2xl z-50 flex flex-col">
-        <div className="flex-none bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-b border-black/10 dark:border-white/10 p-4 flex items-center justify-between">
+      <div className="fixed inset-y-0 right-0 w-full max-w-4xl bg-white/95 dark:bg-slate-800/95 backdrop-blur-lg border-l border-black/10 dark:border-white/10 shadow-2xl z-50 flex flex-col">
+        <div className="flex-none bg-white/95 dark:bg-slate-800/95 backdrop-blur-lg border-b border-black/10 dark:border-white/10 p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setShowResume(false)}
@@ -403,12 +403,12 @@ export function ProfileDetailPanel({
   }
 
   return (
-    <div className="fixed inset-y-0 right-0 w-full max-w-md bg-white/98 dark:bg-slate-900/98 backdrop-blur-2xl border-l border-black/10 dark:border-white/10 shadow-2xl z-50 overflow-y-auto animate-in slide-in-from-right duration-300">
+    <div className="fixed inset-y-0 right-0 w-full max-w-md bg-white/98 dark:bg-slate-800/98 backdrop-blur-2xl border-l border-black/10 dark:border-white/10 shadow-2xl z-50 overflow-y-auto animate-in slide-in-from-right duration-300">
       {/* Gradient accent */}
       <div className="absolute inset-y-0 left-0 w-px bg-gradient-to-b from-indigo-500/50 via-purple-500/50 to-transparent" />
 
       {/* Header */}
-      <div className="sticky top-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-black/10 dark:border-white/10 p-4 flex items-center justify-between z-10">
+      <div className="sticky top-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-b border-black/10 dark:border-white/10 p-4 flex items-center justify-between z-10">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-500/30 to-purple-500/30 flex items-center justify-center border border-black/10 dark:border-white/10 text-foreground font-semibold">
             {(profile.name || "?").charAt(0).toUpperCase()}
@@ -468,20 +468,20 @@ export function ProfileDetailPanel({
             <>
               {/* Name */}
               <div className="space-y-2">
-                <Label className="text-white/60">Name</Label>
+                <Label className="text-foreground/60">Name</Label>
                 <Input
                   value={editData.name}
                   onChange={(e) =>
                     setEditData((prev) => ({ ...prev, name: e.target.value }))
                   }
-                  className="bg-white/5 border-white/10 text-white"
+                  className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
                   placeholder="Full name"
                 />
               </div>
 
               {/* Status */}
               <div className="space-y-2">
-                <Label className="text-white/60">Status</Label>
+                <Label className="text-foreground/60">Status</Label>
                 <Select
                   value={editData.status}
                   onChange={(e) =>
@@ -490,14 +490,14 @@ export function ProfileDetailPanel({
                       status: e.target.value as CandidateStatus,
                     }))
                   }
-                  className="bg-white/5 border-white/10 text-white"
+                  className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
                   options={CANDIDATE_STATUSES}
                 />
               </div>
 
               {/* Summary */}
               <div className="space-y-2">
-                <Label className="text-white/60">Summary</Label>
+                <Label className="text-foreground/60">Summary</Label>
                 <textarea
                   value={editData.summary}
                   onChange={(e) =>
@@ -507,7 +507,7 @@ export function ProfileDetailPanel({
                     }))
                   }
                   rows={3}
-                  className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all resize-none"
+                  className="w-full px-3 py-2 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground placeholder-foreground/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all resize-none"
                   placeholder="Brief professional summary"
                 />
               </div>
@@ -516,15 +516,15 @@ export function ProfileDetailPanel({
             <>
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
-                  <h3 className="text-xl font-bold text-white mb-1">
+                  <h3 className="text-xl font-bold text-foreground mb-1">
                     {profile.name || "Unknown"}
                   </h3>
                   <StatusBadge status={profile.status} />
                 </div>
               </div>
               {profile.summary && (
-                <div className="bg-white/5 rounded-xl p-4 border border-white/5">
-                  <p className="text-white/70 text-sm leading-relaxed italic">
+                <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4 border border-black/5 dark:border-white/5">
+                  <p className="text-foreground/70 text-sm leading-relaxed italic">
                     &ldquo;{profile.summary}&rdquo;
                   </p>
                 </div>
@@ -552,7 +552,7 @@ export function ProfileDetailPanel({
             <div className="p-1.5 bg-blue-500/20 rounded-lg">
               <Mail className="h-3.5 w-3.5 text-blue-400" />
             </div>
-            <h4 className="text-xs font-semibold text-white/60 uppercase tracking-wider">
+            <h4 className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
               Contact Information
             </h4>
           </div>
@@ -560,7 +560,7 @@ export function ProfileDetailPanel({
           {isEditMode ? (
             <div className="space-y-3">
               <div className="space-y-2">
-                <Label className="text-white/60 text-xs">Email</Label>
+                <Label className="text-foreground/60 text-xs">Email</Label>
                 <Input
                   type="email"
                   value={editData.contact.email}
@@ -570,12 +570,12 @@ export function ProfileDetailPanel({
                       contact: { ...prev.contact, email: e.target.value },
                     }))
                   }
-                  className="bg-white/5 border-white/10 text-white"
+                  className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
                   placeholder="email@example.com"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-white/60 text-xs">Phone</Label>
+                <Label className="text-foreground/60 text-xs">Phone</Label>
                 <Input
                   type="tel"
                   value={editData.contact.phone}
@@ -585,12 +585,12 @@ export function ProfileDetailPanel({
                       contact: { ...prev.contact, phone: e.target.value },
                     }))
                   }
-                  className="bg-white/5 border-white/10 text-white"
+                  className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
                   placeholder="(555) 123-4567"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-white/60 text-xs">LinkedIn</Label>
+                <Label className="text-foreground/60 text-xs">LinkedIn</Label>
                 <Input
                   value={editData.contact.linkedin}
                   onChange={(e) =>
@@ -599,12 +599,12 @@ export function ProfileDetailPanel({
                       contact: { ...prev.contact, linkedin: e.target.value },
                     }))
                   }
-                  className="bg-white/5 border-white/10 text-white"
+                  className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
                   placeholder="linkedin.com/in/username"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-white/60 text-xs">GitHub</Label>
+                <Label className="text-foreground/60 text-xs">GitHub</Label>
                 <Input
                   value={editData.contact.github}
                   onChange={(e) =>
@@ -613,13 +613,13 @@ export function ProfileDetailPanel({
                       contact: { ...prev.contact, github: e.target.value },
                     }))
                   }
-                  className="bg-white/5 border-white/10 text-white"
+                  className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
                   placeholder="github.com/username"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label className="text-white/60 text-xs">City</Label>
+                  <Label className="text-foreground/60 text-xs">City</Label>
                   <Input
                     value={editData.location.city}
                     onChange={(e) =>
@@ -628,12 +628,12 @@ export function ProfileDetailPanel({
                         location: { ...prev.location, city: e.target.value },
                       }))
                     }
-                    className="bg-white/5 border-white/10 text-white"
+                    className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
                     placeholder="City"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-white/60 text-xs">State</Label>
+                  <Label className="text-foreground/60 text-xs">State</Label>
                   <Select
                     value={editData.location.state}
                     onChange={(e) =>
@@ -642,7 +642,7 @@ export function ProfileDetailPanel({
                         location: { ...prev.location, state: e.target.value },
                       }))
                     }
-                    className="bg-white/5 border-white/10 text-white"
+                    className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
                     options={[
                       { value: "", label: "Select state" },
                       ...US_STATES,
@@ -652,13 +652,13 @@ export function ProfileDetailPanel({
               </div>
             </div>
           ) : (
-            <div className="bg-white/5 rounded-xl border border-white/5 divide-y divide-white/5">
+            <div className="bg-black/5 dark:bg-white/5 rounded-xl border border-black/5 dark:border-white/5 divide-y divide-black/5 dark:divide-white/5">
               {profile.contact.email && (
                 <div className="flex items-center gap-3 px-4 py-3">
-                  <Mail className="h-4 w-4 text-white/30" />
+                  <Mail className="h-4 w-4 text-foreground/30" />
                   <a
                     href={`mailto:${profile.contact.email}`}
-                    className="text-white/80 hover:text-indigo-400 transition-colors flex-1 truncate"
+                    className="text-foreground/80 hover:text-indigo-400 transition-colors flex-1 truncate"
                   >
                     {profile.contact.email}
                   </a>
@@ -666,18 +666,18 @@ export function ProfileDetailPanel({
               )}
               {profile.contact.phone && (
                 <div className="flex items-center gap-3 px-4 py-3">
-                  <Phone className="h-4 w-4 text-white/30" />
-                  <span className="text-white/80">{profile.contact.phone}</span>
+                  <Phone className="h-4 w-4 text-foreground/30" />
+                  <span className="text-foreground/80">{profile.contact.phone}</span>
                 </div>
               )}
               {profile.contact.linkedin && (
                 <div className="flex items-center gap-3 px-4 py-3">
-                  <Linkedin className="h-4 w-4 text-white/30" />
+                  <Linkedin className="h-4 w-4 text-foreground/30" />
                   <a
                     href={`https://${profile.contact.linkedin}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-white/80 hover:text-indigo-400 transition-colors flex-1 truncate"
+                    className="text-foreground/80 hover:text-indigo-400 transition-colors flex-1 truncate"
                   >
                     {profile.contact.linkedin}
                   </a>
@@ -685,20 +685,20 @@ export function ProfileDetailPanel({
               )}
               {profile.contact.github && (
                 <div className="flex items-center gap-3 px-4 py-3">
-                  <Github className="h-4 w-4 text-white/30" />
+                  <Github className="h-4 w-4 text-foreground/30" />
                   <a
                     href={`https://${profile.contact.github}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-white/80 hover:text-indigo-400 transition-colors flex-1 truncate"
+                    className="text-foreground/80 hover:text-indigo-400 transition-colors flex-1 truncate"
                   >
                     {profile.contact.github}
                   </a>
                 </div>
               )}
               <div className="flex items-center gap-3 px-4 py-3">
-                <MapPin className="h-4 w-4 text-white/30" />
-                <span className="text-white/80">
+                <MapPin className="h-4 w-4 text-foreground/30" />
+                <span className="text-foreground/80">
                   {profile.location.city ? `${profile.location.city}, ` : ""}
                   {US_STATES.find((s) => s.value === profile.location_state)
                     ?.label || profile.location_state}
@@ -714,7 +714,7 @@ export function ProfileDetailPanel({
             <div className="p-1.5 bg-purple-500/20 rounded-lg">
               <Briefcase className="h-3.5 w-3.5 text-purple-400" />
             </div>
-            <h4 className="text-xs font-semibold text-white/60 uppercase tracking-wider">
+            <h4 className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
               Professional Details
             </h4>
           </div>
@@ -722,7 +722,7 @@ export function ProfileDetailPanel({
           {isEditMode ? (
             <div className="space-y-3">
               <div className="space-y-2">
-                <Label className="text-white/60 text-xs">Talent Bucket</Label>
+                <Label className="text-foreground/60 text-xs">Talent Bucket</Label>
                 <Select
                   value={editData.talent_bucket}
                   onChange={(e) =>
@@ -731,12 +731,12 @@ export function ProfileDetailPanel({
                       talent_bucket: e.target.value as TalentBucket,
                     }))
                   }
-                  className="bg-white/5 border-white/10 text-white"
+                  className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
                   options={TALENT_BUCKETS}
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-white/60 text-xs">Talent Category</Label>
+                <Label className="text-foreground/60 text-xs">Talent Category</Label>
                 <Select
                   value={editData.talent_category}
                   onChange={(e) =>
@@ -745,13 +745,13 @@ export function ProfileDetailPanel({
                       talent_category: e.target.value as TalentCategory,
                     }))
                   }
-                  className="bg-white/5 border-white/10 text-white"
+                  className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
                   options={TALENT_CATEGORIES}
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label className="text-white/60 text-xs">
+                  <Label className="text-foreground/60 text-xs">
                     Years of Experience
                   </Label>
                   <Input
@@ -764,12 +764,12 @@ export function ProfileDetailPanel({
                         years_of_experience: e.target.value,
                       }))
                     }
-                    className="bg-white/5 border-white/10 text-white"
+                    className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
                     placeholder="Years"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-white/60 text-xs">
+                  <Label className="text-foreground/60 text-xs">
                     Bill Rate ($/hr)
                   </Label>
                   <Input
@@ -783,13 +783,13 @@ export function ProfileDetailPanel({
                         bill_rate: e.target.value,
                       }))
                     }
-                    className="bg-white/5 border-white/10 text-white"
+                    className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
                     placeholder="Rate"
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label className="text-white/60 text-xs">Clearance Level</Label>
+                <Label className="text-foreground/60 text-xs">Clearance Level</Label>
                 <Select
                   value={editData.clearance_level}
                   onChange={(e) =>
@@ -798,7 +798,7 @@ export function ProfileDetailPanel({
                       clearance_level: e.target.value,
                     }))
                   }
-                  className="bg-white/5 border-white/10 text-white"
+                  className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
                   options={[{ value: "", label: "None" }, ...CLEARANCE_LEVELS]}
                 />
               </div>
@@ -806,21 +806,21 @@ export function ProfileDetailPanel({
           ) : (
             <>
               <div className="grid grid-cols-2 gap-3">
-                <div className="bg-white/5 rounded-xl p-4 border border-white/5">
-                  <div className="flex items-center gap-2 text-white/50 text-xs mb-2">
+                <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4 border border-black/5 dark:border-white/5">
+                  <div className="flex items-center gap-2 text-foreground/50 text-xs mb-2">
                     <Briefcase className="h-3.5 w-3.5" />
                     <span>Talent Bucket</span>
                   </div>
-                  <p className="text-white font-semibold text-sm">
+                  <p className="text-foreground font-semibold text-sm">
                     {profile.talent_bucket}
                   </p>
                 </div>
-                <div className="bg-white/5 rounded-xl p-4 border border-white/5">
-                  <div className="flex items-center gap-2 text-white/50 text-xs mb-2">
+                <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4 border border-black/5 dark:border-white/5">
+                  <div className="flex items-center gap-2 text-foreground/50 text-xs mb-2">
                     <Clock className="h-3.5 w-3.5" />
                     <span>Experience</span>
                   </div>
-                  <p className="text-white font-semibold">
+                  <p className="text-foreground font-semibold">
                     {profile.years_of_experience
                       ? `${profile.years_of_experience} years`
                       : "Not specified"}
@@ -828,29 +828,29 @@ export function ProfileDetailPanel({
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div className="bg-white/5 rounded-xl p-4 border border-white/5">
-                  <div className="flex items-center gap-2 text-white/50 text-xs mb-2">
+                <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4 border border-black/5 dark:border-white/5">
+                  <div className="flex items-center gap-2 text-foreground/50 text-xs mb-2">
                     <Shield className="h-3.5 w-3.5" />
                     <span>Clearance</span>
                   </div>
                   {profile.clearance_level ? (
                     <ClearanceBadge level={profile.clearance_level} />
                   ) : (
-                    <span className="text-white/40 text-sm">None</span>
+                    <span className="text-foreground/40 text-sm">None</span>
                   )}
                 </div>
-                <div className="bg-white/5 rounded-xl p-4 border border-white/5">
-                  <div className="flex items-center gap-2 text-white/50 text-xs mb-2">
+                <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4 border border-black/5 dark:border-white/5">
+                  <div className="flex items-center gap-2 text-foreground/50 text-xs mb-2">
                     <DollarSign className="h-3.5 w-3.5" />
                     <span>Bill Rate</span>
                   </div>
                   {profile.bill_rate ? (
                     <p className="text-emerald-400 font-semibold">
                       ${profile.bill_rate}
-                      <span className="text-white/40 font-normal">/hr</span>
+                      <span className="text-foreground/40 font-normal">/hr</span>
                     </p>
                   ) : (
-                    <span className="text-white/40 text-sm">Not set</span>
+                    <span className="text-foreground/40 text-sm">Not set</span>
                   )}
                 </div>
               </div>
@@ -865,7 +865,7 @@ export function ProfileDetailPanel({
               <div className="p-1.5 bg-amber-500/20 rounded-lg">
                 <Building className="h-3.5 w-3.5 text-amber-400" />
               </div>
-              <h4 className="text-xs font-semibold text-white/60 uppercase tracking-wider">
+              <h4 className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
                 Work History
               </h4>
             </div>
@@ -886,7 +886,7 @@ export function ProfileDetailPanel({
                   <Input
                     value={company.name}
                     onChange={(e) => updateCompany(i, e.target.value)}
-                    className="bg-white/5 border-white/10 text-white flex-1"
+                    className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground flex-1"
                     placeholder="Company name"
                   />
                   <button
@@ -898,20 +898,20 @@ export function ProfileDetailPanel({
                 </div>
               ))}
               {editData.companies.length === 0 && (
-                <p className="text-white/40 text-sm">No companies added</p>
+                <p className="text-foreground/40 text-sm">No companies added</p>
               )}
             </div>
           ) : profile.companies.length > 0 ? (
-            <div className="bg-white/5 rounded-xl border border-white/5 divide-y divide-white/5">
+            <div className="bg-black/5 dark:bg-white/5 rounded-xl border border-black/5 dark:border-white/5 divide-y divide-black/5 dark:divide-white/5">
               {profile.companies.map((company, i) => (
                 <div key={i} className="flex items-center gap-3 px-4 py-3">
-                  <Building className="h-4 w-4 text-white/30" />
-                  <span className="text-white/80">{company.name}</span>
+                  <Building className="h-4 w-4 text-foreground/30" />
+                  <span className="text-foreground/80">{company.name}</span>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-white/40 text-sm">No work history listed</p>
+            <p className="text-foreground/40 text-sm">No work history listed</p>
           )}
         </div>
 
@@ -922,7 +922,7 @@ export function ProfileDetailPanel({
               <div className="p-1.5 bg-indigo-500/20 rounded-lg">
                 <Award className="h-3.5 w-3.5 text-indigo-400" />
               </div>
-              <h4 className="text-xs font-semibold text-white/60 uppercase tracking-wider">
+              <h4 className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
                 Skills & Expertise
               </h4>
             </div>
@@ -943,7 +943,7 @@ export function ProfileDetailPanel({
                   <Input
                     value={skill.name}
                     onChange={(e) => updateSkill(i, e.target.value)}
-                    className="bg-white/5 border-white/10 text-white flex-1"
+                    className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground flex-1"
                     placeholder="Skill name"
                   />
                   <button
@@ -955,7 +955,7 @@ export function ProfileDetailPanel({
                 </div>
               ))}
               {editData.skillsets.length === 0 && (
-                <p className="text-white/40 text-sm">No skills added</p>
+                <p className="text-foreground/40 text-sm">No skills added</p>
               )}
             </div>
           ) : (
@@ -970,7 +970,7 @@ export function ProfileDetailPanel({
                 </Badge>
               ))}
               {profile.skillsets.length === 0 && (
-                <span className="text-white/40 text-sm">No skills listed</span>
+                <span className="text-foreground/40 text-sm">No skills listed</span>
               )}
             </div>
           )}
@@ -983,7 +983,7 @@ export function ProfileDetailPanel({
               <div className="p-1.5 bg-amber-500/20 rounded-lg">
                 <Award className="h-3.5 w-3.5 text-amber-400" />
               </div>
-              <h4 className="text-xs font-semibold text-white/60 uppercase tracking-wider">
+              <h4 className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
                 Certifications
               </h4>
             </div>
@@ -1004,7 +1004,7 @@ export function ProfileDetailPanel({
                   <Input
                     value={cert}
                     onChange={(e) => updateCertification(i, e.target.value)}
-                    className="bg-white/5 border-white/10 text-white flex-1"
+                    className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground flex-1"
                     placeholder="Certification name"
                   />
                   <button
@@ -1016,7 +1016,7 @@ export function ProfileDetailPanel({
                 </div>
               ))}
               {editData.certifications.length === 0 && (
-                <p className="text-white/40 text-sm">No certifications added</p>
+                <p className="text-foreground/40 text-sm">No certifications added</p>
               )}
             </div>
           ) : profile.certifications.length > 0 ? (
@@ -1033,7 +1033,7 @@ export function ProfileDetailPanel({
               ))}
             </div>
           ) : (
-            <p className="text-white/40 text-sm">No certifications listed</p>
+            <p className="text-foreground/40 text-sm">No certifications listed</p>
           )}
         </div>
 
@@ -1044,26 +1044,26 @@ export function ProfileDetailPanel({
               <div className="p-1.5 bg-slate-500/20 rounded-lg">
                 <Calendar className="h-3.5 w-3.5 text-slate-400" />
               </div>
-              <h4 className="text-xs font-semibold text-white/60 uppercase tracking-wider">
+              <h4 className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
                 Record Info
               </h4>
             </div>
-            <div className="bg-white/5 rounded-xl border border-white/5 divide-y divide-white/5 text-sm">
+            <div className="bg-black/5 dark:bg-white/5 rounded-xl border border-black/5 dark:border-white/5 divide-y divide-black/5 dark:divide-white/5 text-sm">
               <div className="flex justify-between px-4 py-2.5">
-                <span className="text-white/40">Date received</span>
-                <span className="text-white/70">
+                <span className="text-foreground/40">Date received</span>
+                <span className="text-foreground/70">
                   {new Date(profile.date_received).toLocaleDateString()}
                 </span>
               </div>
               <div className="flex justify-between px-4 py-2.5">
-                <span className="text-white/40">Last updated</span>
-                <span className="text-white/70">
+                <span className="text-foreground/40">Last updated</span>
+                <span className="text-foreground/70">
                   {new Date(profile.updated_at).toLocaleDateString()}
                 </span>
               </div>
               <div className="flex justify-between px-4 py-2.5">
-                <span className="text-white/40">Profile ID</span>
-                <span className="text-white/50 font-mono text-xs truncate max-w-[180px]">
+                <span className="text-foreground/40">Profile ID</span>
+                <span className="text-foreground/50 font-mono text-xs truncate max-w-[180px]">
                   {profile.key}
                 </span>
               </div>
@@ -1095,7 +1095,7 @@ export function ProfileDetailPanel({
                 <div className="flex gap-2">
                   <button
                     onClick={() => setShowDeleteConfirm(false)}
-                    className="flex-1 px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 hover:text-white transition-all text-sm font-medium"
+                    className="flex-1 px-4 py-2.5 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground/60 hover:bg-black/10 dark:hover:bg-white/10 hover:text-foreground transition-all text-sm font-medium"
                   >
                     Cancel
                   </button>

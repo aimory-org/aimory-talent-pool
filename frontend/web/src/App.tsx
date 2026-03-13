@@ -162,20 +162,20 @@ function AppContent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
+      <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-slate-100 dark:bg-slate-900">
         {/* Background effects */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-1/3 -left-20 w-72 h-72 bg-indigo-500/20 rounded-full blur-3xl" />
           <div className="absolute bottom-1/3 -right-20 w-96 h-96 bg-purple-500/15 rounded-full blur-3xl" />
         </div>
 
-        <div className="relative bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-black/10 dark:border-white/10 p-10 text-center max-w-sm shadow-2xl">
+        <div className="relative bg-white dark:bg-slate-800 backdrop-blur-xl rounded-2xl border border-gray-200 dark:border-slate-700 p-10 text-center max-w-sm shadow-2xl">
           <div className="relative mx-auto mb-6 w-16 h-16">
             <div className="absolute inset-0 rounded-full border-2 border-indigo-500/30" />
             <div className="absolute inset-0 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin" />
             <div className="absolute inset-3 rounded-full bg-linear-to-br from-indigo-500/20 to-purple-500/20" />
           </div>
-          <p className="text-foreground/70 font-medium mb-1">
+          <p className="text-gray-700 dark:text-gray-300 font-medium mb-1">
             Checking your session
           </p>
           <p className="text-foreground/40 text-sm">Please wait a moment...</p>

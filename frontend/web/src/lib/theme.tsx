@@ -32,8 +32,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const root = window.document.documentElement;
 
-    // Remove both classes first
-    root.classList.remove("light", "dark");
+    // Disable transitions during theme switch - add class FIRST
+    root.classList.add("theme-switching");
+
+    // Force synchronous style recalculation
+    void root.offsetHeight;
 
     // Determine the actual theme to apply
     let effectiveTheme: "dark" | "light";
@@ -43,7 +46,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       effectiveTheme = theme;
     }
 
-    // Apply the theme class
+    // Apply the theme class in one operation
+    root.classList.remove("light", "dark");
     root.classList.add(effectiveTheme);
     setResolvedTheme(effectiveTheme);
 
@@ -52,9 +56,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (metaThemeColor) {
       metaThemeColor.setAttribute(
         "content",
-        effectiveTheme === "dark" ? "#0f172a" : "#ffffff",
+        effectiveTheme === "dark" ? "#1e293b" : "#ffffff",
       );
     }
+
+    // Force another reflow before removing the class
+    void root.offsetHeight;
+
+    // Re-enable transitions after paint
+    requestAnimationFrame(() => {
+      root.classList.remove("theme-switching");
+    });
   }, [theme]);
 
   // Listen for system theme changes

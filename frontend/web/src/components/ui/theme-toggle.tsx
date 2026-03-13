@@ -1,24 +1,24 @@
-import { Moon, Sun, Monitor } from "lucide-react";
+import { Moon, Sun } from "lucide-react";
 import { useTheme } from "@/lib/theme";
 
 export function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
 
-  const cycleTheme = () => {
-    if (theme === "dark") setTheme("light");
-    else if (theme === "light") setTheme("system");
-    else setTheme("dark");
+  const toggleTheme = () => {
+    setTheme(resolvedTheme === "dark" ? "light" : "dark");
   };
 
   return (
     <button
-      onClick={cycleTheme}
-      className="flex items-center justify-center w-9 h-9 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground/60 hover:bg-black/10 dark:hover:bg-white/10 hover:text-foreground transition-all duration-200"
-      title={`Theme: ${theme} (click to cycle)`}
+      onClick={toggleTheme}
+      className="flex items-center justify-center w-9 h-9 rounded-lg bg-gray-100 dark:bg-slate-700 border border-gray-200 dark:border-slate-500 text-gray-600 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-slate-500 hover:text-gray-900 dark:hover:text-white transition-all duration-200"
+      title={`Switch to ${resolvedTheme === "dark" ? "light" : "dark"} mode`}
     >
-      {theme === "dark" && <Moon className="w-4 h-4" />}
-      {theme === "light" && <Sun className="w-4 h-4" />}
-      {theme === "system" && <Monitor className="w-4 h-4" />}
+      {resolvedTheme === "dark" ? (
+        <Moon className="w-4 h-4" />
+      ) : (
+        <Sun className="w-4 h-4" />
+      )}
     </button>
   );
 }

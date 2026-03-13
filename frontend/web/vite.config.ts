@@ -11,4 +11,12 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  server: {
+    host: true, // Listen on all interfaces (needed for dev containers)
+    port: 5174,
+    strictPort: true,
+    hmr: {
+      clientPort: 5174, // Use same port for HMR WebSocket
+    },
+  },
 })
