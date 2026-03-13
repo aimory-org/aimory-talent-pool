@@ -20,14 +20,6 @@ locals {
         TALENT_PROFILES_TABLE = var.talent_profiles_table_name
       }
     }
-    update_talent_status = {
-      route   = "PATCH /talents/{pk}/status"
-      timeout = 10
-      memory  = 256
-      env = {
-        TALENT_PROFILES_TABLE = var.talent_profiles_table_name
-      }
-    }
     get_lookups = {
       route   = "GET /lookups"
       timeout = 10
