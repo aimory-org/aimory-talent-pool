@@ -1,12 +1,13 @@
 # Terraform
 **/.terraform/
-**/.terraform.lock.hcl
 **/terraform.tfstate
 **/terraform.tfstate.backup
 **/*.tfstate
 **/*.tfstate.*
 **/*.tfvars
 **/.terraform.tfstate.lock.info
+**/tfplan
+**/tfplan.*
 
 # Lambda build artifacts
 **/lambda_build/
@@ -31,8 +32,6 @@ venv/
 
 # Node (if you add any tooling)
 node_modules/
-package-lock.json
-yarn.lock
 
 # Environment variables
 .env

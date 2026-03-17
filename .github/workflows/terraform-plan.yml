@@ -1,0 +1,194 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Terraform Plan — runs on every pull request targeting main.
+# Posts a plan summary as a PR comment and uploads the plan as an artifact.
+#
+# Required GitHub Secrets (repository or environment "dev"):
+#   AWS_ACCESS_KEY_ID          – IAM user/role access key
+#   AWS_SECRET_ACCESS_KEY      – IAM user/role secret key
+#   TF_VAR_PRESIGN_API_KEY     – presign Lambda API key (min 16 chars)
+#   TF_VAR_ENTRA_CLIENT_ID     – Microsoft Entra ID application client ID
+#   TF_VAR_ENTRA_CLIENT_SECRET – Microsoft Entra ID client secret
+#   TF_VAR_ENTRA_TENANT_ID     – Microsoft Entra ID tenant ID
+#
+# Required GitHub Variables (repository or environment "dev"):
+#   TF_VAR_COGNITO_CALLBACK_URLS – JSON list, e.g. '["http://localhost:5173","https://xxxxx.cloudfront.net"]'
+#   TF_VAR_COGNITO_LOGOUT_URLS   – JSON list, same format
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: Terraform Plan
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: terraform-plan-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  TF_DIR: infra/envs/dev
+  AWS_REGION: us-east-1
+  TF_IN_AUTOMATION: true
+
+jobs:
+  plan:
+    name: Format, Validate & Plan
+    runs-on: ubuntu-latest
+
+    env:
+      TF_VAR_presign_api_key: ${{ secrets.TF_VAR_PRESIGN_API_KEY }}
+      TF_VAR_entra_client_id: ${{ secrets.TF_VAR_ENTRA_CLIENT_ID }}
+      TF_VAR_entra_client_secret: ${{ secrets.TF_VAR_ENTRA_CLIENT_SECRET }}
+      TF_VAR_entra_tenant_id: ${{ secrets.TF_VAR_ENTRA_TENANT_ID }}
+      TF_VAR_cognito_callback_urls: ${{ vars.TF_VAR_COGNITO_CALLBACK_URLS }}
+      TF_VAR_cognito_logout_urls: ${{ vars.TF_VAR_COGNITO_LOGOUT_URLS }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # ── Build Lambda Layer (required before plan) ──────────────────────────
+      - name: Build pdfminer Lambda layer
+        working-directory: infra/modules/pipeline/lambdas/layers/pdfminer
+        run: pip install --quiet -r requirements.txt -t python
+
+      # ── Terraform checks ──────────────────────────────────────────────────
+      - name: Terraform Format Check
+        id: fmt
+        run: terraform fmt -check -recursive -diff
+        working-directory: infra
+        continue-on-error: true
+
+      - name: Terraform Init
+        id: init
+        run: terraform init -input=false
+        working-directory: ${{ env.TF_DIR }}
+
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate -no-color
+        working-directory: ${{ env.TF_DIR }}
+
+      - name: Terraform Plan
+        id: plan
+        run: |
+          set +e
+          terraform plan -input=false -no-color -out=tfplan 2>&1 | tee plan_output.txt
+          PLAN_EXIT=${PIPESTATUS[0]}
+          echo "exitcode=$PLAN_EXIT" >> "$GITHUB_OUTPUT"
+          exit $PLAN_EXIT
+        working-directory: ${{ env.TF_DIR }}
+        continue-on-error: true
+
+      # ── Artifacts ─────────────────────────────────────────────────────────
+      - name: Upload Plan Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan-pr-${{ github.event.pull_request.number }}
+          path: |
+            ${{ env.TF_DIR }}/tfplan
+            ${{ env.TF_DIR }}/plan_output.txt
+          retention-days: 30
+
+      # ── PR Comment ────────────────────────────────────────────────────────
+      - name: Post Plan Summary to PR
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const MAX_LEN = 60000;
+
+            let planText = '';
+            try {
+              planText = fs.readFileSync('${{ env.TF_DIR }}/plan_output.txt', 'utf8');
+            } catch {
+              planText = 'Plan output not available.';
+            }
+            if (planText.length > MAX_LEN) {
+              planText = planText.substring(0, MAX_LEN) +
+                '\n\n... truncated — see full output in workflow artifacts.';
+            }
+
+            const status = (outcome) => outcome === 'success' ? '✅' : '❌';
+
+            const body = [
+              '### Terraform Plan — PR #${{ github.event.pull_request.number }}',
+              '',
+              '| Step | Result |',
+              '|------|--------|',
+              `| **Format**   | ${status('${{ steps.fmt.outcome }}')} ${{ steps.fmt.outcome }} |`,
+              `| **Init**     | ${status('${{ steps.init.outcome }}')} ${{ steps.init.outcome }} |`,
+              `| **Validate** | ${status('${{ steps.validate.outcome }}')} ${{ steps.validate.outcome }} |`,
+              `| **Plan**     | ${status('${{ steps.plan.outcome }}')} ${{ steps.plan.outcome }} |`,
+              '',
+              '<details><summary>Show Plan Output</summary>',
+              '',
+              '```',
+              planText,
+              '```',
+              '',
+              '</details>',
+              '',
+              `*Pusher: @${{ github.actor }} · [Run #${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})*`,
+            ].join('\n');
+
+            // Upsert comment (update existing bot comment or create new one)
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(
+              (c) => c.user.type === 'Bot' && c.body.includes('### Terraform Plan')
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+      # ── Final gate ────────────────────────────────────────────────────────
+      - name: Fail workflow on errors
+        if: always()
+        run: |
+          if [[ "${{ steps.fmt.outcome }}" == "failure" ]]; then
+            echo "::warning::terraform fmt check failed — run 'terraform fmt -recursive' locally."
+          fi
+          if [[ "${{ steps.plan.outcome }}" == "failure" ]]; then
+            echo "::error::Terraform plan failed. Review the plan output above."
+            exit 1
+          fi

@@ -1,0 +1,218 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Deploy — runs on every push (merge) to main.
+# 1. Builds Lambda layer
+# 2. terraform plan → apply
+# 3. Rebuilds & deploys the frontend to S3/CloudFront
+#
+# Approval gate: configure "Required reviewers" on the GitHub Environment
+# named "dev" (Settings → Environments → dev → Protection rules).
+# If no reviewers are configured the deploy runs automatically on merge.
+#
+# Required GitHub Secrets (repository or environment "dev"):
+#   AWS_ACCESS_KEY_ID          – IAM access key with deploy permissions
+#   AWS_SECRET_ACCESS_KEY      – IAM secret key
+#   TF_VAR_PRESIGN_API_KEY     – presign Lambda API key (min 16 chars)
+#   TF_VAR_ENTRA_CLIENT_ID     – Microsoft Entra ID application client ID
+#   TF_VAR_ENTRA_CLIENT_SECRET – Microsoft Entra ID client secret
+#   TF_VAR_ENTRA_TENANT_ID     – Microsoft Entra ID tenant ID
+#
+# Required GitHub Variables (repository or environment "dev"):
+#   TF_VAR_COGNITO_CALLBACK_URLS – JSON list, e.g. '["http://localhost:5173","https://xxxxx.cloudfront.net"]'
+#   TF_VAR_COGNITO_LOGOUT_URLS   – JSON list, same format
+#
+# Optional GitHub Variables:
+#   VITE_ALLOWED_EMAIL_SUFFIXES – comma-separated email suffixes (e.g. "@contoso.com")
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# Prevent concurrent deploys — queue rather than cancel
+concurrency:
+  group: deploy-dev
+  cancel-in-progress: false
+
+env:
+  TF_DIR: infra/envs/dev
+  AWS_REGION: us-east-1
+  TF_IN_AUTOMATION: true
+
+jobs:
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Terraform Plan & Apply
+  # ═══════════════════════════════════════════════════════════════════════════
+  terraform:
+    name: Terraform Apply
+    runs-on: ubuntu-latest
+    environment: dev
+
+    outputs:
+      frontend_bucket: ${{ steps.outputs.outputs.frontend_bucket }}
+      distribution_id: ${{ steps.outputs.outputs.distribution_id }}
+      distribution_domain: ${{ steps.outputs.outputs.distribution_domain }}
+      cognito_user_pool_id: ${{ steps.outputs.outputs.cognito_user_pool_id }}
+      cognito_web_client_id: ${{ steps.outputs.outputs.cognito_web_client_id }}
+      cognito_domain: ${{ steps.outputs.outputs.cognito_domain }}
+      api_endpoint: ${{ steps.outputs.outputs.api_endpoint }}
+
+    env:
+      TF_VAR_presign_api_key: ${{ secrets.TF_VAR_PRESIGN_API_KEY }}
+      TF_VAR_entra_client_id: ${{ secrets.TF_VAR_ENTRA_CLIENT_ID }}
+      TF_VAR_entra_client_secret: ${{ secrets.TF_VAR_ENTRA_CLIENT_SECRET }}
+      TF_VAR_entra_tenant_id: ${{ secrets.TF_VAR_ENTRA_TENANT_ID }}
+      TF_VAR_cognito_callback_urls: ${{ vars.TF_VAR_COGNITO_CALLBACK_URLS }}
+      TF_VAR_cognito_logout_urls: ${{ vars.TF_VAR_COGNITO_LOGOUT_URLS }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false # clean output for terraform output -raw
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # ── Build Lambda layer ────────────────────────────────────────────────
+      - name: Build pdfminer Lambda layer
+        working-directory: infra/modules/pipeline/lambdas/layers/pdfminer
+        run: pip install --quiet -r requirements.txt -t python
+
+      # ── Terraform ─────────────────────────────────────────────────────────
+      - name: Terraform Init
+        run: terraform init -input=false
+        working-directory: ${{ env.TF_DIR }}
+
+      - name: Terraform Plan
+        run: |
+          terraform plan -input=false -no-color -out=tfplan 2>&1 | tee plan.log
+        working-directory: ${{ env.TF_DIR }}
+
+      - name: Terraform Apply
+        run: |
+          terraform apply -input=false -no-color tfplan 2>&1 | tee apply.log
+        working-directory: ${{ env.TF_DIR }}
+
+      # ── Capture outputs for the frontend job ──────────────────────────────
+      - name: Capture Terraform Outputs
+        id: outputs
+        working-directory: ${{ env.TF_DIR }}
+        run: |
+          echo "frontend_bucket=$(terraform output -raw frontend_site_bucket_name)" >> "$GITHUB_OUTPUT"
+          echo "distribution_id=$(terraform output -raw frontend_distribution_id)" >> "$GITHUB_OUTPUT"
+          echo "distribution_domain=$(terraform output -raw frontend_distribution_domain)" >> "$GITHUB_OUTPUT"
+          echo "cognito_user_pool_id=$(terraform output -raw cognito_user_pool_id)" >> "$GITHUB_OUTPUT"
+          echo "cognito_web_client_id=$(terraform output -raw cognito_web_client_id)" >> "$GITHUB_OUTPUT"
+
+          # Strip https:// prefix if present so VITE_COGNITO_DOMAIN is just the hostname
+          RAW_DOMAIN=$(terraform output -raw cognito_domain_url)
+          echo "cognito_domain=${RAW_DOMAIN#https://}" >> "$GITHUB_OUTPUT"
+
+          echo "api_endpoint=$(terraform output -raw api_endpoint)" >> "$GITHUB_OUTPUT"
+
+      # ── Upload logs for auditing ──────────────────────────────────────────
+      - name: Upload Terraform Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-logs-${{ github.sha }}
+          path: |
+            ${{ env.TF_DIR }}/plan.log
+            ${{ env.TF_DIR }}/apply.log
+          retention-days: 90
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Frontend Build & Deploy
+  # ═══════════════════════════════════════════════════════════════════════════
+  frontend:
+    name: Deploy Frontend
+    needs: terraform
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/web/package-lock.json
+
+      - name: Generate .env from Terraform outputs
+        working-directory: frontend/web
+        run: |
+          cat > .env <<ENVEOF
+          VITE_COGNITO_USER_POOL_ID=${{ needs.terraform.outputs.cognito_user_pool_id }}
+          VITE_COGNITO_CLIENT_ID=${{ needs.terraform.outputs.cognito_web_client_id }}
+          VITE_COGNITO_DOMAIN=${{ needs.terraform.outputs.cognito_domain }}
+          VITE_AWS_REGION=us-east-1
+          VITE_COGNITO_REDIRECT_URI=https://${{ needs.terraform.outputs.distribution_domain }}
+          VITE_API_ENDPOINT=${{ needs.terraform.outputs.api_endpoint }}
+          VITE_ALLOWED_EMAIL_SUFFIXES=${{ vars.VITE_ALLOWED_EMAIL_SUFFIXES }}
+          ENVEOF
+
+      - name: Install dependencies
+        working-directory: frontend/web
+        run: npm ci
+
+      - name: Build
+        working-directory: frontend/web
+        run: npm run build
+
+      - name: Deploy to S3
+        run: |
+          aws s3 sync frontend/web/dist \
+            "s3://${{ needs.terraform.outputs.frontend_bucket }}" \
+            --delete
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "${{ needs.terraform.outputs.distribution_id }}" \
+            --paths "/index.html"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Notify on failure (extend with Slack/Teams webhook as needed)
+  # ═══════════════════════════════════════════════════════════════════════════
+  notify-failure:
+    name: Failure Notification
+    if: failure()
+    needs: [terraform, frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report failure
+        run: |
+          echo "::error::Deploy workflow failed for commit ${{ github.sha }}."
+          echo ""
+          echo "Troubleshooting:"
+          echo "  • Check the Terraform logs artifact for detailed output."
+          echo "  • If state is locked, run: terraform force-unlock <LOCK_ID>"
+          echo "  • Re-run the workflow from the Actions tab after fixing."
+          echo ""
+          echo "To add Slack/Teams alerts, add a webhook step to the notify-failure job."
