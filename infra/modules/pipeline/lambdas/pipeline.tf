@@ -182,9 +182,9 @@ resource "aws_iam_role_policy" "pipeline_dynamodb" {
         Resource = var.talent_profiles_table_arn
       },
       {
-        Sid      = "LookupTables"
-        Effect   = "Allow"
-        Action   = ["dynamodb:PutItem"]
+        Sid    = "LookupTables"
+        Effect = "Allow"
+        Action = ["dynamodb:PutItem"]
         Resource = [
           var.skills_lookup_table_arn,
           var.certifications_lookup_table_arn,

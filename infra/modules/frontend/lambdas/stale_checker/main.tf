@@ -20,7 +20,7 @@ resource "aws_lambda_function" "stale_checker" {
   filename         = data.archive_file.stale_checker_zip.output_path
   source_code_hash = data.archive_file.stale_checker_zip.output_base64sha256
 
-  timeout     = 300  # 5 minutes for scanning large tables
+  timeout     = 300 # 5 minutes for scanning large tables
   memory_size = 256
 
   environment {
@@ -73,7 +73,7 @@ resource "aws_iam_role_policy" "stale_checker_dynamodb" {
 resource "aws_cloudwatch_event_rule" "stale_checker_schedule" {
   name                = "${var.project_name}-${var.environment}-stale-checker-schedule"
   description         = "Triggers stale candidate checker daily"
-  schedule_expression = "cron(0 2 * * ? *)"  # Daily at 2:00 AM UTC
+  schedule_expression = "cron(0 2 * * ? *)" # Daily at 2:00 AM UTC
 }
 
 resource "aws_cloudwatch_event_target" "stale_checker_target" {
