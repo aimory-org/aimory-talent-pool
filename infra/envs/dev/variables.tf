@@ -47,6 +47,7 @@ variable "extracted_prefix" {
 variable "sfn_arn_param_name" {
   description = "SSM Parameter name containing Step Functions state machine ARN"
   type        = string
+  default     = "/aimory-talent-pool/dev/resume-pipeline-arn"
 
   validation {
     condition     = startswith(var.sfn_arn_param_name, "/")
