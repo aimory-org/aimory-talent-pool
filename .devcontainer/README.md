@@ -34,7 +34,8 @@ Before opening the dev container, ensure you have:
 1. **Docker Desktop** — [Download](https://www.docker.com/products/docker-desktop/) and ensure it's running
 2. **VS Code** — [Download](https://code.visualstudio.com/)
 3. **Dev Containers Extension** — Install from [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
-4. **AWS Credentials** — Configured locally at `~/.aws/credentials`
+
+> **Note:** AWS credentials are **not required** for local development. Infrastructure deployments are handled via CI/CD. If you need AWS access locally (for debugging, running Terraform, etc.), configure credentials inside the container with `aws configure`.
 
 ### Open in Container
 
