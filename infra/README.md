@@ -16,11 +16,10 @@ infra/
 │       ├── terraform.tfvars  # Your values (not in git)
 │       └── terraform.tfvars.example
 └── modules/
-    ├── api/                  # API Gateway + Lambda endpoints for frontend
-    │   └── lambda_src/       # Python handlers (list_talents, get_talent, etc.)
+    ├── api/                  # API Gateway + Lambda endpoints + stale checker
+    │   └── lambda_src/       # Python handlers (list_talents, get_talent, stale_checker, etc.)
     ├── frontend/
     │   ├── cognito/          # User pool + Microsoft Entra ID federation
-    │   ├── lambdas/          # Supporting Lambdas (stale_checker)
     │   └── site/             # S3 + CloudFront static hosting
     ├── pipeline/
     │   ├── lambdas/          # Resume processing Lambdas

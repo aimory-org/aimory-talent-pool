@@ -27,15 +27,6 @@ module "cognito" {
   entra_tenant_id     = var.entra_tenant_id
 }
 
-module "stale_checker" {
-  source       = "../../modules/frontend/lambdas/stale_checker"
-  project_name = var.project_name
-  environment  = var.environment
-
-  talent_profiles_table_name = module.storage.talent_profiles_table_name
-  talent_profiles_table_arn  = module.storage.talent_profiles_table_arn
-}
-
 module "pipeline_lambdas" {
   source       = "../../modules/pipeline/lambdas"
   project_name = var.project_name
