@@ -1,5 +1,7 @@
+# -----------------------------------------------------------------------------
 # Stale Candidate Checker Lambda
-# Runs daily to mark candidates as "Stale Candidate" after 90 days
+# Runs daily to mark candidates as "Stale Candidate" after 90 days of inactivity
+# -----------------------------------------------------------------------------
 
 locals {
   stale_checker_name = "${var.project_name}-${var.environment}-stale-checker"
@@ -29,9 +31,15 @@ resource "aws_lambda_function" "stale_checker" {
       STALE_DAYS            = "90"
     }
   }
+
+  tags = {
+    Project     = var.project_name
+    Environment = var.environment
+    ManagedBy   = "terraform"
+  }
 }
 
-# Dedicated IAM role for stale checker
+# Dedicated IAM role for stale checker (needs scan + write, unlike read-only API)
 resource "aws_iam_role" "stale_checker_role" {
   name = "${var.project_name}-${var.environment}-stale-checker-role"
 
@@ -43,6 +51,12 @@ resource "aws_iam_role" "stale_checker_role" {
       Action    = "sts:AssumeRole"
     }]
   })
+
+  tags = {
+    Project     = var.project_name
+    Environment = var.environment
+    ManagedBy   = "terraform"
+  }
 }
 
 resource "aws_iam_role_policy_attachment" "stale_checker_logs" {
@@ -74,6 +88,12 @@ resource "aws_cloudwatch_event_rule" "stale_checker_schedule" {
   name                = "${var.project_name}-${var.environment}-stale-checker-schedule"
   description         = "Triggers stale candidate checker daily"
   schedule_expression = "cron(0 2 * * ? *)" # Daily at 2:00 AM UTC
+
+  tags = {
+    Project     = var.project_name
+    Environment = var.environment
+    ManagedBy   = "terraform"
+  }
 }
 
 resource "aws_cloudwatch_event_target" "stale_checker_target" {
