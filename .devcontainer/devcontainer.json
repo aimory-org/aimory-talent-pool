@@ -25,15 +25,6 @@
   },
 
   // ===========================================================================
-  // AWS Credentials
-  // ===========================================================================
-  // Mounts your local ~/.aws folder so you don't need to reconfigure credentials
-  // On Windows: uses %USERPROFILE%\.aws | On Mac/Linux: uses $HOME/.aws
-  "mounts": [
-    "source=${localEnv:USERPROFILE}${localEnv:HOME}/.aws,target=/home/vscode/.aws,type=bind,consistency=cached"
-  ],
-
-  // ===========================================================================
   // VS Code Extensions & Settings
   // ===========================================================================
   "customizations": {
