@@ -14,20 +14,7 @@ import {
 
 export function HowItWorks() {
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border-b border-black/10 dark:border-white/10 px-6 py-4 sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto flex items-center gap-4">
-          <Link
-            to="/"
-            className="flex items-center gap-2 text-foreground/60 hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span className="text-sm">Back to Dashboard</span>
-          </Link>
-        </div>
-      </div>
-
+    <div className="bg-background">
       {/* Content */}
       <div className="max-w-4xl mx-auto px-6 py-12">
         <div className="mb-12">

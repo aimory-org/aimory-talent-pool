@@ -5,13 +5,12 @@ import {
   fetchAuthSession,
 } from "aws-amplify/auth";
 import { Hub } from "aws-amplify/utils";
-import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
-import { HelpCircle } from "lucide-react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import "./App.css";
 import { allowedEmailSuffixes, microsoftProvider } from "@/lib/auth";
 import { TalentDashboard } from "./components/TalentDashboard";
 import { HowItWorks } from "./components/HowItWorks";
-import { ThemeToggle } from "./components/ui/theme-toggle";
+import { NavBar } from "./components/ui/navbar";
 
 interface UserInfo {
   username: string;
@@ -108,52 +107,24 @@ const useAuth = () => {
   return { user, isLoading };
 };
 
-const InsightsGrid = ({ user }: { user: UserInfo }) => {
-  const safeName = user.name || user.email;
-
-  return (
-    <div className="w-full">
-      {/* User Info Bar */}
-      <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-black/10 dark:border-white/10 px-6 py-3">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-full bg-linear-to-br from-indigo-500/30 to-purple-500/30 flex items-center justify-center border border-black/10 dark:border-white/10 text-foreground font-semibold text-sm shadow-lg shadow-indigo-500/10">
-              {safeName.charAt(0).toUpperCase()}
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-foreground">
-                {safeName}
-              </p>
-              <p className="text-xs text-foreground/40">{user.email}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link
-              to="/how-it-works"
-              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground/60 hover:bg-black/10 dark:hover:bg-white/10 hover:text-foreground hover:border-black/20 dark:hover:border-white/20 transition-all duration-200 text-sm"
-            >
-              <HelpCircle className="w-4 h-4" />
-              <span className="hidden sm:inline">How It Works</span>
-            </Link>
-            <ThemeToggle />
-            <SignOutButton />
-          </div>
-        </div>
-      </div>
-
-      {/* Talent Dashboard */}
-      <TalentDashboard />
-    </div>
-  );
+const handleSignOut = async () => {
+  try {
+    await signOut();
+  } catch (error) {
+    console.error("Sign-out failed", error);
+  }
 };
 
-// Authenticated routes wrapper
+// Authenticated routes wrapper with persistent NavBar
 const AuthenticatedRoutes = ({ user }: { user: UserInfo }) => {
   return (
-    <Routes>
-      <Route path="/how-it-works" element={<HowItWorks />} />
-      <Route path="*" element={<InsightsGrid user={user} />} />
-    </Routes>
+    <div className="min-h-screen bg-background">
+      <NavBar user={user} onSignOut={handleSignOut} />
+      <Routes>
+        <Route path="/how-it-works" element={<HowItWorks />} />
+        <Route path="*" element={<TalentDashboard />} />
+      </Routes>
+    </div>
   );
 };
 
