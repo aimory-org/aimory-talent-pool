@@ -135,7 +135,7 @@ describe("App Authentication", () => {
       let hubCallback: ((data: { payload: { event: string } }) => void) | null =
         null;
 
-      mockHubListen.mockImplementation((channel, callback) => {
+      mockHubListen.mockImplementation((_channel, callback) => {
         hubCallback = callback;
         return () => {};
       });
@@ -172,7 +172,7 @@ describe("App Authentication", () => {
       let hubCallback: ((data: { payload: { event: string } }) => void) | null =
         null;
 
-      mockHubListen.mockImplementation((channel, callback) => {
+      mockHubListen.mockImplementation((_channel, callback) => {
         hubCallback = callback;
         return () => {};
       });
