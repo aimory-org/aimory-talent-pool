@@ -49,6 +49,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     // Apply the theme class in one operation
     root.classList.remove("light", "dark");
     root.classList.add(effectiveTheme);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setResolvedTheme(effectiveTheme);
 
     // Update meta theme-color for mobile browsers
@@ -97,6 +98,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useTheme() {
   const context = useContext(ThemeContext);
   if (context === undefined) {
