@@ -1,6 +1,7 @@
 # -----------------------------------------------------------------------------
-# Stale Candidate Checker Lambda
-# Runs daily to mark candidates as "Stale Candidate" after 90 days of inactivity
+# Scheduled Background Jobs
+# Currently contains the stale candidate checker.
+# Add future scheduled jobs here.
 # -----------------------------------------------------------------------------
 
 locals {
@@ -39,7 +40,7 @@ resource "aws_lambda_function" "stale_checker" {
   }
 }
 
-# Dedicated IAM role for stale checker (needs scan + write, unlike read-only API)
+# Dedicated IAM role — needs scan + write, separate from read-only API role
 resource "aws_iam_role" "stale_checker_role" {
   name = "${var.project_name}-${var.environment}-stale-checker-role"
 
@@ -70,24 +71,19 @@ resource "aws_iam_role_policy" "stale_checker_dynamodb" {
 
   policy = jsonencode({
     Version = "2012-10-17",
-    Statement = [
-      {
-        Effect = "Allow",
-        Action = [
-          "dynamodb:Scan",
-          "dynamodb:UpdateItem"
-        ],
-        Resource = var.talent_profiles_table_arn
-      }
-    ]
+    Statement = [{
+      Effect   = "Allow",
+      Action   = ["dynamodb:Scan", "dynamodb:UpdateItem"],
+      Resource = var.talent_profiles_table_arn
+    }]
   })
 }
 
-# EventBridge rule to trigger daily at 2 AM UTC
+# EventBridge rule — triggers daily at 2 AM UTC
 resource "aws_cloudwatch_event_rule" "stale_checker_schedule" {
   name                = "${var.project_name}-${var.environment}-stale-checker-schedule"
   description         = "Triggers stale candidate checker daily"
-  schedule_expression = "cron(0 2 * * ? *)" # Daily at 2:00 AM UTC
+  schedule_expression = "cron(0 2 * * ? *)"
 
   tags = {
     Project     = var.project_name
