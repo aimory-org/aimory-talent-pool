@@ -53,7 +53,7 @@ describe("TalentTable", () => {
       render(<TalentTable {...defaultProps} />);
 
       expect(screen.getByText("Secret")).toBeInTheDocument();
-      expect(screen.getByText("Top Secret")).toBeInTheDocument();
+      expect(screen.getByText("TS")).toBeInTheDocument();
     });
   });
 
