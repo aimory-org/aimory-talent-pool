@@ -1,3 +1,7 @@
+# -----------------------------------------------------------------------------
+# Step Functions state machine — orchestrates the resume processing pipeline
+# -----------------------------------------------------------------------------
+
 resource "aws_iam_role" "sfn_role" {
   name = "${var.project_name}-${var.environment}-sfn-role"
 
@@ -21,13 +25,13 @@ resource "aws_iam_role_policy" "sfn_invoke_lambdas" {
       Effect = "Allow",
       Action = ["lambda:InvokeFunction"],
       Resource = [
-        var.lambda_arns.classify,
-        var.lambda_arns.start_textract,
-        var.lambda_arns.check_textract,
-        var.lambda_arns.fetch_textract,
-        var.lambda_arns.normalize,
-        var.lambda_arns.llm_extract,
-        var.lambda_arns.persist
+        aws_lambda_function.pipeline["classify"].arn,
+        aws_lambda_function.pipeline["start_textract"].arn,
+        aws_lambda_function.pipeline["check_textract"].arn,
+        aws_lambda_function.pipeline["fetch_textract"].arn,
+        aws_lambda_function.pipeline["normalize"].arn,
+        aws_lambda_function.pipeline["llm_extract"].arn,
+        aws_lambda_function.pipeline["persist"].arn,
       ]
     }]
   })
@@ -39,27 +43,27 @@ resource "aws_sfn_state_machine" "pipeline" {
   type     = "STANDARD"
 
   definition = templatefile("${path.module}/state_machine.asl.json", {
-    lambda_classify_arn       = var.lambda_arns.classify
-    lambda_start_textract_arn = var.lambda_arns.start_textract
-    lambda_check_textract_arn = var.lambda_arns.check_textract
-    lambda_fetch_textract_arn = var.lambda_arns.fetch_textract
-    lambda_normalize_arn      = var.lambda_arns.normalize
-    lambda_llm_extract_arn    = var.lambda_arns.llm_extract
-    lambda_persist_arn        = var.lambda_arns.persist
+    lambda_classify_arn       = aws_lambda_function.pipeline["classify"].arn
+    lambda_start_textract_arn = aws_lambda_function.pipeline["start_textract"].arn
+    lambda_check_textract_arn = aws_lambda_function.pipeline["check_textract"].arn
+    lambda_fetch_textract_arn = aws_lambda_function.pipeline["fetch_textract"].arn
+    lambda_normalize_arn      = aws_lambda_function.pipeline["normalize"].arn
+    lambda_llm_extract_arn    = aws_lambda_function.pipeline["llm_extract"].arn
+    lambda_persist_arn        = aws_lambda_function.pipeline["persist"].arn
   })
 }
 
-# Store SFN ARN in SSM so starter lambda can read it without terraform cycles
+# Store SFN ARN in SSM so the starter Lambda can read it without a Terraform cycle
 resource "aws_ssm_parameter" "pipeline_sfn_arn" {
   name  = var.sfn_arn_param_name
   type  = "String"
   value = aws_sfn_state_machine.pipeline.arn
 }
 
-# Allow pipeline lambdas to start executions
+# Allow pipeline Lambdas to start executions
 resource "aws_iam_role_policy" "pipeline_can_start_sfn" {
   name = "${var.project_name}-${var.environment}-pipeline-start-sfn"
-  role = var.pipeline_lambda_role_name
+  role = aws_iam_role.pipeline_lambda_role.name
 
   policy = jsonencode({
     Version = "2012-10-17",

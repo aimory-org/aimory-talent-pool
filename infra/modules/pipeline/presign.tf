@@ -1,8 +1,8 @@
-############################################
-# Presign Lambda (Power Automate -> S3)
-############################################
+# -----------------------------------------------------------------------------
+# Presign Lambda — public upload endpoint consumed by Power Automate
+# Protected by x-api-key validation inside the function (not API Gateway auth)
+# -----------------------------------------------------------------------------
 
-# Build zip automatically from source file
 data "archive_file" "presign_zip" {
   type        = "zip"
   source_file = "${path.module}/lambda_src/presign/app.py"
@@ -33,13 +33,11 @@ resource "aws_iam_role_policy" "presign_s3_put" {
 
   policy = jsonencode({
     Version = "2012-10-17",
-    Statement = [
-      {
-        Effect   = "Allow",
-        Action   = ["s3:PutObject"],
-        Resource = "arn:aws:s3:::${var.resume_bucket}/${var.raw_prefix}/*"
-      }
-    ]
+    Statement = [{
+      Effect   = "Allow",
+      Action   = ["s3:PutObject"],
+      Resource = "arn:aws:s3:::${var.resume_bucket}/${var.raw_prefix}/*"
+    }]
   })
 }
 
@@ -61,13 +59,12 @@ resource "aws_lambda_function" "presign" {
   }
 }
 
-# Public URL, protected by x-api-key in code
+# Public function URL — auth handled in-code via x-api-key header
 resource "aws_lambda_function_url" "presign" {
   function_name      = aws_lambda_function.presign.arn
   authorization_type = "NONE"
 }
 
-# Allow unauthenticated invoke of the Function URL (AuthType NONE)
 resource "aws_lambda_permission" "presign_allow_url" {
   statement_id           = "AllowPublicInvokeFunctionUrl"
   action                 = "lambda:InvokeFunctionUrl"
@@ -76,7 +73,6 @@ resource "aws_lambda_permission" "presign_allow_url" {
   function_url_auth_type = "NONE"
 }
 
-# Required by AWS for Function URLs created under the newer auth model (Oct 2025+)
 resource "aws_lambda_permission" "presign_allow_invoke" {
   statement_id  = "AllowPublicInvokeFunction"
   action        = "lambda:InvokeFunction"

@@ -5,7 +5,7 @@ module "storage" {
 }
 
 module "frontend_site" {
-  source          = "../../modules/frontend/site"
+  source          = "../../modules/frontend"
   project_name    = var.project_name
   environment     = var.environment
   domain_aliases  = var.frontend_domain_aliases
@@ -13,7 +13,7 @@ module "frontend_site" {
 }
 
 module "cognito" {
-  source       = "../../modules/frontend/cognito"
+  source       = "../../modules/auth"
   project_name = var.project_name
   environment  = var.environment
 
@@ -27,46 +27,30 @@ module "cognito" {
   entra_tenant_id     = var.entra_tenant_id
 }
 
-module "pipeline_lambdas" {
-  source       = "../../modules/pipeline/lambdas"
+module "pipeline" {
+  source       = "../../modules/pipeline"
   project_name = var.project_name
   environment  = var.environment
 
-  resume_bucket              = module.storage.resume_bucket_name
-  resume_bucket_arn          = module.storage.resume_bucket_arn
-  raw_prefix                 = var.raw_prefix
-  extracted_prefix           = var.extracted_prefix
-  presign_api_key            = var.presign_api_key
-  sfn_arn_param_name         = var.sfn_arn_param_name
+  resume_bucket     = module.storage.resume_bucket_name
+  resume_bucket_arn = module.storage.resume_bucket_arn
+  raw_prefix        = var.raw_prefix
+  extracted_prefix  = var.extracted_prefix
+
+  presign_api_key    = var.presign_api_key
+  sfn_arn_param_name = var.sfn_arn_param_name
+
   talent_profiles_table_name = module.storage.talent_profiles_table_name
   talent_profiles_table_arn  = module.storage.talent_profiles_table_arn
 
-  # Lookup tables
   skills_lookup_table_name         = module.storage.skills_lookup_table_name
   skills_lookup_table_arn          = module.storage.skills_lookup_table_arn
   certifications_lookup_table_name = module.storage.certifications_lookup_table_name
   certifications_lookup_table_arn  = module.storage.certifications_lookup_table_arn
   cities_lookup_table_name         = module.storage.cities_lookup_table_name
   cities_lookup_table_arn          = module.storage.cities_lookup_table_arn
-}
 
-module "step_functions" {
-  source       = "../../modules/pipeline/step_functions"
-  project_name = var.project_name
-  environment  = var.environment
-
-  lambda_arns = {
-    classify       = module.pipeline_lambdas.pipeline_lambda_arns["classify"]
-    start_textract = module.pipeline_lambdas.pipeline_lambda_arns["start_textract"]
-    check_textract = module.pipeline_lambdas.pipeline_lambda_arns["check_textract"]
-    fetch_textract = module.pipeline_lambdas.pipeline_lambda_arns["fetch_textract"]
-    normalize      = module.pipeline_lambdas.pipeline_lambda_arns["normalize"]
-    llm_extract    = module.pipeline_lambdas.pipeline_lambda_arns["llm_extract"]
-    persist        = module.pipeline_lambdas.pipeline_lambda_arns["persist"]
-  }
-
-  sfn_arn_param_name        = var.sfn_arn_param_name
-  pipeline_lambda_role_name = module.pipeline_lambdas.pipeline_lambda_role_name
+  bedrock_model_id = var.bedrock_model_id
 }
 
 # -----------------------------------------------------------------------------
@@ -99,5 +83,18 @@ module "api" {
     [for url in var.cognito_callback_urls : url if url != "http://localhost:5173"],
     ["https://${module.frontend_site.distribution_domain_name}"]
   )
+}
+
+# -----------------------------------------------------------------------------
+# Scheduled background jobs (stale candidate checker, etc.)
+# -----------------------------------------------------------------------------
+
+module "jobs" {
+  source       = "../../modules/jobs"
+  project_name = var.project_name
+  environment  = var.environment
+
+  talent_profiles_table_name = module.storage.talent_profiles_table_name
+  talent_profiles_table_arn  = module.storage.talent_profiles_table_arn
 }
 

@@ -1,5 +1,4 @@
 locals {
-  # One place to add lambdas or adjust timeouts/memory/env
   pipeline_lambdas = {
     starter = {
       timeout = 30
@@ -45,10 +44,10 @@ locals {
       }
     }
   }
+
   pdfminer_layer_ready = length(fileset(path.module, "layers/pdfminer/python/**")) > 0
 }
 
-# Package each lambda from lambda_src/<name>/app.py 
 data "archive_file" "pipeline_zip" {
   for_each    = local.pipeline_lambdas
   type        = "zip"
@@ -77,7 +76,10 @@ resource "aws_lambda_layer_version" "pdfminer" {
   }
 }
 
-# Shared role for all pipeline lambdas
+# -----------------------------------------------------------------------------
+# IAM role shared by all pipeline Lambdas
+# -----------------------------------------------------------------------------
+
 resource "aws_iam_role" "pipeline_lambda_role" {
   name = "${var.project_name}-${var.environment}-pipeline-role"
 
@@ -96,9 +98,6 @@ resource "aws_iam_role_policy_attachment" "pipeline_basic_logs" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-# Permissions for the pipeline - split into logical policies for clarity
-
-# S3 access for raw and extracted prefixes
 resource "aws_iam_role_policy" "pipeline_s3" {
   name = "${var.project_name}-${var.environment}-pipeline-s3"
   role = aws_iam_role.pipeline_lambda_role.id
@@ -122,7 +121,6 @@ resource "aws_iam_role_policy" "pipeline_s3" {
   })
 }
 
-# Textract for document processing
 resource "aws_iam_role_policy" "pipeline_textract" {
   name = "${var.project_name}-${var.environment}-pipeline-textract"
   role = aws_iam_role.pipeline_lambda_role.id
@@ -137,7 +135,6 @@ resource "aws_iam_role_policy" "pipeline_textract" {
   })
 }
 
-# SSM for reading Step Functions ARN
 resource "aws_iam_role_policy" "pipeline_ssm" {
   name = "${var.project_name}-${var.environment}-pipeline-ssm"
   role = aws_iam_role.pipeline_lambda_role.id
@@ -152,7 +149,6 @@ resource "aws_iam_role_policy" "pipeline_ssm" {
   })
 }
 
-# Bedrock for LLM extraction
 resource "aws_iam_role_policy" "pipeline_bedrock" {
   name = "${var.project_name}-${var.environment}-pipeline-bedrock"
   role = aws_iam_role.pipeline_lambda_role.id
@@ -167,7 +163,6 @@ resource "aws_iam_role_policy" "pipeline_bedrock" {
   })
 }
 
-# DynamoDB for persisting talent profiles and lookups
 resource "aws_iam_role_policy" "pipeline_dynamodb" {
   name = "${var.project_name}-${var.environment}-pipeline-dynamodb"
   role = aws_iam_role.pipeline_lambda_role.id
@@ -216,7 +211,7 @@ resource "aws_lambda_function" "pipeline" {
 }
 
 # -----------------------------------------------------------------------------
-# S3 Trigger - invoke starter lambda on raw uploads
+# S3 trigger — start the pipeline on raw uploads
 # -----------------------------------------------------------------------------
 
 resource "aws_lambda_permission" "allow_s3_invoke_starter" {
