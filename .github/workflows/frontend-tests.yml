@@ -45,8 +45,11 @@ jobs:
       - name: ESLint
         run: npx eslint .
 
-      - name: TypeScript check
+      - name: TypeScript check (app)
         run: npx tsc --noEmit
+
+      - name: TypeScript check (tests)
+        run: npx tsc --noEmit -p tsconfig.test.json
 
       - name: Run tests with coverage
         run: npm run test:coverage
