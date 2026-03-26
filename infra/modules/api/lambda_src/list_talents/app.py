@@ -3,6 +3,7 @@ List talents via OpenSearch.
 Replaces the DynamoDB GSI + Python post-filter approach with a single
 OpenSearch bool query, enabling multi-dimension filtering and name search.
 """
+
 import json
 import os
 
@@ -34,16 +35,27 @@ def handler(event, context):
         must = []
         filters = []
 
-        # Full-text name search with fuzzy matching
+        # Full-text search across name and summary
         if params.get("search"):
-            must.append({
-                "match": {
-                    "name": {"query": params["search"], "fuzziness": "AUTO"}
+            must.append(
+                {
+                    "multi_match": {
+                        "query": params["search"],
+                        "fields": ["name^3", "summary"],
+                        "type": "best_fields",
+                        "fuzziness": "AUTO",
+                    }
                 }
-            })
+            )
 
         # Exact keyword filters
-        for field in ("status", "talent_bucket", "talent_category", "clearance_level", "location_state"):
+        for field in (
+            "status",
+            "talent_bucket",
+            "talent_category",
+            "clearance_level",
+            "location_state",
+        ):
             if params.get(field):
                 filters.append({"term": {field: params[field]}})
 
@@ -57,7 +69,9 @@ def handler(event, context):
 
         # Certifications — each must be present (AND logic)
         if params.get("certifications"):
-            for cert in [c.strip() for c in params["certifications"].split(",") if c.strip()]:
+            for cert in [
+                c.strip() for c in params["certifications"].split(",") if c.strip()
+            ]:
                 filters.append({"term": {"cert_names": cert}})
 
         # Years of experience range
@@ -72,12 +86,12 @@ def handler(event, context):
         query = {
             "query": {
                 "bool": {
-                    "must":   must if must else [{"match_all": {}}],
+                    "must": must if must else [{"match_all": {}}],
                     "filter": filters,
                 }
             },
-            "sort":  [{"date_received": {"order": "desc"}}],
-            "size":  1000,
+            "sort": [{"date_received": {"order": "desc"}}],
+            "size": 1000,
         }
 
         response = client.search(index=INDEX_NAME, body=query)
@@ -92,6 +106,7 @@ def handler(event, context):
     except Exception as e:
         print(f"Error: {e}")
         import traceback
+
         traceback.print_exc()
         return {
             "statusCode": 500,
