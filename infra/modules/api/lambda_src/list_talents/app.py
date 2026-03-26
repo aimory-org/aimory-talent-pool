@@ -43,7 +43,8 @@ def handler(event, context):
                         "query": params["search"],
                         "fields": ["name^3", "summary"],
                         "type": "best_fields",
-                        "fuzziness": "AUTO",
+                        # AUTO:4,8 — no fuzz on ≤3 chars (prevents AWS→aws false matches)
+                        "fuzziness": "AUTO:4,8",
                     }
                 }
             )
@@ -83,6 +84,8 @@ def handler(event, context):
         if years_range:
             filters.append({"range": {"years_of_experience": years_range}})
 
+        search_active = bool(params.get("search"))
+
         query = {
             "query": {
                 "bool": {
@@ -94,8 +97,25 @@ def handler(event, context):
             "size": 1000,
         }
 
+        if search_active:
+            query["highlight"] = {
+                "pre_tags": ["<em>"],
+                "post_tags": ["</em>"],
+                "number_of_fragments": 1,
+                "fragment_size": 120,
+                "fields": {
+                    "name": {"number_of_fragments": 0},
+                    "summary": {},
+                },
+            }
+
         response = client.search(index=INDEX_NAME, body=query)
-        items = [hit["_source"] for hit in response["hits"]["hits"]]
+        items = []
+        for hit in response["hits"]["hits"]:
+            doc = hit["_source"]
+            if search_active and hit.get("highlight"):
+                doc["_highlight"] = hit["highlight"]
+            items.append(doc)
 
         return {
             "statusCode": 200,

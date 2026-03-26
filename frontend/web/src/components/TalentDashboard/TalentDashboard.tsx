@@ -308,6 +308,7 @@ export function TalentDashboard() {
           onSelectProfile={setSelectedProfile}
           activeFilterCount={activeFilterCount}
           onClearFilters={clearFilters}
+          searchActive={!!filters.search}
         />
       </div>
 
