@@ -36,35 +36,34 @@ def handler(event, context):
         filters = []
 
         # Full-text search across name and summary.
-        # Short queries (≤3 chars): name prefix only — avoids tokenizer false
-        # positives in summary (e.g. "aws" matching "a" tokens).
-        # Longer queries: also search summary with fuzziness for typo tolerance.
+        # name: match_phrase_prefix always (handles "ben" → "Benjamin", last name tokens)
+        # summary: exact token match always; fuzziness only for 5+ char terms
+        #   ("aws" → exact token "aws" in summary ✓, no "a" false positives)
         if params.get("search"):
             search_term = params["search"]
-            name_prefix = {
-                "match_phrase_prefix": {"name": {"query": search_term, "boost": 3}}
-            }
-            if len(search_term) <= 3:
-                must.append(name_prefix)
-            else:
-                must.append(
-                    {
-                        "bool": {
-                            "should": [
-                                name_prefix,
-                                {
-                                    "multi_match": {
+            must.append(
+                {
+                    "bool": {
+                        "should": [
+                            {
+                                "match_phrase_prefix": {
+                                    "name": {"query": search_term, "boost": 3}
+                                }
+                            },
+                            {
+                                "match": {
+                                    "summary": {
                                         "query": search_term,
-                                        "fields": ["name^2", "summary"],
-                                        "type": "best_fields",
-                                        "fuzziness": "AUTO:4,8",
+                                        # fuzz only kicks in for 5+ char terms
+                                        "fuzziness": "AUTO:5,8",
                                     }
-                                },
-                            ],
-                            "minimum_should_match": 1,
-                        }
+                                }
+                            },
+                        ],
+                        "minimum_should_match": 1,
                     }
-                )
+                }
+            )
 
         # Exact keyword filters
         for field in (
