@@ -108,7 +108,7 @@ def main():
     client = _get_opensearch_client(args.endpoint, args.region)
 
     # Create index if it doesn't exist
-    if not client.indices.exists(INDEX_NAME):
+    if not client.indices.exists(index=INDEX_NAME):
         client.indices.create(
             index=INDEX_NAME,
             body={
