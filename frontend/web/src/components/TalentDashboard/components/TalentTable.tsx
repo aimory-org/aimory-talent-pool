@@ -29,10 +29,16 @@ interface TalentTableProps {
 }
 
 /** Renders an OpenSearch highlight fragment safely — no dangerouslySetInnerHTML */
-function HighlightSnippet({ html }: { html: string }) {
+function HighlightSnippet({
+  html,
+  className,
+}: {
+  html: string;
+  className?: string;
+}) {
   const parts = html.split(/(<em>.*?<\/em>)/g);
   return (
-    <span className="text-xs text-foreground/50 leading-relaxed">
+    <span className={className ?? "text-xs text-foreground/50 leading-relaxed"}>
       {parts.map((part, i) =>
         part.startsWith("<em>") ? (
           <mark
@@ -209,7 +215,14 @@ export function TalentTable({
                     </div>
                     <div>
                       <p className="font-medium text-foreground group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors">
-                        {profile.name || "Unknown"}
+                        {searchActive && profile._highlight?.name?.[0] ? (
+                          <HighlightSnippet
+                            html={profile._highlight.name[0]}
+                            className=""
+                          />
+                        ) : (
+                          profile.name || "Unknown"
+                        )}
                       </p>
                       {searchActive && profile._highlight?.summary?.[0] ? (
                         <HighlightSnippet
