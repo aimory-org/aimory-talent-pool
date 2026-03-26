@@ -48,3 +48,23 @@ output "cities_lookup_table_arn" {
   description = "DynamoDB table ARN for cities lookup"
   value       = aws_dynamodb_table.cities_lookup.arn
 }
+
+output "talent_profiles_table_stream_arn" {
+  description = "DynamoDB Stream ARN for talent profiles table"
+  value       = aws_dynamodb_table.talent_profiles.stream_arn
+}
+
+output "opensearch_endpoint" {
+  description = "OpenSearch domain HTTPS endpoint (no scheme)"
+  value       = aws_opensearch_domain.talent_search.endpoint
+}
+
+output "opensearch_domain_arn" {
+  description = "OpenSearch domain ARN"
+  value       = aws_opensearch_domain.talent_search.arn
+}
+
+output "opensearch_layer_arn" {
+  description = "ARN of the opensearch-py Lambda layer"
+  value       = aws_lambda_layer_version.opensearch.arn
+}

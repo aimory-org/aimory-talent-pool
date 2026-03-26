@@ -163,3 +163,24 @@ resource "aws_iam_role_policy" "api_s3_read" {
     }]
   })
 }
+
+# OpenSearch HTTP access for list_talents
+resource "aws_iam_role_policy" "api_opensearch" {
+  name = "${var.project_name}-${var.environment}-api-opensearch"
+  role = aws_iam_role.api_lambda_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid    = "OpenSearchQuery"
+      Effect = "Allow"
+      Action = [
+        "es:ESHttpGet",
+        "es:ESHttpPost",
+        "es:ESHttpPut",
+        "es:ESHttpHead"
+      ]
+      Resource = "${var.opensearch_domain_arn}/*"
+    }]
+  })
+}

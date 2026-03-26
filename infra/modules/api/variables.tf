@@ -73,3 +73,18 @@ variable "cors_allowed_origins" {
   description = "Allowed origins for CORS"
   default     = ["http://localhost:5173"]
 }
+
+variable "opensearch_endpoint" {
+  type        = string
+  description = "OpenSearch domain endpoint (no scheme) for list_talents queries"
+}
+
+variable "opensearch_domain_arn" {
+  type        = string
+  description = "OpenSearch domain ARN for IAM policy"
+}
+
+variable "opensearch_layer_arn" {
+  type        = string
+  description = "ARN of the opensearch-py Lambda layer"
+}

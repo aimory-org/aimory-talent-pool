@@ -8,14 +8,16 @@ locals {
       route   = "GET /talents"
       timeout = 15
       memory  = 256
+      layers  = [var.opensearch_layer_arn]
       env = {
-        TALENT_PROFILES_TABLE = var.talent_profiles_table_name
+        OPENSEARCH_ENDPOINT = var.opensearch_endpoint
       }
     }
     get_talent = {
       route   = "GET /talents/{pk}"
       timeout = 10
       memory  = 256
+      layers  = []
       env = {
         TALENT_PROFILES_TABLE = var.talent_profiles_table_name
       }
@@ -24,6 +26,7 @@ locals {
       route   = "GET /lookups"
       timeout = 10
       memory  = 256
+      layers  = []
       env = {
         SKILLS_LOOKUP_TABLE         = var.skills_lookup_table_name
         CERTIFICATIONS_LOOKUP_TABLE = var.certifications_lookup_table_name
@@ -34,6 +37,7 @@ locals {
       route   = "GET /resume-url"
       timeout = 10
       memory  = 256
+      layers  = []
       env = {
         RESUME_BUCKET = var.resume_bucket_name
       }
@@ -42,6 +46,7 @@ locals {
       route   = "PATCH /talents"
       timeout = 10
       memory  = 256
+      layers  = []
       env = {
         TALENT_PROFILES_TABLE = var.talent_profiles_table_name
       }
@@ -50,6 +55,7 @@ locals {
       route   = "DELETE /talents"
       timeout = 10
       memory  = 256
+      layers  = []
       env = {
         TALENT_PROFILES_TABLE = var.talent_profiles_table_name
         RESUME_BUCKET         = var.resume_bucket_name
@@ -78,6 +84,8 @@ resource "aws_lambda_function" "api" {
 
   timeout     = each.value.timeout
   memory_size = each.value.memory
+
+  layers = each.value.layers
 
   environment {
     variables = each.value.env

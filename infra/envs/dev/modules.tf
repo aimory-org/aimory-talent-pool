@@ -68,6 +68,10 @@ module "api" {
   talent_profiles_table_name = module.storage.talent_profiles_table_name
   talent_profiles_table_arn  = module.storage.talent_profiles_table_arn
 
+  opensearch_endpoint   = module.storage.opensearch_endpoint
+  opensearch_domain_arn = module.storage.opensearch_domain_arn
+  opensearch_layer_arn  = module.storage.opensearch_layer_arn
+
   skills_lookup_table_name         = module.storage.skills_lookup_table_name
   skills_lookup_table_arn          = module.storage.skills_lookup_table_arn
   certifications_lookup_table_name = module.storage.certifications_lookup_table_name
