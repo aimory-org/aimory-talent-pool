@@ -35,16 +35,31 @@ def handler(event, context):
         must = []
         filters = []
 
-        # Full-text search across name and summary
+        # Full-text search across name and summary.
+        # Uses a should (OR) between:
+        #   1. match_phrase_prefix on name — handles partial input ("ben" → "Benjamin")
+        #   2. multi_match on name+summary — handles full words + typos in summary
         if params.get("search"):
             must.append(
                 {
-                    "multi_match": {
-                        "query": params["search"],
-                        "fields": ["name^3", "summary"],
-                        "type": "best_fields",
-                        # AUTO:4,8 — no fuzz on ≤3 chars (prevents AWS→aws false matches)
-                        "fuzziness": "AUTO:4,8",
+                    "bool": {
+                        "should": [
+                            {
+                                "match_phrase_prefix": {
+                                    "name": {"query": params["search"], "boost": 3}
+                                }
+                            },
+                            {
+                                "multi_match": {
+                                    "query": params["search"],
+                                    "fields": ["name^2", "summary"],
+                                    "type": "best_fields",
+                                    # AUTO:4,8 — no fuzz on ≤3 chars (prevents AWS false matches)
+                                    "fuzziness": "AUTO:4,8",
+                                }
+                            },
+                        ],
+                        "minimum_should_match": 1,
                     }
                 }
             )
