@@ -3,7 +3,6 @@
 # t3.small.search, single node, gp3 10 GB — minimal cost for dev/prod
 # -----------------------------------------------------------------------------
 
-data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
 resource "aws_opensearch_domain" "talent_search" {
