@@ -6,7 +6,7 @@
 data "aws_region" "current" {}
 
 resource "aws_opensearch_domain" "talent_search" {
-  domain_name    = "${var.project_name}-${var.environment}-talent"
+  domain_name    = "${var.project_name}-${var.environment}"
   engine_version = "OpenSearch_2.11"
 
   cluster_config {
@@ -47,7 +47,7 @@ resource "aws_opensearch_domain" "talent_search" {
       Effect    = "Allow"
       Principal = { AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root" }
       Action    = "es:*"
-      Resource  = "arn:aws:es:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:domain/${var.project_name}-${var.environment}-talent/*"
+      Resource  = "arn:aws:es:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:domain/${var.project_name}-${var.environment}/*"
     }]
   })
 
