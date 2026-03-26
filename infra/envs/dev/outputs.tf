@@ -49,3 +49,8 @@ output "api_endpoint" {
   description = "API Gateway endpoint URL for frontend"
   value       = module.api.api_endpoint
 }
+
+output "opensearch_endpoint" {
+  description = "OpenSearch domain endpoint for backfill script"
+  value       = module.storage.opensearch_endpoint
+}
