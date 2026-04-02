@@ -26,6 +26,7 @@ interface TalentTableProps {
   activeFilterCount: number;
   onClearFilters: () => void;
   searchActive?: boolean;
+  searchTerm?: string;
 }
 
 /** Renders an OpenSearch highlight fragment safely — no dangerouslySetInnerHTML */
@@ -55,6 +56,50 @@ function HighlightSnippet({
   );
 }
 
+/** Highlights only the prefix-matching portion of a name */
+function NamePrefixHighlight({
+  name,
+  searchTerm,
+}: {
+  name: string;
+  searchTerm: string;
+}) {
+  const lowerName = name.toLowerCase();
+  const lowerSearch = searchTerm.toLowerCase().trim();
+  if (!lowerSearch || !lowerName.startsWith(lowerSearch)) {
+    // Check if any word in the name starts with the search term
+    const words = name.split(/\s+/);
+    let offset = 0;
+    for (const word of words) {
+      if (word.toLowerCase().startsWith(lowerSearch)) {
+        const before = name.slice(0, offset);
+        const match = name.slice(offset, offset + lowerSearch.length);
+        const after = name.slice(offset + lowerSearch.length);
+        return (
+          <>
+            {before}
+            <mark className="bg-yellow-200/60 text-yellow-900 dark:bg-yellow-500/25 dark:text-yellow-200 rounded px-0.5 not-italic font-medium">
+              {match}
+            </mark>
+            {after}
+          </>
+        );
+      }
+      offset += word.length + 1; // +1 for space
+    }
+    return <>{name}</>;
+  }
+  const matchLen = lowerSearch.length;
+  return (
+    <>
+      <mark className="bg-yellow-200/60 text-yellow-900 dark:bg-yellow-500/25 dark:text-yellow-200 rounded px-0.5 not-italic font-medium">
+        {name.slice(0, matchLen)}
+      </mark>
+      {name.slice(matchLen)}
+    </>
+  );
+}
+
 export function TalentTable({
   profiles,
   isLoading,
@@ -65,6 +110,7 @@ export function TalentTable({
   activeFilterCount,
   onClearFilters,
   searchActive = false,
+  searchTerm = "",
 }: TalentTableProps) {
   return (
     <div className="relative bg-white/50 dark:bg-slate-700/50 backdrop-blur-xl rounded-2xl border border-black/10 dark:border-white/10 overflow-hidden shadow-xl shadow-black/20">
@@ -215,10 +261,10 @@ export function TalentTable({
                     </div>
                     <div>
                       <p className="font-medium text-foreground group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors">
-                        {searchActive && profile._highlight?.name?.[0] ? (
-                          <HighlightSnippet
-                            html={profile._highlight.name[0]}
-                            className=""
+                        {searchActive && searchTerm && profile.name ? (
+                          <NamePrefixHighlight
+                            name={profile.name}
+                            searchTerm={searchTerm}
                           />
                         ) : (
                           profile.name || "Unknown"
