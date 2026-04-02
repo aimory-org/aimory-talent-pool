@@ -104,23 +104,10 @@ def handler(event, context):
             "size": 1000,
         }
 
-        if search_active:
-            query["highlight"] = {
-                "pre_tags": ["<em>"],
-                "post_tags": ["</em>"],
-                "number_of_fragments": 1,
-                "fragment_size": 120,
-                "fields": {
-                    "summary": {},
-                },
-            }
-
         response = client.search(index=INDEX_NAME, body=query)
         items = []
         for hit in response["hits"]["hits"]:
             doc = hit["_source"]
-            if search_active and hit.get("highlight"):
-                doc["_highlight"] = hit["highlight"]
             items.append(doc)
 
         return {

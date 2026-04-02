@@ -29,33 +29,6 @@ interface TalentTableProps {
   searchTerm?: string;
 }
 
-/** Renders an OpenSearch highlight fragment safely — no dangerouslySetInnerHTML */
-function HighlightSnippet({
-  html,
-  className,
-}: {
-  html: string;
-  className?: string;
-}) {
-  const parts = html.split(/(<em>.*?<\/em>)/g);
-  return (
-    <span className={className ?? "text-xs text-foreground/50 leading-relaxed"}>
-      {parts.map((part, i) =>
-        part.startsWith("<em>") ? (
-          <mark
-            key={i}
-            className="bg-yellow-200/60 text-yellow-900 dark:bg-yellow-500/25 dark:text-yellow-200 rounded px-0.5 not-italic font-medium"
-          >
-            {part.slice(4, -5)}
-          </mark>
-        ) : (
-          <span key={i}>{part}</span>
-        ),
-      )}
-    </span>
-  );
-}
-
 /** Highlights only the prefix-matching portion of a name */
 function NamePrefixHighlight({
   name,
@@ -97,6 +70,114 @@ function NamePrefixHighlight({
       </mark>
       {name.slice(matchLen)}
     </>
+  );
+}
+
+const MARK_CLASS =
+  "bg-yellow-200/60 text-yellow-900 dark:bg-yellow-500/25 dark:text-yellow-200 rounded px-0.5 not-italic font-medium";
+
+/**
+ * Highlights the prefix-matching portions of text for a multi-word search phrase.
+ * Each search token must appear in order; the last token is a prefix match.
+ * Returns a 120-char fragment around the first match.
+ */
+function PhraseHighlight({
+  text,
+  searchTerm,
+  className,
+  fragmentSize = 120,
+}: {
+  text: string;
+  searchTerm: string;
+  className?: string;
+  fragmentSize?: number;
+}) {
+  const tokens = searchTerm.toLowerCase().trim().split(/\s+/).filter(Boolean);
+  if (!tokens.length || !text) return null;
+
+  const lowerText = text.toLowerCase();
+
+  // Find the phrase: each token must appear in order, last one is prefix
+  type Hit = { start: number; end: number };
+  const hits: Hit[] = [];
+  let cursor = 0;
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i];
+    // Find start of next word boundary containing this token
+    const idx = lowerText.indexOf(token, cursor);
+    if (idx === -1) return null; // phrase not found
+
+    // Find the end of this word in the original text
+    let wordEnd = idx + token.length;
+    if (i < tokens.length - 1) {
+      // Not the last token — match the full word
+      while (wordEnd < text.length && /\S/.test(text[wordEnd])) wordEnd++;
+      hits.push({ start: idx, end: idx + token.length });
+    } else {
+      // Last token — prefix match, only highlight what was typed
+      hits.push({ start: idx, end: idx + token.length });
+    }
+    cursor = wordEnd;
+  }
+
+  // Build a fragment around the match
+  const firstHit = hits[0].start;
+  const lastHit = hits[hits.length - 1].end;
+  const matchCenter = Math.floor((firstHit + lastHit) / 2);
+  const half = Math.floor(fragmentSize / 2);
+  let fragStart = Math.max(0, matchCenter - half);
+  let fragEnd = Math.min(text.length, fragStart + fragmentSize);
+  // Adjust start if we're near the end
+  if (fragEnd - fragStart < fragmentSize) {
+    fragStart = Math.max(0, fragEnd - fragmentSize);
+  }
+
+  // Snap to word boundaries
+  if (fragStart > 0) {
+    const spaceIdx = text.indexOf(" ", fragStart);
+    if (spaceIdx !== -1 && spaceIdx < fragStart + 20) fragStart = spaceIdx + 1;
+  }
+  if (fragEnd < text.length) {
+    const spaceIdx = text.lastIndexOf(" ", fragEnd);
+    if (spaceIdx > fragEnd - 20) fragEnd = spaceIdx;
+  }
+
+  const fragment = text.slice(fragStart, fragEnd);
+  const prefix = fragStart > 0 ? "…" : "";
+  const suffix = fragEnd < text.length ? "…" : "";
+
+  // Map hits into fragment-relative offsets and build parts
+  const relHits = hits
+    .map((h) => ({
+      start: h.start - fragStart,
+      end: h.end - fragStart,
+    }))
+    .filter((h) => h.start >= 0 && h.end <= fragment.length);
+
+  const parts: React.ReactNode[] = [];
+  let pos = 0;
+  for (let i = 0; i < relHits.length; i++) {
+    const h = relHits[i];
+    if (h.start > pos) {
+      parts.push(<span key={`t${i}`}>{fragment.slice(pos, h.start)}</span>);
+    }
+    parts.push(
+      <mark key={`m${i}`} className={MARK_CLASS}>
+        {fragment.slice(h.start, h.end)}
+      </mark>,
+    );
+    pos = h.end;
+  }
+  if (pos < fragment.length) {
+    parts.push(<span key="tail">{fragment.slice(pos)}</span>);
+  }
+
+  return (
+    <span className={className ?? "text-xs text-foreground/50 leading-relaxed"}>
+      {prefix}
+      {parts}
+      {suffix}
+    </span>
   );
 }
 
@@ -270,9 +351,10 @@ export function TalentTable({
                           profile.name || "Unknown"
                         )}
                       </p>
-                      {searchActive && profile._highlight?.summary?.[0] ? (
-                        <HighlightSnippet
-                          html={profile._highlight.summary[0]}
+                      {searchActive && searchTerm && profile.summary ? (
+                        <PhraseHighlight
+                          text={profile.summary}
+                          searchTerm={searchTerm}
                         />
                       ) : (
                         <p className="text-xs text-foreground/40">
