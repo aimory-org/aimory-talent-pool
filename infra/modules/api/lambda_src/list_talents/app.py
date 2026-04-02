@@ -37,27 +37,16 @@ def handler(event, context):
 
         # Full-text search across name and summary.
         # name: match_phrase_prefix — strict prefix matching, no fuzziness
-        # summary: match with fuzziness 1 — allows one typo per token (2+ chars only)
+        # summary: match_phrase_prefix — strict prefix matching, 2+ chars required
         if params.get("search"):
             search_term = params["search"]
             should_clauses = [
                 {"match_phrase_prefix": {"name": {"query": search_term, "boost": 3}}},
             ]
-            # Only add fuzzy summary search for 2+ character queries
             if len(search_term.strip()) >= 2:
                 should_clauses.append(
-                    {
-                        "match": {
-                            "summary": {
-                                "query": search_term,
-                                "fuzziness": 1,
-                            }
-                        }
-                    }
+                    {"match_phrase_prefix": {"summary": {"query": search_term}}}
                 )
-            else:
-                # For single-character queries, exact token match only
-                should_clauses.append({"match": {"summary": {"query": search_term}}})
             must.append(
                 {
                     "bool": {
