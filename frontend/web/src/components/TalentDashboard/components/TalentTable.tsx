@@ -97,14 +97,22 @@ function PhraseHighlight({
 
   const lowerText = text.toLowerCase();
 
-  // Find the phrase: each token must appear in order, last one is prefix
+  // Find the phrase: each token must appear in order, last one is prefix.
+  // Each token must match at a word boundary (start of a word) so that e.g.
+  // searching "net" does not highlight the middle of "internet".
   type Hit = { start: number; end: number };
   const hits: Hit[] = [];
   let cursor = 0;
   for (let i = 0; i < tokens.length; i++) {
     const token = tokens[i];
-    // Find start of next word boundary containing this token
-    const idx = lowerText.indexOf(token, cursor);
+    // Search for the token starting at a word boundary from cursor onward.
+    const pattern = new RegExp(
+      `(?<![\\w])${token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`,
+      "i",
+    );
+    const slice = lowerText.slice(cursor);
+    const match = pattern.exec(slice);
+    const idx = match ? cursor + match.index : -1;
     if (idx === -1) return null; // phrase not found
 
     // Find the end of this word in the original text
