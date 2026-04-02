@@ -37,27 +37,31 @@ def handler(event, context):
 
         # Full-text search across name and summary.
         # name: match_phrase_prefix — strict prefix matching, no fuzziness
-        # summary: match with fuzziness 1 — allows one typo per token
+        # summary: match with fuzziness 1 — allows one typo per token (2+ chars only)
         if params.get("search"):
             search_term = params["search"]
+            should_clauses = [
+                {"match_phrase_prefix": {"name": {"query": search_term, "boost": 3}}},
+            ]
+            # Only add fuzzy summary search for 2+ character queries
+            if len(search_term.strip()) >= 2:
+                should_clauses.append(
+                    {
+                        "match": {
+                            "summary": {
+                                "query": search_term,
+                                "fuzziness": 1,
+                            }
+                        }
+                    }
+                )
+            else:
+                # For single-character queries, exact token match only
+                should_clauses.append({"match": {"summary": {"query": search_term}}})
             must.append(
                 {
                     "bool": {
-                        "should": [
-                            {
-                                "match_phrase_prefix": {
-                                    "name": {"query": search_term, "boost": 3}
-                                }
-                            },
-                            {
-                                "match": {
-                                    "summary": {
-                                        "query": search_term,
-                                        "fuzziness": 1,
-                                    }
-                                }
-                            },
-                        ],
+                        "should": should_clauses,
                         "minimum_should_match": 1,
                     }
                 }
@@ -118,7 +122,6 @@ def handler(event, context):
                 "number_of_fragments": 1,
                 "fragment_size": 120,
                 "fields": {
-                    "name": {},
                     "summary": {},
                 },
             }

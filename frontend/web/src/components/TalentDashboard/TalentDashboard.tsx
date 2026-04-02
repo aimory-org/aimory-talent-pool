@@ -309,6 +309,7 @@ export function TalentDashboard() {
           activeFilterCount={activeFilterCount}
           onClearFilters={clearFilters}
           searchActive={!!filters.search}
+          searchTerm={filters.search || ""}
         />
       </div>
 
