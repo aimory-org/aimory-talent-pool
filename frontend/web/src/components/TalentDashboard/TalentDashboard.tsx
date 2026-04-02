@@ -236,7 +236,7 @@ export function TalentDashboard() {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-foreground/40 group-focus-within:text-indigo-400 transition-colors" />
               <input
                 type="text"
-                placeholder="Search by name..."
+                placeholder="Search by name or summary..."
                 value={filters.search}
                 onChange={(e) => handleFilterChange("search", e.target.value)}
                 className="w-full h-12 pl-12 pr-4 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground placeholder-foreground/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 focus:bg-black/10 dark:focus:bg-white/10 transition-all duration-300"
@@ -326,6 +326,7 @@ export function TalentDashboard() {
           onSelectProfile={setSelectedProfile}
           activeFilterCount={activeFilterCount}
           onClearFilters={clearFilters}
+          searchActive={!!filters.search}
         />
       </div>
 

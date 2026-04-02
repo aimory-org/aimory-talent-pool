@@ -90,25 +90,70 @@ jobs:
         with:
           python-version: "3.12"
 
-      # ── Build Lambda layer ────────────────────────────────────────────────
-      - name: Build pdfminer Lambda layer
-        working-directory: infra/modules/pipeline/lambdas/layers/pdfminer
-        run: pip install --quiet -r requirements.txt -t python
+      # ── Build Lambda layers ────────────────────────────────────────────────
+      - name: Build Lambda layers
+        run: |
+          find infra/modules -type f -name requirements.txt -path "*/layers/*" | while read req; do
+            layer_dir=$(dirname "$req")
+            echo "Building layer: $layer_dir"
+            pip install --quiet -r "$req" -t "$layer_dir/python"
+          done
 
       # ── Terraform ─────────────────────────────────────────────────────────
       - name: Terraform Init
         run: terraform init -input=false
         working-directory: ${{ env.TF_DIR }}
 
-      - name: Terraform Plan
-        run: |
-          terraform plan -input=false -no-color -out=tfplan 2>&1 | tee plan.log
+      # ── Backup current state before apply ─────────────────────────────────
+      - name: Backup Terraform State
+        id: backup
         working-directory: ${{ env.TF_DIR }}
+        run: |
+          # Download current state for potential rollback
+          terraform state pull > state-backup-${{ github.sha }}.json
+          if [ -s state-backup-${{ github.sha }}.json ]; then
+            echo "state_exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "state_exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload State Backup
+        if: steps.backup.outputs.state_exists == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-state-backup-${{ github.sha }}
+          path: ${{ env.TF_DIR }}/state-backup-${{ github.sha }}.json
+          retention-days: 30
+
+      - name: Terraform Plan
+        id: plan
+        working-directory: ${{ env.TF_DIR }}
+        run: |
+          set +e
+          terraform plan -input=false -no-color -detailed-exitcode -out=tfplan 2>&1 | tee plan.log
+          PLAN_EXIT=${PIPESTATUS[0]}
+          echo "exitcode=$PLAN_EXIT" >> "$GITHUB_OUTPUT"
+          
+          # Exit codes: 0=no changes, 1=error, 2=changes present
+          if [ $PLAN_EXIT -eq 1 ]; then
+            echo "::error::Terraform plan failed"
+            exit 1
+          fi
 
       - name: Terraform Apply
-        run: |
-          terraform apply -input=false -no-color tfplan 2>&1 | tee apply.log
+        id: apply
         working-directory: ${{ env.TF_DIR }}
+        run: |
+          set +e
+          terraform apply -input=false -no-color tfplan 2>&1 | tee apply.log
+          APPLY_EXIT=${PIPESTATUS[0]}
+          echo "exitcode=$APPLY_EXIT" >> "$GITHUB_OUTPUT"
+          
+          if [ $APPLY_EXIT -ne 0 ]; then
+            echo "::error::Terraform apply failed. State backup available in artifacts."
+            echo "::error::To rollback: download state-backup artifact and run 'terraform state push <file>'"
+            exit 1
+          fi
 
       # ── Capture outputs for the frontend job ──────────────────────────────
       - name: Capture Terraform Outputs

@@ -32,6 +32,12 @@ variable "presign_api_key" {
   }
 }
 
+variable "bedrock_model_id" {
+  description = "Bedrock model ID used by the pipeline for resume parsing"
+  type        = string
+  default     = "anthropic.claude-3-5-sonnet-20240620-v1:0"
+}
+
 variable "raw_prefix" {
   description = "S3 key prefix for resume uploads"
   type        = string

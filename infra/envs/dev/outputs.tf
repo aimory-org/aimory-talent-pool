@@ -5,7 +5,7 @@ output "resume_bucket_name" {
 
 output "presign_function_url" {
   description = "Public function URL for the presign Lambda"
-  value       = module.pipeline_lambdas.presign_function_url
+  value       = module.pipeline.presign_function_url
 }
 
 output "frontend_site_bucket_name" {
@@ -48,4 +48,9 @@ output "cognito_frontend_config" {
 output "api_endpoint" {
   description = "API Gateway endpoint URL for frontend"
   value       = module.api.api_endpoint
+}
+
+output "opensearch_endpoint" {
+  description = "OpenSearch domain endpoint for backfill script"
+  value       = module.storage.opensearch_endpoint
 }

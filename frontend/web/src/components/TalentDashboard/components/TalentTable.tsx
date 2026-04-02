@@ -25,6 +25,34 @@ interface TalentTableProps {
   onSelectProfile: (profile: TalentProfile) => void;
   activeFilterCount: number;
   onClearFilters: () => void;
+  searchActive?: boolean;
+}
+
+/** Renders an OpenSearch highlight fragment safely — no dangerouslySetInnerHTML */
+function HighlightSnippet({
+  html,
+  className,
+}: {
+  html: string;
+  className?: string;
+}) {
+  const parts = html.split(/(<em>.*?<\/em>)/g);
+  return (
+    <span className={className ?? "text-xs text-foreground/50 leading-relaxed"}>
+      {parts.map((part, i) =>
+        part.startsWith("<em>") ? (
+          <mark
+            key={i}
+            className="bg-yellow-200/60 text-yellow-900 dark:bg-yellow-500/25 dark:text-yellow-200 rounded px-0.5 not-italic font-medium"
+          >
+            {part.slice(4, -5)}
+          </mark>
+        ) : (
+          <span key={i}>{part}</span>
+        ),
+      )}
+    </span>
+  );
 }
 
 export function TalentTable({
@@ -36,6 +64,7 @@ export function TalentTable({
   onSelectProfile,
   activeFilterCount,
   onClearFilters,
+  searchActive = false,
 }: TalentTableProps) {
   return (
     <div className="relative bg-white/50 dark:bg-slate-700/50 backdrop-blur-xl rounded-2xl border border-black/10 dark:border-white/10 overflow-hidden shadow-xl shadow-black/20">
@@ -186,11 +215,24 @@ export function TalentTable({
                     </div>
                     <div>
                       <p className="font-medium text-foreground group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors">
-                        {profile.name || "Unknown"}
+                        {searchActive && profile._highlight?.name?.[0] ? (
+                          <HighlightSnippet
+                            html={profile._highlight.name[0]}
+                            className=""
+                          />
+                        ) : (
+                          profile.name || "Unknown"
+                        )}
                       </p>
-                      <p className="text-xs text-foreground/40">
-                        {profile.contact?.email || "—"}
-                      </p>
+                      {searchActive && profile._highlight?.summary?.[0] ? (
+                        <HighlightSnippet
+                          html={profile._highlight.summary[0]}
+                        />
+                      ) : (
+                        <p className="text-xs text-foreground/40">
+                          {profile.contact?.email || "—"}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </TableCell>

@@ -1,52 +1,57 @@
 // Types matching the DynamoDB talent_profiles table schema
 export interface TalentProfile {
-  pk: string // Primary key (e.g., "bucket#key")
-  bucket: string
-  key: string
-  name: string
-  name_lower: string
+  pk: string; // Primary key (e.g., "bucket#key")
+  bucket: string;
+  key: string;
+  name: string;
+  name_lower: string;
   contact: {
-    email: string | null
-    phone: string | null
-    linkedin: string | null
-    github: string | null
-  }
-  summary: string | null
-  talent_bucket: TalentBucket
-  talent_category: TalentCategory
-  skillsets: { name: string; evidence: string[] }[]
-  skill_names: string // comma-separated for search
-  years_of_experience: number | null
-  clearance_level: ClearanceLevel
-  certifications: string[]
-  cert_names: string // comma-separated for search
-  companies: { name: string; evidence: string[] }[]
+    email: string | null;
+    phone: string | null;
+    linkedin: string | null;
+    github: string | null;
+  };
+  summary: string | null;
+  talent_bucket: TalentBucket;
+  talent_category: TalentCategory;
+  skillsets: { name: string; evidence: string[] }[];
+  skill_names: string; // comma-separated for search
+  years_of_experience: number | null;
+  clearance_level: ClearanceLevel;
+  certifications: string[];
+  cert_names: string; // comma-separated for search
+  companies: { name: string; evidence: string[] }[];
   location: {
-    city: string | null
-    state: string | null
-  }
-  location_state: string
-  bill_rate: number | null
-  status: CandidateStatus
-  date_received: string // ISO date string
-  updated_at: string
+    city: string | null;
+    state: string | null;
+  };
+  location_state: string;
+  bill_rate: number | null;
+  status: CandidateStatus;
+  date_received: string; // ISO date string
+  updated_at: string;
+  /** Populated by OpenSearch when a search query is active */
+  _highlight?: {
+    name?: string[];
+    summary?: string[];
+  };
 }
 
-export type CandidateStatus = 
+export type CandidateStatus =
   | "Potential Candidate"
   | "Active Candidate"
   | "Placed Candidate"
   | "Stale Candidate"
-  | "Do Not Contact"
+  | "Do Not Contact";
 
-export type TalentBucket = 
+export type TalentBucket =
   | "IT Resources"
   | "Accounting and Finance Resources"
   | "HR Resources"
   | "Business Development/Sales Resources"
-  | "Unclassified"
+  | "Unclassified";
 
-export type TalentCategory = 
+export type TalentCategory =
   | "Accounting"
   | "Finance"
   | "Data Analysis"
@@ -59,16 +64,16 @@ export type TalentCategory =
   | "HR"
   | "Business Development"
   | "Sales"
-  | "Unclassified"
+  | "Unclassified";
 
-export type ClearanceLevel = 
+export type ClearanceLevel =
   | "Secret"
   | "TS"
   | "TS/SCI"
   | "TS/SCI/FSP"
   | "TS/SCI/CI"
   | "Yankee White"
-  | null
+  | null;
 
 export const CANDIDATE_STATUSES: { value: CandidateStatus; label: string }[] = [
   { value: "Active Candidate", label: "Active Candidate" },
@@ -76,15 +81,18 @@ export const CANDIDATE_STATUSES: { value: CandidateStatus; label: string }[] = [
   { value: "Placed Candidate", label: "Placed Candidate" },
   { value: "Potential Candidate", label: "Potential Candidate" },
   { value: "Stale Candidate", label: "Stale Candidate" },
-]
+];
 
 export const TALENT_BUCKETS: { value: TalentBucket; label: string }[] = [
   { value: "Accounting and Finance Resources", label: "Accounting & Finance" },
-  { value: "Business Development/Sales Resources", label: "Business Dev/Sales" },
+  {
+    value: "Business Development/Sales Resources",
+    label: "Business Dev/Sales",
+  },
   { value: "HR Resources", label: "HR Resources" },
   { value: "IT Resources", label: "IT Resources" },
   { value: "Unclassified", label: "Unclassified" },
-]
+];
 
 export const TALENT_CATEGORIES: { value: TalentCategory; label: string }[] = [
   { value: "Accounting", label: "Accounting" },
@@ -100,7 +108,7 @@ export const TALENT_CATEGORIES: { value: TalentCategory; label: string }[] = [
   { value: "Project Manager", label: "Project Manager" },
   { value: "Sales", label: "Sales" },
   { value: "Unclassified", label: "Unclassified" },
-]
+];
 
 export const CLEARANCE_LEVELS: { value: string; label: string }[] = [
   { value: "Secret", label: "Secret" },
@@ -109,7 +117,7 @@ export const CLEARANCE_LEVELS: { value: string; label: string }[] = [
   { value: "TS/SCI/CI", label: "TS/SCI + CI Poly" },
   { value: "TS/SCI/FSP", label: "TS/SCI + Full Scope Poly" },
   { value: "Yankee White", label: "Yankee White" },
-]
+];
 
 export const US_STATES: { value: string; label: string }[] = [
   { value: "AL", label: "Alabama" },
@@ -163,4 +171,4 @@ export const US_STATES: { value: string; label: string }[] = [
   { value: "WV", label: "West Virginia" },
   { value: "WI", label: "Wisconsin" },
   { value: "WY", label: "Wyoming" },
-]
+];
