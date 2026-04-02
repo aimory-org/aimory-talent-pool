@@ -36,9 +36,8 @@ def handler(event, context):
         filters = []
 
         # Full-text search across name and summary.
-        # name: match_phrase_prefix always (handles "ben" → "Benjamin", last name tokens)
-        # summary: exact token match always; fuzziness only for 5+ char terms
-        #   ("aws" → exact token "aws" in summary ✓, no "a" false positives)
+        # name: match_phrase_prefix — strict prefix matching, no fuzziness
+        # summary: match with fuzziness 1 — allows one typo per token
         if params.get("search"):
             search_term = params["search"]
             must.append(
@@ -54,8 +53,7 @@ def handler(event, context):
                                 "match": {
                                     "summary": {
                                         "query": search_term,
-                                        # fuzz only kicks in for 5+ char terms
-                                        "fuzziness": "AUTO:5,8",
+                                        "fuzziness": 1,
                                     }
                                 }
                             },
@@ -120,7 +118,7 @@ def handler(event, context):
                 "number_of_fragments": 1,
                 "fragment_size": 120,
                 "fields": {
-                    "name": {"number_of_fragments": 0},
+                    "name": {},
                     "summary": {},
                 },
             }
