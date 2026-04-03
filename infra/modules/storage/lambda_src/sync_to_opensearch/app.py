@@ -7,13 +7,12 @@ Handles REMOVE → delete document
 Creates the index with explicit mappings on first run (idempotent).
 """
 
-import json
 import os
 from decimal import Decimal
 
 import boto3
 from boto3.dynamodb.types import TypeDeserializer
-from opensearchpy import OpenSearch, RequestsHttpConnection, AWSV4SignerAuth
+from opensearchpy import AWSV4SignerAuth, OpenSearch, RequestsHttpConnection
 
 OPENSEARCH_ENDPOINT = os.environ["OPENSEARCH_ENDPOINT"]
 INDEX_NAME = "talent-profiles"
@@ -91,13 +90,9 @@ def _prepare_document(item):
     """Normalize fields that need special treatment for OpenSearch queries."""
     # Convert comma-separated strings to lists for exact term matching
     if isinstance(item.get("skill_names"), str):
-        item["skill_names"] = [
-            s.strip() for s in item["skill_names"].split(",") if s.strip()
-        ]
+        item["skill_names"] = [s.strip() for s in item["skill_names"].split(",") if s.strip()]
     if isinstance(item.get("cert_names"), str):
-        item["cert_names"] = [
-            c.strip() for c in item["cert_names"].split(",") if c.strip()
-        ]
+        item["cert_names"] = [c.strip() for c in item["cert_names"].split(",") if c.strip()]
     return item
 
 

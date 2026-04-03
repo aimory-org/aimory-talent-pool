@@ -1,4 +1,6 @@
-import os, json
+import json
+import os
+
 import boto3
 
 textract = boto3.client("textract")
@@ -6,6 +8,7 @@ s3 = boto3.client("s3")
 
 OUT_BUCKET = os.environ["OUT_BUCKET"]
 OUT_PREFIX = os.environ.get("OUT_PREFIX", "extracted/")
+
 
 def handler(event, context):
     bucket = event["bucket"]

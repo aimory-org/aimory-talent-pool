@@ -31,7 +31,8 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write   # needed for rollback git revert + push
+  pull-requests: write
 
 # Prevent concurrent deploys — queue rather than cancel
 concurrency:
@@ -248,7 +249,7 @@ jobs:
   notify-failure:
     name: Failure Notification
     if: failure()
-    needs: [terraform, frontend]
+    needs: [terraform, frontend, smoke-test]
     runs-on: ubuntu-latest
     steps:
       - name: Report failure
@@ -261,3 +262,145 @@ jobs:
           echo "  • Re-run the workflow from the Actions tab after fixing."
           echo ""
           echo "To add Slack/Teams alerts, add a webhook step to the notify-failure job."
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Post-Deployment Smoke Tests
+  # Runs against the live deployed environment after terraform + frontend.
+  # Uses real AWS credentials — no mocking.
+  # ═══════════════════════════════════════════════════════════════════════════
+  smoke-test:
+    name: Post-Deployment Smoke Tests
+    needs: [terraform, frontend]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt requests
+
+      - name: Run post-deployment smoke tests
+        run: |
+          pytest infra/tests/integration/ -m integration -v --tb=short
+        env:
+          API_ENDPOINT: ${{ needs.terraform.outputs.api_endpoint }}
+          PRESIGN_API_KEY: ${{ secrets.TF_VAR_PRESIGN_API_KEY }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+          RESUME_BUCKET: ${{ needs.terraform.outputs.frontend_bucket }}
+          TALENT_PROFILES_TABLE: ${{ vars.TALENT_PROFILES_TABLE }}
+          SKILLS_LOOKUP_TABLE: ${{ vars.SKILLS_LOOKUP_TABLE }}
+          CERTIFICATIONS_LOOKUP_TABLE: ${{ vars.CERTIFICATIONS_LOOKUP_TABLE }}
+          CITIES_LOOKUP_TABLE: ${{ vars.CITIES_LOOKUP_TABLE }}
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Automatic Rollback
+  #
+  # Triggered only when smoke-test fails. Strategy:
+  #   1. Attempt to release any stale Terraform state lock (safe no-op if not locked)
+  #   2. Create a git revert commit on main, which auto-triggers a fresh deploy
+  #      of the last known-good state.
+  #
+  # Requirements:
+  #   • Branch protection must allow GitHub Actions to push to main, OR
+  #     store a PAT with repo write access as secret DEPLOY_PAT and replace
+  #     GITHUB_TOKEN below with that secret.
+  #   • GitHub Environment "dev" must exist (used by the terraform job above).
+  # ═══════════════════════════════════════════════════════════════════════════
+  rollback:
+    name: Auto Rollback
+    needs: [smoke-test]
+    if: failure()
+    runs-on: ubuntu-latest
+    environment: dev
+
+    env:
+      TF_VAR_presign_api_key: ${{ secrets.TF_VAR_PRESIGN_API_KEY }}
+      TF_VAR_entra_client_id: ${{ secrets.TF_VAR_ENTRA_CLIENT_ID }}
+      TF_VAR_entra_client_secret: ${{ secrets.TF_VAR_ENTRA_CLIENT_SECRET }}
+      TF_VAR_entra_tenant_id: ${{ secrets.TF_VAR_ENTRA_TENANT_ID }}
+      TF_VAR_cognito_callback_urls: ${{ vars.TF_VAR_COGNITO_CALLBACK_URLS }}
+      TF_VAR_cognito_logout_urls: ${{ vars.TF_VAR_COGNITO_LOGOUT_URLS }}
+
+    steps:
+      - name: Checkout (full history needed for revert)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # Use DEPLOY_PAT if your branch protection blocks GITHUB_TOKEN pushes.
+          # token: ${{ secrets.DEPLOY_PAT }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        run: terraform init -input=false
+        working-directory: ${{ env.TF_DIR }}
+
+      # ── Release stale lock (if any) ────────────────────────────────────────
+      # If a previous run crashed mid-apply it may have left the state locked.
+      # We extract the lock ID from `terraform plan` output and force-unlock it
+      # so the subsequent rollback apply can proceed.
+      - name: Release stale Terraform state lock
+        working-directory: ${{ env.TF_DIR }}
+        run: |
+          set +e
+          PLAN_OUTPUT=$(terraform plan -input=false -no-color 2>&1)
+          PLAN_EXIT=$?
+          echo "$PLAN_OUTPUT"
+
+          if echo "$PLAN_OUTPUT" | grep -q "Error acquiring the state lock"; then
+            # Extract the lock ID from the error message
+            LOCK_ID=$(echo "$PLAN_OUTPUT" | grep -oP '(?<=ID:\s{8})[a-f0-9-]{36}' | head -1)
+            if [ -n "$LOCK_ID" ]; then
+              echo "::warning::Stale lock detected (ID: $LOCK_ID). Force-unlocking..."
+              terraform force-unlock -force "$LOCK_ID"
+            else
+              echo "::error::State is locked but could not extract lock ID. Manual intervention required."
+              echo "Run: cd ${{ env.TF_DIR }} && terraform force-unlock <LOCK_ID>"
+              exit 1
+            fi
+          elif [ $PLAN_EXIT -eq 1 ]; then
+            echo "::error::Terraform plan failed for a reason other than state lock."
+            exit 1
+          fi
+          echo "State is not locked — proceeding with rollback."
+
+      # ── Revert the failing commit ──────────────────────────────────────────
+      - name: Create revert commit and push to main
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Revert the merge commit that triggered this deploy.
+          # --mainline 1 handles merge commits (pick the first parent = main branch).
+          git revert --no-edit --mainline 1 ${{ github.sha }} || \
+            git revert --no-edit ${{ github.sha }}
+
+          git push origin main
+
+          echo "::notice::Revert commit pushed to main."
+          echo "::notice::A fresh deploy of the last stable version is now in progress."
+          echo "::notice::Monitor it at: ${{ github.server_url }}/${{ github.repository }}/actions"

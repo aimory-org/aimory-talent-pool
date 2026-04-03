@@ -8,7 +8,7 @@ import json
 import os
 
 import boto3
-from opensearchpy import OpenSearch, RequestsHttpConnection, AWSV4SignerAuth
+from opensearchpy import AWSV4SignerAuth, OpenSearch, RequestsHttpConnection
 
 OPENSEARCH_ENDPOINT = os.environ["OPENSEARCH_ENDPOINT"]
 INDEX_NAME = "talent-profiles"
@@ -44,9 +44,7 @@ def handler(event, context):
                 {"match_phrase_prefix": {"name": {"query": search_term, "boost": 3}}},
             ]
             if len(search_term.strip()) >= 2:
-                should_clauses.append(
-                    {"match_phrase_prefix": {"summary": {"query": search_term}}}
-                )
+                should_clauses.append({"match_phrase_prefix": {"summary": {"query": search_term}}})
             must.append(
                 {
                     "bool": {
@@ -77,9 +75,7 @@ def handler(event, context):
 
         # Certifications — each must be present (AND logic)
         if params.get("certifications"):
-            for cert in [
-                c.strip() for c in params["certifications"].split(",") if c.strip()
-            ]:
+            for cert in [c.strip() for c in params["certifications"].split(",") if c.strip()]:
                 filters.append({"term": {"cert_names": cert}})
 
         # Years of experience range
@@ -90,8 +86,6 @@ def handler(event, context):
             years_range["lte"] = int(params["maxYears"])
         if years_range:
             filters.append({"range": {"years_of_experience": years_range}})
-
-        search_active = bool(params.get("search"))
 
         query = {
             "query": {
