@@ -1,4 +1,6 @@
-import os, json
+import json
+import os
+
 import boto3
 
 textract = boto3.client("textract")

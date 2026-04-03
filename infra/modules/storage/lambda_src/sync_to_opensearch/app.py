@@ -7,13 +7,12 @@ Handles REMOVE → delete document
 Creates the index with explicit mappings on first run (idempotent).
 """
 
-import json
 import os
 from decimal import Decimal
 
 import boto3
 from boto3.dynamodb.types import TypeDeserializer
-from opensearchpy import OpenSearch, RequestsHttpConnection, AWSV4SignerAuth
+from opensearchpy import AWSV4SignerAuth, OpenSearch, RequestsHttpConnection
 
 OPENSEARCH_ENDPOINT = os.environ["OPENSEARCH_ENDPOINT"]
 INDEX_NAME = "talent-profiles"

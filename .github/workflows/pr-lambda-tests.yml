@@ -17,7 +17,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write   # needed to push auto-fix commits back to the PR branch
   pull-requests: write
 
 concurrency:
@@ -32,6 +32,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Full ref so we can push fixes back to the PR branch
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -42,12 +46,32 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements-dev.txt
 
-      # ── Code quality ───────────────────────────────────────────────────────
+      # ── Auto-fix & commit ──────────────────────────────────────────────────
+      # ruff --fix handles imports, unused vars, whitespace, etc.
+      # black handles formatting.
+      # If either changes anything, commit & push back to the PR branch so the
+      # author doesn't have to fix style issues manually.
+      - name: Auto-fix with ruff and black
+        id: autofix
+        run: |
+          ruff check --fix infra/modules infra/tests
+          black infra/modules infra/tests
+          if ! git diff --quiet; then
+            git config user.name  "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git commit -am "style: auto-fix ruff + black [skip ci]"
+            git push
+            echo "fixed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "fixed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # ── Code quality (fail if anything remains after auto-fix) ────────────
       - name: Ruff lint
-        run: ruff check infra/modules --output-format=github
+        run: ruff check infra/modules infra/tests --output-format=github
 
       - name: Black format check
-        run: black --check infra/modules
+        run: black --check infra/modules infra/tests
 
       # ── Unit tests ─────────────────────────────────────────────────────────
       - name: Run unit tests

@@ -1,7 +1,7 @@
 import json
 import os
-import time
 import re
+
 import boto3
 from botocore.config import Config
 
@@ -50,9 +50,9 @@ def handler(event, context):
             "Bucket": BUCKET,
             "Key": key,
             "ContentType": content_type,
-            "Metadata": meta,  
+            "Metadata": meta,
         },
-        ExpiresIn=300,          
+        ExpiresIn=300,
     )
 
     return {

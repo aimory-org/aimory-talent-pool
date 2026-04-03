@@ -1,4 +1,7 @@
-import os, json, urllib.parse
+import json
+import os
+import urllib.parse
+
 import boto3
 
 PARAM_NAME = os.environ["SFN_ARN_PARAM"]

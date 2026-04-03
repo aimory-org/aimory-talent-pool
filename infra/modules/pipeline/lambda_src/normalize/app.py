@@ -1,5 +1,6 @@
 import json
 import re
+
 import boto3
 
 s3 = boto3.client("s3")
@@ -38,7 +39,12 @@ def _light_normalize(text: str) -> str:
 
     # Break before year ranges and month-year patterns.
     text = re.sub(r"(\b(?:19|20)\d{2}\s*[–-]\s*(?:19|20)\d{2}\b)", r"\n\1", text)
-    text = re.sub(r"(\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\s+\d{4}\b)", r"\n\1", text, flags=re.IGNORECASE)
+    text = re.sub(
+        r"(\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\s+\d{4}\b)",
+        r"\n\1",
+        text,
+        flags=re.IGNORECASE,
+    )
 
     # Normalize multiple newlines.
     text = re.sub(r"\n{3,}", "\n\n", text)

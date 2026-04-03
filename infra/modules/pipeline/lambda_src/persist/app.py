@@ -14,17 +14,57 @@ table = dynamodb.Table(TABLE_NAME)
 
 # State name to abbreviation mapping
 _STATE_ABBREVS = {
-    "alabama": "AL", "alaska": "AK", "arizona": "AZ", "arkansas": "AR", "california": "CA",
-    "colorado": "CO", "connecticut": "CT", "delaware": "DE", "florida": "FL", "georgia": "GA",
-    "hawaii": "HI", "idaho": "ID", "illinois": "IL", "indiana": "IN", "iowa": "IA",
-    "kansas": "KS", "kentucky": "KY", "louisiana": "LA", "maine": "ME", "maryland": "MD",
-    "massachusetts": "MA", "michigan": "MI", "minnesota": "MN", "mississippi": "MS",
-    "missouri": "MO", "montana": "MT", "nebraska": "NE", "nevada": "NV", "new hampshire": "NH",
-    "new jersey": "NJ", "new mexico": "NM", "new york": "NY", "north carolina": "NC",
-    "north dakota": "ND", "ohio": "OH", "oklahoma": "OK", "oregon": "OR", "pennsylvania": "PA",
-    "rhode island": "RI", "south carolina": "SC", "south dakota": "SD", "tennessee": "TN",
-    "texas": "TX", "utah": "UT", "vermont": "VT", "virginia": "VA", "washington": "WA",
-    "west virginia": "WV", "wisconsin": "WI", "wyoming": "WY", "washington dc": "DC",
+    "alabama": "AL",
+    "alaska": "AK",
+    "arizona": "AZ",
+    "arkansas": "AR",
+    "california": "CA",
+    "colorado": "CO",
+    "connecticut": "CT",
+    "delaware": "DE",
+    "florida": "FL",
+    "georgia": "GA",
+    "hawaii": "HI",
+    "idaho": "ID",
+    "illinois": "IL",
+    "indiana": "IN",
+    "iowa": "IA",
+    "kansas": "KS",
+    "kentucky": "KY",
+    "louisiana": "LA",
+    "maine": "ME",
+    "maryland": "MD",
+    "massachusetts": "MA",
+    "michigan": "MI",
+    "minnesota": "MN",
+    "mississippi": "MS",
+    "missouri": "MO",
+    "montana": "MT",
+    "nebraska": "NE",
+    "nevada": "NV",
+    "new hampshire": "NH",
+    "new jersey": "NJ",
+    "new mexico": "NM",
+    "new york": "NY",
+    "north carolina": "NC",
+    "north dakota": "ND",
+    "ohio": "OH",
+    "oklahoma": "OK",
+    "oregon": "OR",
+    "pennsylvania": "PA",
+    "rhode island": "RI",
+    "south carolina": "SC",
+    "south dakota": "SD",
+    "tennessee": "TN",
+    "texas": "TX",
+    "utah": "UT",
+    "vermont": "VT",
+    "virginia": "VA",
+    "washington": "WA",
+    "west virginia": "WV",
+    "wisconsin": "WI",
+    "wyoming": "WY",
+    "washington dc": "DC",
     "district of columbia": "DC",
 }
 _VALID_ABBREVS = set(_STATE_ABBREVS.values())
@@ -70,9 +110,9 @@ def _normalize_phone(phone: str) -> str:
     if not phone:
         return phone
     # Extract only digits
-    digits = ''.join(c for c in phone if c.isdigit())
+    digits = "".join(c for c in phone if c.isdigit())
     # Handle US numbers with country code
-    if len(digits) == 11 and digits.startswith('1'):
+    if len(digits) == 11 and digits.startswith("1"):
         digits = digits[1:]
     # Format as (XXX) XXX-XXXX if we have 10 digits
     if len(digits) == 10:
@@ -87,12 +127,67 @@ def _normalize_skill(skill: str) -> str:
         return skill
     skill = skill.strip()
     # Common tech acronyms to preserve
-    acronyms = {'AWS', 'GCP', 'API', 'REST', 'SQL', 'NoSQL', 'HTML', 'CSS', 'JSON', 'XML', 
-                'CI/CD', 'DevOps', 'AI', 'ML', 'NLP', 'ETL', 'SaaS', 'PaaS', 'IaaS', 'IAM',
-                'VPN', 'DNS', 'TCP', 'UDP', 'HTTP', 'HTTPS', 'SSH', 'SSL', 'TLS', 'OAuth',
-                'JWT', 'LDAP', 'AD', 'SSO', 'MFA', 'SIEM', 'SOC', 'NIST', 'ISO', 'PCI',
-                'HIPAA', 'SOX', 'GDPR', 'FedRAMP', 'FISMA', 'RMF', 'SCRUM', 'SAFe', 'PMI',
-                'ITIL', 'COBIT', 'TOGAF', 'UML', 'OOP', 'TDD', 'BDD', 'DDD', 'UI', 'UX'}
+    acronyms = {
+        "AWS",
+        "GCP",
+        "API",
+        "REST",
+        "SQL",
+        "NoSQL",
+        "HTML",
+        "CSS",
+        "JSON",
+        "XML",
+        "CI/CD",
+        "DevOps",
+        "AI",
+        "ML",
+        "NLP",
+        "ETL",
+        "SaaS",
+        "PaaS",
+        "IaaS",
+        "IAM",
+        "VPN",
+        "DNS",
+        "TCP",
+        "UDP",
+        "HTTP",
+        "HTTPS",
+        "SSH",
+        "SSL",
+        "TLS",
+        "OAuth",
+        "JWT",
+        "LDAP",
+        "AD",
+        "SSO",
+        "MFA",
+        "SIEM",
+        "SOC",
+        "NIST",
+        "ISO",
+        "PCI",
+        "HIPAA",
+        "SOX",
+        "GDPR",
+        "FedRAMP",
+        "FISMA",
+        "RMF",
+        "SCRUM",
+        "SAFe",
+        "PMI",
+        "ITIL",
+        "COBIT",
+        "TOGAF",
+        "UML",
+        "OOP",
+        "TDD",
+        "BDD",
+        "DDD",
+        "UI",
+        "UX",
+    }
     # Check if it's an acronym (all uppercase and short)
     if skill.upper() in acronyms:
         return skill.upper()
@@ -112,33 +207,33 @@ def _normalize_profile(profile: dict) -> dict:
     # Normalize name
     if profile.get("name"):
         profile["name"] = _normalize_name(profile["name"])
-    
+
     # Normalize contact info
     if profile.get("contact"):
         if profile["contact"].get("email"):
             profile["contact"]["email"] = _normalize_email(profile["contact"]["email"])
         if profile["contact"].get("phone"):
             profile["contact"]["phone"] = _normalize_phone(profile["contact"]["phone"])
-    
+
     # Normalize location
     if profile.get("location"):
         if profile["location"].get("city"):
             profile["location"]["city"] = _normalize_city(profile["location"]["city"])
         if profile["location"].get("state"):
             profile["location"]["state"] = _normalize_state(profile["location"]["state"])
-    
+
     # Normalize skills
     if profile.get("skillsets"):
         for skill in profile["skillsets"]:
             if skill.get("name"):
                 skill["name"] = _normalize_skill(skill["name"])
-    
+
     # Normalize companies
     if profile.get("companies"):
         for company in profile["companies"]:
             if company.get("name"):
                 company["name"] = _normalize_company(company["name"])
-    
+
     return profile
 
 
@@ -146,20 +241,28 @@ _TALENT_BUCKETS = {
     "IT Resources",
     "Accounting and Finance Resources",
     "HR Resources",
-    "Business Development/Sales Resources"
+    "Business Development/Sales Resources",
 }
 _TALENT_CATEGORIES = {
-    "Accounting", "Finance", "Data Analysis", "Forensics",
-    "Developer", "Network Engineer", "Database Analyst", "Cloud Expert", "Project Manager",
+    "Accounting",
+    "Finance",
+    "Data Analysis",
+    "Forensics",
+    "Developer",
+    "Network Engineer",
+    "Database Analyst",
+    "Cloud Expert",
+    "Project Manager",
     "HR",
-    "Business Development", "Sales"
+    "Business Development",
+    "Sales",
 }
 _CANDIDATE_STATUSES = {
     "Potential Candidate",
     "Active Candidate",
     "Placed Candidate",
     "Stale Candidate",
-    "Do Not Contact"
+    "Do Not Contact",
 }
 
 
@@ -266,15 +369,15 @@ def _validate_profile(profile):
 
     _validate_string(profile["name"], "name", min_len=1)
     _validate_string(profile["summary"], "summary", min_len=1)
-    
+
     bucket = profile["talent_bucket"]
     if bucket is not None and bucket not in _TALENT_BUCKETS:
         raise ValueError(f"talent_bucket invalid: {bucket}")
-    
+
     category = profile["talent_category"]
     if category is not None and category not in _TALENT_CATEGORIES:
         raise ValueError(f"talent_category invalid: {category}")
-    
+
     _validate_contact(profile["contact"])
 
     years = profile["years_of_experience"]
@@ -297,7 +400,7 @@ def _validate_profile(profile):
         _validate_company(company, i)
 
     _validate_location(profile["location"])
-    
+
     bill_rate = profile["bill_rate"]
     if bill_rate is not None and not _is_number(bill_rate):
         raise ValueError("bill_rate must be a number or null")
@@ -318,40 +421,30 @@ def _to_decimal(value):
 def _populate_lookup_tables(profile):
     """Populate lookup tables with skills, certifications, and cities for dropdown menus."""
     now = datetime.now(timezone.utc).isoformat()
-    
+
     # Populate skills lookup (using already-normalized profile data)
     if SKILLS_LOOKUP_TABLE and profile["skillsets"]:
         skills_table = dynamodb.Table(SKILLS_LOOKUP_TABLE)
         for skill in profile["skillsets"]:
             skill_name = skill.get("name", "").strip()
             if skill_name:
-                skills_table.put_item(Item={
-                    "skill": skill_name,
-                    "updated_at": now
-                })
-    
+                skills_table.put_item(Item={"skill": skill_name, "updated_at": now})
+
     # Populate certifications lookup
     if CERTIFICATIONS_LOOKUP_TABLE and profile["certifications"]:
         certs_table = dynamodb.Table(CERTIFICATIONS_LOOKUP_TABLE)
         for cert in profile["certifications"]:
             cert_name = cert.strip() if cert else ""
             if cert_name:
-                certs_table.put_item(Item={
-                    "certification": cert_name,
-                    "updated_at": now
-                })
-    
+                certs_table.put_item(Item={"certification": cert_name, "updated_at": now})
+
     # Populate cities lookup (using already-normalized profile data)
     if CITIES_LOOKUP_TABLE and profile["location"]:
         city = profile["location"].get("city", "")
         state = profile["location"].get("state", "")
         if city and state:
             cities_table = dynamodb.Table(CITIES_LOOKUP_TABLE)
-            cities_table.put_item(Item={
-                "city": city,
-                "state": state,
-                "updated_at": now
-            })
+            cities_table.put_item(Item={"city": city, "state": state, "updated_at": now})
 
 
 def handler(event, context):
@@ -360,7 +453,7 @@ def handler(event, context):
         raise ValueError("Missing extracted profile in event")
 
     _validate_profile(profile)
-    
+
     # Normalize profile data for consistency
     profile = _normalize_profile(profile)
 
@@ -376,10 +469,12 @@ def handler(event, context):
     # Denormalized fields for GSI queries and filtering
     # GSI keys cannot be NULL, so use placeholder values
     name_lower = profile["name"].lower() if profile["name"] else "unknown"
-    location_state = profile["location"]["state"] if profile["location"] and profile["location"].get("state") else "Unknown"
+    location_state = (
+        profile["location"]["state"] if profile["location"] and profile["location"].get("state") else "Unknown"
+    )
     skill_names = ",".join(s["name"] for s in profile["skillsets"]) if profile["skillsets"] else ""
     cert_names = ",".join(profile["certifications"]) if profile["certifications"] else ""
-    
+
     # GSI key fields - use "None" placeholder for null values
     clearance_level = profile["clearance_level"] if profile["clearance_level"] else "None"
     talent_bucket = profile["talent_bucket"] if profile["talent_bucket"] else "Unclassified"

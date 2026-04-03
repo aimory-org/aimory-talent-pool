@@ -4,6 +4,7 @@ Generate a presigned URL for viewing a resume from S3.
 import json
 import os
 import urllib.parse
+
 import boto3
 from botocore.exceptions import ClientError
 
@@ -17,17 +18,17 @@ def handler(event, context):
         # Get the S3 key from query parameter
         query_params = event.get("queryStringParameters") or {}
         s3_key = query_params.get("key")
-        
+
         if not s3_key:
             return {
                 "statusCode": 400,
                 "headers": {"Content-Type": "application/json"},
                 "body": json.dumps({"error": "Missing key parameter"}),
             }
-        
+
         # URL decode the key
         s3_key = urllib.parse.unquote(s3_key)
-        
+
         # Check if the object exists
         try:
             s3_client.head_object(Bucket=RESUME_BUCKET, Key=s3_key)
@@ -39,7 +40,7 @@ def handler(event, context):
                     "body": json.dumps({"error": "Resume not found"}),
                 }
             raise
-        
+
         # Generate presigned URL for viewing (inline)
         presigned_url = s3_client.generate_presigned_url(
             "get_object",
@@ -50,7 +51,7 @@ def handler(event, context):
             },
             ExpiresIn=URL_EXPIRATION,
         )
-        
+
         return {
             "statusCode": 200,
             "headers": {"Content-Type": "application/json"},
@@ -59,7 +60,7 @@ def handler(event, context):
                 "expiresIn": URL_EXPIRATION,
             }),
         }
-        
+
     except Exception as e:
         print(f"Error: {e}")
         import traceback

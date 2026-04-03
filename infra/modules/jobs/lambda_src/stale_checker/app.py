@@ -4,8 +4,7 @@ Runs on a schedule (e.g., daily) via EventBridge.
 """
 
 import os
-from datetime import datetime, timezone, timedelta
-from decimal import Decimal
+from datetime import datetime, timedelta, timezone
 
 import boto3
 from boto3.dynamodb.conditions import Attr
