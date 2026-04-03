@@ -1,9 +1,7 @@
 """Tests for sync_to_opensearch Lambda (DynamoDB Streams → OpenSearch)."""
 
 from decimal import Decimal
-from unittest.mock import patch, MagicMock
-
-import pytest
+from unittest.mock import MagicMock, patch
 
 from _lambda_loader import load as _load_lambda
 

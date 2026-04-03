@@ -3,8 +3,6 @@
 import json
 
 import boto3
-import pytest
-
 from _lambda_loader import load as _load_lambda
 
 

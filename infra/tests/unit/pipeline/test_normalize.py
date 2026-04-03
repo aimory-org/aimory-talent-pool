@@ -1,9 +1,8 @@
 """Tests for normalize Lambda."""
 
 import json
-import boto3
-import pytest
 
+import boto3
 from _lambda_loader import load as _load_lambda
 
 

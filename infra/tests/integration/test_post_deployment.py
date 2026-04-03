@@ -19,9 +19,7 @@ Required environment variables:
     CITIES_LOOKUP_TABLE    – DynamoDB cities lookup table name
 """
 
-import json
 import os
-import time
 
 import boto3
 import pytest

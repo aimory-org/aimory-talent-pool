@@ -1,11 +1,9 @@
 """Tests for fetch_textract Lambda."""
 
 import json
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 import boto3
-import pytest
-
 from _lambda_loader import load as _load_lambda
 
 

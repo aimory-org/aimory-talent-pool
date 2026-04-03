@@ -14,7 +14,6 @@ Usage in a test file::
         return _load_lambda("modules/api/lambda_src/get_talent")
 """
 
-import importlib
 import os
 import sys
 

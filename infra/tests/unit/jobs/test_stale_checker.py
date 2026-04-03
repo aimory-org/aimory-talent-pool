@@ -1,11 +1,8 @@
 """Tests for stale_checker Lambda."""
 
-from datetime import datetime, timezone, timedelta
-from decimal import Decimal
+from datetime import datetime, timedelta, timezone
 
-import boto3
 import pytest
-
 from _lambda_loader import load as _load_lambda
 
 

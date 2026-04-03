@@ -1,9 +1,7 @@
 """Tests for list_talents Lambda (OpenSearch-based)."""
 
 import json
-from unittest.mock import patch, MagicMock
-
-import pytest
+from unittest.mock import MagicMock, patch
 
 from _lambda_loader import load as _load_lambda
 

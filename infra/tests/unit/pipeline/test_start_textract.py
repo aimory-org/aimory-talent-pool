@@ -1,8 +1,6 @@
 """Tests for start_textract Lambda."""
 
-from unittest.mock import patch, MagicMock
-
-import pytest
+from unittest.mock import patch
 
 from _lambda_loader import load as _load_lambda
 

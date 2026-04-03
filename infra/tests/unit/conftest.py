@@ -17,14 +17,14 @@ and convenience data.  ``aws_mocks`` is the entry-point fixture every test
 should depend on.
 """
 
-import json
+import importlib
 import os
 import sys
-import importlib
-import pytest
-import boto3
-from moto import mock_aws
 from decimal import Decimal
+
+import boto3
+import pytest
+from moto import mock_aws
 
 # ---------------------------------------------------------------------------
 # Add Lambda source directories to sys.path so ``import app`` works.

@@ -1,12 +1,11 @@
 """Tests for classify Lambda."""
 
 import io
-import zipfile
 import xml.etree.ElementTree as ET
+import zipfile
 
 import boto3
 import pytest
-
 from _lambda_loader import load as _load_lambda
 
 

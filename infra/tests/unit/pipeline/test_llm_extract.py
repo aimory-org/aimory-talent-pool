@@ -1,11 +1,10 @@
 """Tests for llm_extract Lambda."""
 
 import json
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 import boto3
 import pytest
-
 from _lambda_loader import load as _load_lambda
 
 
@@ -109,7 +108,14 @@ class TestLLMExtractJSONRepair:
     def test_strips_code_fences(self, mock_bedrock, aws_mocks):
         import app
 
-        fenced = '```json\n{"is_resume": true, "name": "X", "contact": {"email": null, "phone": null, "linkedin": null, "github": null}, "summary": "Y", "talent_bucket": null, "talent_category": null, "skillsets": [], "years_of_experience": null, "clearance_level": null, "certifications": [], "companies": [], "location": {"city": null, "state": null}, "bill_rate": null}\n```'
+        payload = (
+            '{"is_resume": true, "name": "X", "contact": {"email": null, "phone": null,'
+            ' "linkedin": null, "github": null}, "summary": "Y", "talent_bucket": null,'
+            ' "talent_category": null, "skillsets": [], "years_of_experience": null,'
+            ' "clearance_level": null, "certifications": [], "companies": [],'
+            ' "location": {"city": null, "state": null}, "bill_rate": null}'
+        )
+        fenced = f"```json\n{payload}\n```"
         mock_bedrock.converse.return_value = {"output": {"message": {"content": [{"text": fenced}]}}}
         result = app.handler(_make_event(), None)
         assert result["is_resume"] is True
@@ -118,7 +124,13 @@ class TestLLMExtractJSONRepair:
     def test_fixes_trailing_commas(self, mock_bedrock, aws_mocks):
         import app
 
-        bad_json = '{"is_resume": true, "name": "X", "contact": {"email": null, "phone": null, "linkedin": null, "github": null,}, "summary": "Y", "talent_bucket": null, "talent_category": null, "skillsets": [], "years_of_experience": null, "clearance_level": null, "certifications": [], "companies": [], "location": {"city": null, "state": null}, "bill_rate": null,}'
+        bad_json = (
+            '{"is_resume": true, "name": "X", "contact": {"email": null, "phone": null,'
+            ' "linkedin": null, "github": null,}, "summary": "Y", "talent_bucket": null,'
+            ' "talent_category": null, "skillsets": [], "years_of_experience": null,'
+            ' "clearance_level": null, "certifications": [], "companies": [],'
+            ' "location": {"city": null, "state": null}, "bill_rate": null,}'
+        )
         mock_bedrock.converse.return_value = {"output": {"message": {"content": [{"text": bad_json}]}}}
         result = app.handler(_make_event(), None)
         assert result["name"] == "X"
@@ -147,9 +159,8 @@ class TestLLMExtractThrottling:
     @patch("app.time.sleep")  # Don't actually wait during tests
     @patch("app.bedrock_client")
     def test_retries_on_throttle(self, mock_bedrock, mock_sleep, aws_mocks):
-        from botocore.exceptions import ClientError
-
         import app
+        from botocore.exceptions import ClientError
 
         throttle_err = ClientError(
             {"Error": {"Code": "ThrottlingException", "Message": "Rate exceeded"}},
@@ -183,9 +194,8 @@ class TestLLMExtractThrottling:
     @patch("app.time.sleep")
     @patch("app.bedrock_client")
     def test_exhausted_retries_raises(self, mock_bedrock, mock_sleep, aws_mocks):
-        from botocore.exceptions import ClientError
-
         import app
+        from botocore.exceptions import ClientError
 
         throttle_err = ClientError(
             {"Error": {"Code": "ThrottlingException", "Message": "Rate exceeded"}},

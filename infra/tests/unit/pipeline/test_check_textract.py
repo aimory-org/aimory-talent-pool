@@ -2,8 +2,6 @@
 
 from unittest.mock import patch
 
-import pytest
-
 from _lambda_loader import load as _load_lambda
 
 

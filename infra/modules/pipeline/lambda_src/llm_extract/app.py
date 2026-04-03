@@ -39,7 +39,9 @@ TALENT_SCHEMA = {
         "is_resume": {"type": "boolean", "description": "True if the document is a resume/CV, false otherwise"},
         "rejection_reason": {
             "type": ["string", "null"],
-            "description": "If is_resume is false, explain why (e.g. 'document is an invoice', 'document is a contract')",
+            "description": (
+                "If is_resume is false, explain why (e.g. 'document is an invoice', 'document is a contract')"
+            ),
         },
         "name": {"type": ["string", "null"], "minLength": 1},
         "summary": {"type": ["string", "null"], "minLength": 1, "maxLength": 300},

@@ -1,10 +1,9 @@
 """Tests for persist Lambda — validation, normalization, DynamoDB writes, lookup tables."""
 
-import copy
 
-import pytest
 from decimal import Decimal
 
+import pytest
 from _lambda_loader import load as _load_lambda
 
 
@@ -130,7 +129,6 @@ class TestPersistNormalization:
         sample_profile["name"] = "jAnE dOe"
         result = app.handler(_make_event(sample_profile), None)
         # Read back from DynamoDB
-        from boto3 import resource as ddb_resource
         import boto3
 
         table = boto3.resource("dynamodb", region_name="us-east-1").Table("talent-profiles")
