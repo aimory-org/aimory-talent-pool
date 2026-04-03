@@ -61,6 +61,7 @@ jobs:
       cognito_web_client_id: ${{ steps.outputs.outputs.cognito_web_client_id }}
       cognito_domain: ${{ steps.outputs.outputs.cognito_domain }}
       api_endpoint: ${{ steps.outputs.outputs.api_endpoint }}
+      presign_function_url: ${{ steps.outputs.outputs.presign_function_url }}
 
     env:
       TF_VAR_presign_api_key: ${{ secrets.TF_VAR_PRESIGN_API_KEY }}
@@ -172,6 +173,7 @@ jobs:
           echo "cognito_domain=${RAW_DOMAIN#https://}" >> "$GITHUB_OUTPUT"
 
           echo "api_endpoint=$(terraform output -raw api_endpoint)" >> "$GITHUB_OUTPUT"
+          echo "presign_function_url=$(terraform output -raw presign_function_url)" >> "$GITHUB_OUTPUT"
 
       # ── Upload logs for auditing ──────────────────────────────────────────
       - name: Upload Terraform Logs
@@ -298,6 +300,7 @@ jobs:
           pytest infra/tests/integration/ -m integration -v --tb=short
         env:
           API_ENDPOINT: ${{ needs.terraform.outputs.api_endpoint }}
+          PRESIGN_FUNCTION_URL: ${{ needs.terraform.outputs.presign_function_url }}
           PRESIGN_API_KEY: ${{ secrets.TF_VAR_PRESIGN_API_KEY }}
           AWS_REGION: ${{ env.AWS_REGION }}
           RESUME_BUCKET: ${{ needs.terraform.outputs.frontend_bucket }}
@@ -354,6 +357,19 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_wrapper: false
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build Lambda layers
+        run: |
+          find infra/modules -type f -name requirements.txt -path "*/layers/*" | while read req; do
+            layer_dir=$(dirname "$req")
+            echo "Building layer: $layer_dir"
+            pip install --quiet -r "$req" -t "$layer_dir/python"
+          done
 
       - name: Terraform Init
         run: terraform init -input=false
