@@ -1,0 +1,121 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Lambda Unit Tests — runs on every pull request targeting main.
+# No AWS credentials required — all AWS calls are mocked with moto.
+#
+# Tests live in infra/tests/unit/ (pre-deployment, fully mocked).
+# Post-deployment smoke tests in infra/tests/integration/ run separately
+# after a successful merge to main (see terraform-deploy.yml).
+#
+# Gates PR merges: tests must pass before merge is allowed.
+# Coverage report uploaded as a PR artifact.
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: Lambda Tests
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: lambda-tests-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Lint, Type Check & Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      # ── Code quality ───────────────────────────────────────────────────────
+      - name: Ruff lint
+        run: ruff check infra/modules --output-format=github
+
+      - name: Black format check
+        run: black --check infra/modules
+
+      # ── Unit tests ─────────────────────────────────────────────────────────
+      - name: Run unit tests
+        run: |
+          pytest infra/tests/unit/ \
+            --cov=infra/modules \
+            --cov-report=xml:coverage.xml \
+            --cov-report=term-missing \
+            -v
+        env:
+          # Dummy values — moto intercepts all AWS calls
+          AWS_DEFAULT_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: testing
+          AWS_SECRET_ACCESS_KEY: testing
+
+      # ── Artifacts ──────────────────────────────────────────────────────────
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-pr-${{ github.event.pull_request.number }}
+          path: coverage.xml
+          retention-days: 30
+
+      - name: Post coverage summary to PR
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let summary = 'Coverage report not available.';
+            try {
+              const xml = fs.readFileSync('coverage.xml', 'utf8');
+              const match = xml.match(/line-rate="([\d.]+)"/);
+              if (match) {
+                const pct = (parseFloat(match[1]) * 100).toFixed(1);
+                summary = `**Line coverage: ${pct}%**`;
+              }
+            } catch {}
+
+            const body = [
+              '### Lambda Test Results — PR #${{ github.event.pull_request.number }}',
+              '',
+              summary,
+              '',
+              `*Run: [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})*`,
+            ].join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(
+              c => c.user.type === 'Bot' && c.body.includes('### Lambda Test Results')
+            );
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
