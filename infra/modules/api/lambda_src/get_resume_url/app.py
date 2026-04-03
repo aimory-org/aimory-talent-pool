@@ -1,6 +1,7 @@
 """
 Generate a presigned URL for viewing a resume from S3.
 """
+
 import json
 import os
 import urllib.parse
@@ -55,15 +56,18 @@ def handler(event, context):
         return {
             "statusCode": 200,
             "headers": {"Content-Type": "application/json"},
-            "body": json.dumps({
-                "url": presigned_url,
-                "expiresIn": URL_EXPIRATION,
-            }),
+            "body": json.dumps(
+                {
+                    "url": presigned_url,
+                    "expiresIn": URL_EXPIRATION,
+                }
+            ),
         }
 
     except Exception as e:
         print(f"Error: {e}")
         import traceback
+
         traceback.print_exc()
         return {
             "statusCode": 500,

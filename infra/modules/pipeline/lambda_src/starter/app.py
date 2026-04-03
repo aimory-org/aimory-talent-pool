@@ -10,6 +10,7 @@ RAW_PREFIX = os.environ.get("RAW_PREFIX", "raw/")
 ssm = boto3.client("ssm")
 sfn = boto3.client("stepfunctions")
 
+
 def handler(event, context):
     sfn_arn = ssm.get_parameter(Name=PARAM_NAME)["Parameter"]["Value"]
 

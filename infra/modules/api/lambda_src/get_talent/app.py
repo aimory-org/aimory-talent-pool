@@ -1,6 +1,7 @@
 """
 Get a single talent profile by primary key.
 """
+
 import json
 import os
 from decimal import Decimal
@@ -13,6 +14,7 @@ table = dynamodb.Table(os.environ["TALENT_PROFILES_TABLE"])
 
 class DecimalEncoder(json.JSONEncoder):
     """Handle Decimal types from DynamoDB."""
+
     def default(self, o):
         if isinstance(o, Decimal):
             return int(o) if o % 1 == 0 else float(o)
@@ -33,6 +35,7 @@ def handler(event, context):
 
         # URL decode the pk (it may contain special characters)
         import urllib.parse
+
         pk = urllib.parse.unquote(pk)
 
         response = table.get_item(Key={"pk": pk})

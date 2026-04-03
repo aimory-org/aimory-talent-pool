@@ -1,6 +1,5 @@
 """Tests for persist Lambda — validation, normalization, DynamoDB writes, lookup tables."""
 
-
 from decimal import Decimal
 
 import pytest

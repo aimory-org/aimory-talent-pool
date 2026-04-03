@@ -9,6 +9,7 @@ s3 = boto3.client("s3")
 OUT_BUCKET = os.environ["OUT_BUCKET"]
 OUT_PREFIX = os.environ.get("OUT_PREFIX", "extracted/")
 
+
 def handler(event, context):
     bucket = event["bucket"]
     key = event["key"]

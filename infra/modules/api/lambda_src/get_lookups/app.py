@@ -2,6 +2,7 @@
 Get lookup table data for dropdowns (skills, certifications, cities).
 Returns all unique values from the lookup tables.
 """
+
 import json
 import os
 
@@ -21,10 +22,7 @@ def scan_all(table, key_attr):
     items.extend([item[key_attr] for item in response.get("Items", [])])
 
     while response.get("LastEvaluatedKey"):
-        response = table.scan(
-            ProjectionExpression=key_attr,
-            ExclusiveStartKey=response["LastEvaluatedKey"]
-        )
+        response = table.scan(ProjectionExpression=key_attr, ExclusiveStartKey=response["LastEvaluatedKey"])
         items.extend([item[key_attr] for item in response.get("Items", [])])
 
     return sorted(items)
@@ -37,9 +35,7 @@ def scan_cities():
     items.extend(response.get("Items", []))
 
     while response.get("LastEvaluatedKey"):
-        response = cities_table.scan(
-            ExclusiveStartKey=response["LastEvaluatedKey"]
-        )
+        response = cities_table.scan(ExclusiveStartKey=response["LastEvaluatedKey"])
         items.extend(response.get("Items", []))
 
     # Return sorted by state, then city

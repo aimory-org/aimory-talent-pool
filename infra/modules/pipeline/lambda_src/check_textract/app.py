@@ -2,6 +2,7 @@ import boto3
 
 textract = boto3.client("textract")
 
+
 def handler(event, context):
     job_id = event["textract"]["job_id"]
 

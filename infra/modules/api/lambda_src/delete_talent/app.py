@@ -1,6 +1,7 @@
 """
 Delete a talent profile and optionally its resume from S3.
 """
+
 import json
 import os
 
@@ -54,15 +55,18 @@ def handler(event, context):
         return {
             "statusCode": 200,
             "headers": {"Content-Type": "application/json"},
-            "body": json.dumps({
-                "message": "Talent profile deleted successfully",
-                "pk": pk,
-            }),
+            "body": json.dumps(
+                {
+                    "message": "Talent profile deleted successfully",
+                    "pk": pk,
+                }
+            ),
         }
 
     except Exception as e:
         print(f"Error: {e}")
         import traceback
+
         traceback.print_exc()
         return {
             "statusCode": 500,

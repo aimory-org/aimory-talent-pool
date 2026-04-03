@@ -22,18 +22,13 @@ def handler(event, context):
     table = dynamodb.Table(TABLE_NAME)
 
     # Calculate the cutoff date (90 days ago)
-    cutoff_date = (datetime.now(timezone.utc) - timedelta(days=STALE_DAYS)).strftime(
-        "%Y-%m-%d"
-    )
+    cutoff_date = (datetime.now(timezone.utc) - timedelta(days=STALE_DAYS)).strftime("%Y-%m-%d")
 
     # Scan for candidates that:
     # 1. Have date_received older than cutoff
     # 2. Are still "Potential Candidate" status (don't change other statuses)
     scan_kwargs = {
-        "FilterExpression": (
-            Attr("date_received").lt(cutoff_date)
-            & Attr("status").eq("Potential Candidate")
-        ),
+        "FilterExpression": (Attr("date_received").lt(cutoff_date) & Attr("status").eq("Potential Candidate")),
         "ProjectionExpression": "pk, #name_attr, date_received, #status_attr",
         "ExpressionAttributeNames": {"#name_attr": "name", "#status_attr": "status"},
     }
