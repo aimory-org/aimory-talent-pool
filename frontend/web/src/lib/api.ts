@@ -174,11 +174,15 @@ export interface UpdateTalentParams {
 export async function updateTalent(
   pk: string,
   updates: UpdateTalentParams,
-): Promise<void> {
-  await apiFetch(`/talents?pk=${encodeURIComponent(pk)}`, {
-    method: "PATCH",
-    body: JSON.stringify(updates),
-  });
+): Promise<TalentProfile> {
+  const result = await apiFetch<{ profile: TalentProfile }>(
+    `/talents?pk=${encodeURIComponent(pk)}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(updates),
+    },
+  );
+  return result.profile;
 }
 
 /**

@@ -18,6 +18,8 @@ export interface UseTalentsResult {
   refresh: () => Promise<void>;
   /** Update a talent's status optimistically */
   updateStatus: (pk: string, status: CandidateStatus) => Promise<void>;
+  /** Replace a single talent in the local list (e.g. after an edit) */
+  mergeTalent: (updated: TalentProfile) => void;
 }
 
 /**
@@ -100,11 +102,16 @@ export function useTalents(options: UseTalentsOptions = {}): UseTalentsResult {
     [talents],
   );
 
+  const mergeTalent = useCallback((updated: TalentProfile) => {
+    setTalents((prev) => prev.map((t) => (t.pk === updated.pk ? updated : t)));
+  }, []);
+
   return {
     talents,
     isLoading,
     error,
     refresh,
     updateStatus,
+    mergeTalent,
   };
 }
