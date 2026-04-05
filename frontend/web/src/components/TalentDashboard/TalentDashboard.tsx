@@ -37,6 +37,7 @@ export function TalentDashboard() {
     isLoading: talentsLoading,
     error: talentsError,
     refresh: refreshTalents,
+    mergeTalent,
   } = useTalents({
     status: filters.status || undefined,
     talent_bucket: filters.talent_bucket || undefined,
@@ -57,6 +58,16 @@ export function TalentDashboard() {
     certifications: lookupCertifications,
     cities: lookupCities,
   } = useLookups();
+
+  // Handle a profile update from the detail panel by immediately merging
+  // the DynamoDB response into the local list (avoids OpenSearch replication lag).
+  const handleProfileUpdated = useCallback(
+    (updated: TalentProfile) => {
+      mergeTalent(updated);
+      setSelectedProfile(updated);
+    },
+    [mergeTalent],
+  );
 
   // Filter change handler with city reset logic
   const handleFilterChange = useCallback(
@@ -324,6 +335,7 @@ export function TalentDashboard() {
             profile={selectedProfile}
             onClose={() => setSelectedProfile(null)}
             onRefresh={refreshTalents}
+            onProfileUpdated={handleProfileUpdated}
           />
         </>
       )}

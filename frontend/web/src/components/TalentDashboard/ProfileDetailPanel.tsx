@@ -51,6 +51,7 @@ interface ProfileDetailPanelProps {
   profile: TalentProfile;
   onClose: () => void;
   onRefresh: () => Promise<void>;
+  onProfileUpdated?: (updated: TalentProfile) => void;
 }
 
 interface EditableProfile {
@@ -107,6 +108,7 @@ export function ProfileDetailPanel({
   profile,
   onClose,
   onRefresh,
+  onProfileUpdated,
 }: ProfileDetailPanelProps) {
   const [resumeLoading, setResumeLoading] = useState(false);
   const [resumeUrl, setResumeUrl] = useState<string | null>(null);
@@ -247,8 +249,8 @@ export function ProfileDetailPanel({
       }
 
       if (Object.keys(updates).length > 0) {
-        await updateTalent(profile.pk, updates);
-        await onRefresh();
+        const updatedProfile = await updateTalent(profile.pk, updates);
+        onProfileUpdated?.(updatedProfile);
         setIsEditMode(false);
       } else {
         setIsEditMode(false);
@@ -667,7 +669,9 @@ export function ProfileDetailPanel({
               {profile.contact.phone && (
                 <div className="flex items-center gap-3 px-4 py-3">
                   <Phone className="h-4 w-4 text-foreground/30" />
-                  <span className="text-foreground/80">{profile.contact.phone}</span>
+                  <span className="text-foreground/80">
+                    {profile.contact.phone}
+                  </span>
                 </div>
               )}
               {profile.contact.linkedin && (
@@ -722,7 +726,9 @@ export function ProfileDetailPanel({
           {isEditMode ? (
             <div className="space-y-3">
               <div className="space-y-2">
-                <Label className="text-foreground/60 text-xs">Talent Bucket</Label>
+                <Label className="text-foreground/60 text-xs">
+                  Talent Bucket
+                </Label>
                 <Select
                   value={editData.talent_bucket}
                   onChange={(e) =>
@@ -736,7 +742,9 @@ export function ProfileDetailPanel({
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-foreground/60 text-xs">Talent Category</Label>
+                <Label className="text-foreground/60 text-xs">
+                  Talent Category
+                </Label>
                 <Select
                   value={editData.talent_category}
                   onChange={(e) =>
@@ -789,7 +797,9 @@ export function ProfileDetailPanel({
                 </div>
               </div>
               <div className="space-y-2">
-                <Label className="text-foreground/60 text-xs">Clearance Level</Label>
+                <Label className="text-foreground/60 text-xs">
+                  Clearance Level
+                </Label>
                 <Select
                   value={editData.clearance_level}
                   onChange={(e) =>
@@ -847,7 +857,9 @@ export function ProfileDetailPanel({
                   {profile.bill_rate ? (
                     <p className="text-emerald-400 font-semibold">
                       ${profile.bill_rate}
-                      <span className="text-foreground/40 font-normal">/hr</span>
+                      <span className="text-foreground/40 font-normal">
+                        /hr
+                      </span>
                     </p>
                   ) : (
                     <span className="text-foreground/40 text-sm">Not set</span>
@@ -970,7 +982,9 @@ export function ProfileDetailPanel({
                 </Badge>
               ))}
               {profile.skillsets.length === 0 && (
-                <span className="text-foreground/40 text-sm">No skills listed</span>
+                <span className="text-foreground/40 text-sm">
+                  No skills listed
+                </span>
               )}
             </div>
           )}
@@ -1016,7 +1030,9 @@ export function ProfileDetailPanel({
                 </div>
               ))}
               {editData.certifications.length === 0 && (
-                <p className="text-foreground/40 text-sm">No certifications added</p>
+                <p className="text-foreground/40 text-sm">
+                  No certifications added
+                </p>
               )}
             </div>
           ) : profile.certifications.length > 0 ? (
@@ -1033,7 +1049,9 @@ export function ProfileDetailPanel({
               ))}
             </div>
           ) : (
-            <p className="text-foreground/40 text-sm">No certifications listed</p>
+            <p className="text-foreground/40 text-sm">
+              No certifications listed
+            </p>
           )}
         </div>
 
