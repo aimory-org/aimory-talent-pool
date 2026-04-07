@@ -29,41 +29,6 @@ interface TalentTableProps {
   searchTerm?: string;
 }
 
-/**
- * Trims an OpenSearch highlight fragment so the <mark> is always visible.
- * Keeps up to `before` plain-text chars before the mark and `after` chars after.
- */
-function trimAroundMark(html: string, before = 20, after = 60): string {
-  const markStart = html.indexOf("<mark>");
-  if (markStart === -1) return html.slice(0, after);
-
-  const markEnd = html.indexOf("</mark>") + "</mark>".length;
-  const preMark = html.slice(0, markStart);
-  const markContent = html.slice(markStart, markEnd);
-  const postMark = html.slice(markEnd);
-
-  // Trim text before mark — keep the tail so the mark follows naturally
-  let pre = preMark;
-  let preEllipsis = "";
-  if (preMark.length > before) {
-    const cut = preMark.length - before;
-    const space = preMark.indexOf(" ", cut);
-    pre = space > 0 ? preMark.slice(space + 1) : preMark.slice(cut);
-    preEllipsis = "\u2026";
-  }
-
-  // Trim text after mark — keep the head
-  let post = postMark;
-  let postEllipsis = "";
-  if (postMark.length > after) {
-    const space = postMark.lastIndexOf(" ", after);
-    post = space > 0 ? postMark.slice(0, space) : postMark.slice(0, after);
-    postEllipsis = "\u2026";
-  }
-
-  return preEllipsis + pre + markContent + post + postEllipsis;
-}
-
 /** Highlights only the prefix-matching portion of a name */
 function NamePrefixHighlight({
   name,
@@ -283,11 +248,9 @@ export function TalentTable({
                         searchTerm &&
                         profile._highlight?.resume_text?.[0] ? (
                           <span
-                            className="text-xs text-foreground/50 leading-tight mt-0.5 block truncate [&>mark]:bg-yellow-200/60 [&>mark]:text-yellow-900 dark:[&>mark]:bg-yellow-500/25 dark:[&>mark]:text-yellow-200 [&>mark]:rounded [&>mark]:px-0.5 [&>mark]:font-medium"
+                            className="text-xs text-foreground/50 leading-relaxed line-clamp-2 mt-0.5 block [&>mark]:bg-yellow-200/60 [&>mark]:text-yellow-900 dark:[&>mark]:bg-yellow-500/25 dark:[&>mark]:text-yellow-200 [&>mark]:rounded [&>mark]:px-0.5 [&>mark]:font-medium"
                             dangerouslySetInnerHTML={{
-                              __html: trimAroundMark(
-                                profile._highlight.resume_text[0],
-                              ),
+                              __html: `…${profile._highlight.resume_text[0]}…`,
                             }}
                           />
                         ) : (
