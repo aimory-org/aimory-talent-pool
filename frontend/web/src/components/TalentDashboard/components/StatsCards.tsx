@@ -17,7 +17,7 @@ interface StatsCardsProps {
 export function StatsCards({ stats }: StatsCardsProps) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      <div className="group relative bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20 transition-all duration-300 cursor-default">
+      <div className="group relative bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 backdrop-blur-lg rounded-xl p-3 border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20 transition-all duration-300 cursor-default">
         <div className="absolute inset-0 bg-linear-to-br from-slate-500/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
         <div className="relative">
           <div className="flex items-center gap-2 mb-1">
@@ -26,13 +26,13 @@ export function StatsCards({ stats }: StatsCardsProps) {
               Total
             </span>
           </div>
-          <p className="text-3xl font-bold text-foreground tabular-nums">
+          <p className="text-2xl font-bold text-foreground tabular-nums">
             {stats.total}
           </p>
         </div>
       </div>
 
-      <div className="group relative bg-emerald-500/10 hover:bg-emerald-500/20 backdrop-blur-lg rounded-xl p-4 border border-emerald-500/20 hover:border-emerald-500/40 transition-all duration-300 cursor-default">
+      <div className="group relative bg-emerald-500/10 hover:bg-emerald-500/20 backdrop-blur-lg rounded-xl p-3 border border-emerald-500/20 hover:border-emerald-500/40 transition-all duration-300 cursor-default">
         <div className="absolute inset-0 bg-linear-to-br from-emerald-500/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
         <div className="relative">
           <div className="flex items-center gap-2 mb-1">
@@ -41,13 +41,13 @@ export function StatsCards({ stats }: StatsCardsProps) {
               Potential
             </span>
           </div>
-          <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+          <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
             {stats.potentialCount}
           </p>
         </div>
       </div>
 
-      <div className="group relative bg-blue-500/10 hover:bg-blue-500/20 backdrop-blur-lg rounded-xl p-4 border border-blue-500/20 hover:border-blue-500/40 transition-all duration-300 cursor-default">
+      <div className="group relative bg-blue-500/10 hover:bg-blue-500/20 backdrop-blur-lg rounded-xl p-3 border border-blue-500/20 hover:border-blue-500/40 transition-all duration-300 cursor-default">
         <div className="absolute inset-0 bg-linear-to-br from-blue-500/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
         <div className="relative">
           <div className="flex items-center gap-2 mb-1">
@@ -56,13 +56,13 @@ export function StatsCards({ stats }: StatsCardsProps) {
               Active
             </span>
           </div>
-          <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 tabular-nums">
+          <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 tabular-nums">
             {stats.activeCount}
           </p>
         </div>
       </div>
 
-      <div className="group relative bg-green-500/10 hover:bg-green-500/20 backdrop-blur-lg rounded-xl p-4 border border-green-500/20 hover:border-green-500/40 transition-all duration-300 cursor-default">
+      <div className="group relative bg-green-500/10 hover:bg-green-500/20 backdrop-blur-lg rounded-xl p-3 border border-green-500/20 hover:border-green-500/40 transition-all duration-300 cursor-default">
         <div className="absolute inset-0 bg-linear-to-br from-green-500/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
         <div className="relative">
           <div className="flex items-center gap-2 mb-1">
@@ -71,7 +71,7 @@ export function StatsCards({ stats }: StatsCardsProps) {
               Placed
             </span>
           </div>
-          <p className="text-3xl font-bold text-green-600 dark:text-green-400 tabular-nums">
+          <p className="text-2xl font-bold text-green-600 dark:text-green-400 tabular-nums">
             {stats.placedCount}
           </p>
         </div>

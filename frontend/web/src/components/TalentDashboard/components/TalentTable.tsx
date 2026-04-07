@@ -182,7 +182,7 @@ export function TalentTable({
                   onSort={onSort}
                 />
               </TableHead>
-              <TableHead className="text-foreground/60 w-[10%]">
+              <TableHead className="text-foreground/60 w-[14%]">
                 <SortableHeader
                   label="Status"
                   field="status"
@@ -191,7 +191,7 @@ export function TalentTable({
                   onSort={onSort}
                 />
               </TableHead>
-              <TableHead className="text-foreground/60 w-[12%]">
+              <TableHead className="text-foreground/60 w-[8%]">
                 <SortableHeader
                   label="Received"
                   field="date_received"
@@ -342,8 +342,10 @@ export function TalentTable({
                       <span className="text-foreground/30">—</span>
                     )}
                   </TableCell>
-                  <TableCell>
-                    <StatusBadge status={profile.status} />
+                  <TableCell className="overflow-hidden">
+                    <div className="max-w-full overflow-hidden">
+                      <StatusBadge status={profile.status} />
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center justify-between gap-2">

@@ -515,14 +515,14 @@ def _populate_lookup_tables(profile):
             industries_table.put_item(Item={"industry_category": industry, "updated_at": now})
 
 
-def _check_duplicate(name_lower, email):
+def _check_duplicate(name_lower, email, current_pk):
     """Check if a candidate with the same name+email already exists. Returns existing pk or None."""
     if not name_lower or not email:
         return None
     try:
         response = table.scan(
-            FilterExpression="name_lower = :name AND contact.email = :email",
-            ExpressionAttributeValues={":name": name_lower, ":email": email},
+            FilterExpression="name_lower = :name AND contact.email = :email AND pk <> :self",
+            ExpressionAttributeValues={":name": name_lower, ":email": email, ":self": current_pk},
             ProjectionExpression="pk",
             Limit=1,
         )
@@ -573,7 +573,7 @@ def handler(event, context):
 
     # Check for duplicate candidates (same name + email)
     email = profile["contact"].get("email") if profile.get("contact") else None
-    existing_pk = _check_duplicate(name_lower, email)
+    existing_pk = _check_duplicate(name_lower, email, pk)
 
     # Preserve recruiter-curated fields if the record already exists
     existing_status = "Potential Candidate"
