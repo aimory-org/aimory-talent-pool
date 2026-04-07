@@ -74,7 +74,7 @@ class TestListTalentsHandler:
             {
                 "queryStringParameters": {
                     "status": "Active Candidate",
-                    "talent_bucket": "IT Resources",
+                    "service_category": "IT",
                     "location_state": "VA",
                 }
             },

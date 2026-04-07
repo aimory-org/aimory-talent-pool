@@ -49,6 +49,7 @@ _LAMBDA_DIRS = [
     "modules/pipeline/lambda_src/presign",
     "modules/storage/lambda_src/sync_to_opensearch",
     "modules/jobs/lambda_src/stale_checker",
+    "modules/jobs/lambda_src/lookup_dedup",
 ]
 
 # Add the unit tests directory itself so _lambda_loader is importable from subfolders.
@@ -90,6 +91,9 @@ def _aws_env(monkeypatch):
         "RESUME_PREFIX": "raw/onedrive",
         "MIN_PDF_TEXT_CHARS": "1000",
         "STALE_DAYS": "90",
+        "JOB_TITLES_LOOKUP_TABLE": "job-titles-lookup",
+        "INDUSTRY_CATEGORIES_LOOKUP_TABLE": "industry-categories-lookup",
+        "BEDROCK_MODEL_ID": "anthropic.claude-3-sonnet-20240229-v1:0",
     }
     for k, v in env.items():
         monkeypatch.setenv(k, v)
@@ -129,8 +133,8 @@ def _create_talent_profiles_table():
             {"AttributeName": "pk", "AttributeType": "S"},
             {"AttributeName": "status", "AttributeType": "S"},
             {"AttributeName": "date_received", "AttributeType": "S"},
-            {"AttributeName": "talent_bucket", "AttributeType": "S"},
-            {"AttributeName": "talent_category", "AttributeType": "S"},
+            {"AttributeName": "service_category", "AttributeType": "S"},
+            {"AttributeName": "industry_category", "AttributeType": "S"},
             {"AttributeName": "clearance_level", "AttributeType": "S"},
             {"AttributeName": "location_state", "AttributeType": "S"},
             {"AttributeName": "name_lower", "AttributeType": "S"},
@@ -146,12 +150,12 @@ def _create_talent_profiles_table():
             },
             {
                 "IndexName": "bucket-index",
-                "KeySchema": [{"AttributeName": "talent_bucket", "KeyType": "HASH"}],
+                "KeySchema": [{"AttributeName": "service_category", "KeyType": "HASH"}],
                 "Projection": {"ProjectionType": "ALL"},
             },
             {
                 "IndexName": "category-index",
-                "KeySchema": [{"AttributeName": "talent_category", "KeyType": "HASH"}],
+                "KeySchema": [{"AttributeName": "industry_category", "KeyType": "HASH"}],
                 "Projection": {"ProjectionType": "ALL"},
             },
             {
@@ -218,6 +222,30 @@ def _create_cities_lookup_table():
     return table
 
 
+def _create_job_titles_lookup_table():
+    ddb = boto3.resource("dynamodb", region_name="us-east-1")
+    table = ddb.create_table(
+        TableName="job-titles-lookup",
+        KeySchema=[{"AttributeName": "job_title", "KeyType": "HASH"}],
+        AttributeDefinitions=[{"AttributeName": "job_title", "AttributeType": "S"}],
+        BillingMode="PAY_PER_REQUEST",
+    )
+    table.meta.client.get_waiter("table_exists").wait(TableName="job-titles-lookup")
+    return table
+
+
+def _create_industry_categories_lookup_table():
+    ddb = boto3.resource("dynamodb", region_name="us-east-1")
+    table = ddb.create_table(
+        TableName="industry-categories-lookup",
+        KeySchema=[{"AttributeName": "industry_category", "KeyType": "HASH"}],
+        AttributeDefinitions=[{"AttributeName": "industry_category", "AttributeType": "S"}],
+        BillingMode="PAY_PER_REQUEST",
+    )
+    table.meta.client.get_waiter("table_exists").wait(TableName="industry-categories-lookup")
+    return table
+
+
 @pytest.fixture
 def talent_profiles_table(aws_mocks):
     return _create_talent_profiles_table()
@@ -239,13 +267,25 @@ def cities_lookup_table(aws_mocks):
 
 
 @pytest.fixture
+def job_titles_lookup_table(aws_mocks):
+    return _create_job_titles_lookup_table()
+
+
+@pytest.fixture
+def industry_categories_lookup_table(aws_mocks):
+    return _create_industry_categories_lookup_table()
+
+
+@pytest.fixture
 def all_tables(aws_mocks):
-    """Create all four DynamoDB tables inside one moto context."""
+    """Create all six DynamoDB tables inside one moto context."""
     return {
         "talent_profiles": _create_talent_profiles_table(),
         "skills_lookup": _create_skills_lookup_table(),
         "certifications_lookup": _create_certifications_lookup_table(),
         "cities_lookup": _create_cities_lookup_table(),
+        "job_titles_lookup": _create_job_titles_lookup_table(),
+        "industry_categories_lookup": _create_industry_categories_lookup_table(),
     }
 
 
@@ -277,8 +317,9 @@ def sample_profile():
             "github": "github.com/janedoe",
         },
         "summary": "Senior software engineer with 10 years of experience in cloud architecture.",
-        "talent_bucket": "IT Resources",
-        "talent_category": "Developer",
+        "service_category": "IT",
+        "industry_category": "Technology",
+        "job_title": "Senior Software Engineer",
         "skillsets": [
             {"name": "Python", "evidence": ["Built ETL pipelines"]},
             {"name": "AWS", "evidence": ["Managed EC2 fleet"]},
@@ -291,7 +332,7 @@ def sample_profile():
             {"name": "Tech Inc", "evidence": ["Lead Architect"]},
         ],
         "location": {"city": "Herndon", "state": "Virginia"},
-        "bill_rate": 125.0,
+        "requested_salary": 125000,
     }
 
 
@@ -311,8 +352,9 @@ def sample_dynamodb_item():
             "github": "github.com/janedoe",
         },
         "summary": "Senior software engineer with 10 years of experience.",
-        "talent_bucket": "IT Resources",
-        "talent_category": "Developer",
+        "service_category": "IT",
+        "industry_category": "Technology",
+        "job_title": "Senior Software Engineer",
         "skillsets": [
             {"name": "Python", "evidence": ["Built ETL pipelines"]},
             {"name": "AWS", "evidence": ["Managed EC2 fleet"]},
@@ -327,7 +369,7 @@ def sample_dynamodb_item():
         ],
         "location": {"city": "Herndon", "state": "VA"},
         "location_state": "VA",
-        "bill_rate": Decimal("125"),
+        "requested_salary": Decimal("125000"),
         "status": "Potential Candidate",
         "date_received": "2025-01-15",
         "updated_at": "2025-01-15T12:00:00+00:00",

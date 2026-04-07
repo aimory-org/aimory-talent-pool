@@ -26,10 +26,14 @@ locals {
     normalize = { timeout = 30, memory = 512, env = {} }
 
     llm_extract = {
-      timeout = 120
+      timeout = 300
       memory  = 1024
       env = {
-        MODEL_ID = var.bedrock_model_id
+        MODEL_ID                         = var.bedrock_model_id
+        SKILLS_LOOKUP_TABLE              = var.skills_lookup_table_name
+        CERTIFICATIONS_LOOKUP_TABLE      = var.certifications_lookup_table_name
+        JOB_TITLES_LOOKUP_TABLE          = var.job_titles_lookup_table_name
+        INDUSTRY_CATEGORIES_LOOKUP_TABLE = var.industry_categories_lookup_table_name
       }
     }
 
@@ -37,10 +41,12 @@ locals {
       timeout = 30
       memory  = 512
       env = {
-        TALENT_PROFILES_TABLE       = var.talent_profiles_table_name
-        SKILLS_LOOKUP_TABLE         = var.skills_lookup_table_name
-        CERTIFICATIONS_LOOKUP_TABLE = var.certifications_lookup_table_name
-        CITIES_LOOKUP_TABLE         = var.cities_lookup_table_name
+        TALENT_PROFILES_TABLE            = var.talent_profiles_table_name
+        SKILLS_LOOKUP_TABLE              = var.skills_lookup_table_name
+        CERTIFICATIONS_LOOKUP_TABLE      = var.certifications_lookup_table_name
+        CITIES_LOOKUP_TABLE              = var.cities_lookup_table_name
+        JOB_TITLES_LOOKUP_TABLE          = var.job_titles_lookup_table_name
+        INDUSTRY_CATEGORIES_LOOKUP_TABLE = var.industry_categories_lookup_table_name
       }
     }
   }
@@ -157,7 +163,7 @@ resource "aws_iam_role_policy" "pipeline_bedrock" {
     Version = "2012-10-17",
     Statement = [{
       Effect   = "Allow"
-      Action   = ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"]
+      Action   = ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream", "bedrock:Converse"]
       Resource = "*"
     }]
   })
@@ -173,17 +179,19 @@ resource "aws_iam_role_policy" "pipeline_dynamodb" {
       {
         Sid      = "TalentProfiles"
         Effect   = "Allow"
-        Action   = ["dynamodb:PutItem", "dynamodb:UpdateItem"]
+        Action   = ["dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:Scan"]
         Resource = var.talent_profiles_table_arn
       },
       {
         Sid    = "LookupTables"
         Effect = "Allow"
-        Action = ["dynamodb:PutItem"]
+        Action = ["dynamodb:PutItem", "dynamodb:Scan"]
         Resource = [
           var.skills_lookup_table_arn,
           var.certifications_lookup_table_arn,
-          var.cities_lookup_table_arn
+          var.cities_lookup_table_arn,
+          var.job_titles_lookup_table_arn,
+          var.industry_categories_lookup_table_arn
         ]
       }
     ]

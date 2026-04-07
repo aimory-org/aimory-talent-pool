@@ -13,6 +13,8 @@ dynamodb = boto3.resource("dynamodb")
 skills_table = dynamodb.Table(os.environ["SKILLS_LOOKUP_TABLE"])
 certifications_table = dynamodb.Table(os.environ["CERTIFICATIONS_LOOKUP_TABLE"])
 cities_table = dynamodb.Table(os.environ["CITIES_LOOKUP_TABLE"])
+job_titles_table = dynamodb.Table(os.environ["JOB_TITLES_LOOKUP_TABLE"])
+industry_categories_table = dynamodb.Table(os.environ["INDUSTRY_CATEGORIES_LOOKUP_TABLE"])
 
 
 def scan_all(table, key_attr):
@@ -58,6 +60,12 @@ def handler(event, context):
 
         if "all" in include or "cities" in include:
             result["cities"] = scan_cities()
+
+        if "all" in include or "job_titles" in include:
+            result["job_titles"] = scan_all(job_titles_table, "job_title")
+
+        if "all" in include or "industry_categories" in include:
+            result["industry_categories"] = scan_all(industry_categories_table, "industry_category")
 
         return {
             "statusCode": 200,

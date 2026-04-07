@@ -58,6 +58,26 @@ variable "cities_lookup_table_arn" {
   description = "DynamoDB table ARN for cities lookup"
 }
 
+variable "job_titles_lookup_table_name" {
+  type        = string
+  description = "DynamoDB table name for job titles lookup"
+}
+
+variable "job_titles_lookup_table_arn" {
+  type        = string
+  description = "DynamoDB table ARN for job titles lookup"
+}
+
+variable "industry_categories_lookup_table_name" {
+  type        = string
+  description = "DynamoDB table name for industry categories lookup"
+}
+
+variable "industry_categories_lookup_table_arn" {
+  type        = string
+  description = "DynamoDB table ARN for industry categories lookup"
+}
+
 variable "resume_bucket_name" {
   type        = string
   description = "S3 bucket name for resumes"

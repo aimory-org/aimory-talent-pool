@@ -13,6 +13,27 @@ AWS_REGION = os.environ.get("AWS_REGION", "us-east-1")
 
 bedrock_client = boto3.client("bedrock-runtime", region_name=AWS_REGION)
 s3_client = boto3.client("s3", region_name=AWS_REGION)
+dynamodb = boto3.resource("dynamodb", region_name=AWS_REGION)
+
+# Lookup table names for injecting existing values into the prompt
+SKILLS_LOOKUP_TABLE = os.environ.get("SKILLS_LOOKUP_TABLE", "")
+CERTIFICATIONS_LOOKUP_TABLE = os.environ.get("CERTIFICATIONS_LOOKUP_TABLE", "")
+JOB_TITLES_LOOKUP_TABLE = os.environ.get("JOB_TITLES_LOOKUP_TABLE", "")
+INDUSTRY_CATEGORIES_LOOKUP_TABLE = os.environ.get("INDUSTRY_CATEGORIES_LOOKUP_TABLE", "")
+
+
+def _fetch_lookup_values(table_name, key_attr, limit=500):
+    """Scan a lookup table and return up to `limit` values."""
+    if not table_name:
+        return []
+    try:
+        tbl = dynamodb.Table(table_name)
+        response = tbl.scan(ProjectionExpression=key_attr, Limit=limit)
+        return sorted({item[key_attr] for item in response.get("Items", [])})
+    except Exception as e:
+        print(f"Warning: failed to fetch lookups from {table_name}: {e}")
+        return []
+
 
 # JSON Schema for talent profile extraction
 TALENT_SCHEMA = {
@@ -25,15 +46,16 @@ TALENT_SCHEMA = {
         "name",
         "contact",
         "summary",
-        "talent_bucket",
-        "talent_category",
+        "service_category",
+        "industry_category",
+        "job_title",
         "skillsets",
         "years_of_experience",
         "companies",
         "location",
         "clearance_level",
         "certifications",
-        "bill_rate",
+        "requested_salary",
     ],
     "properties": {
         "is_resume": {"type": "boolean", "description": "True if the document is a resume/CV, false otherwise"},
@@ -44,36 +66,43 @@ TALENT_SCHEMA = {
             ),
         },
         "name": {"type": ["string", "null"], "minLength": 1},
-        "summary": {"type": ["string", "null"], "minLength": 1, "maxLength": 300},
-        "talent_bucket": {
+        "summary": {
             "type": ["string", "null"],
-            "enum": [
-                "IT Resources",
-                "Accounting and Finance Resources",
-                "HR Resources",
-                "Business Development/Sales Resources",
-                None,
-            ],
-            "description": "Primary bucket classification for the talent",
+            "minLength": 1,
+            "maxLength": 1000,
+            "description": (
+                "Professional summary of up to 1000 characters covering key experience, "
+                "skills, and accomplishments. May include line breaks."
+            ),
         },
-        "talent_category": {
+        "service_category": {
             "type": ["string", "null"],
             "enum": [
+                "IT",
                 "Accounting",
-                "Finance",
-                "Data Analysis",
-                "Forensics",
-                "Developer",
-                "Network Engineer",
-                "Database Analyst",
-                "Cloud Expert",
-                "Project Manager",
-                "HR",
-                "Business Development",
-                "Sales",
+                "FSP Headhunting",
+                "Cybersecurity",
                 None,
             ],
-            "description": "Specific category within the bucket",
+            "description": "Aimory company service category this talent aligns to",
+        },
+        "industry_category": {
+            "type": ["string", "null"],
+            "description": (
+                "The organizational/industry function this talent works in. "
+                "Common values: HR, Accounting, Finance, IT Engineering, Manufacturing, Federal Government. "
+                "If the resume clearly fits a different industry not listed, use the most appropriate industry name. "
+                "Use null if truly indeterminate."
+            ),
+        },
+        "job_title": {
+            "type": ["string", "null"],
+            "description": (
+                "The most specific standard job title that describes this candidate's primary role. "
+                "Examples: Full Stack Developer, Network Engineer, ServiceNow Developer, Data Analyst, "
+                "Project Manager, Cybersecurity Analyst, HR Generalist, Staff Accountant. "
+                "Use standard industry titles, not creative/internal titles."
+            ),
         },
         "contact": {
             "type": "object",
@@ -112,7 +141,12 @@ TALENT_SCHEMA = {
         "certifications": {
             "type": "array",
             "items": {"type": "string", "minLength": 1},
-            "description": "List of certifications (e.g. PMP, CPA, AWS Solutions Architect, CISSP)",
+            "description": (
+                "List of certifications using full official names, e.g. "
+                "'Project Management Professional (PMP)', "
+                "'Certified Information Systems Security Professional (CISSP)', "
+                "'AWS Solutions Architect - Associate'"
+            ),
         },
         "companies": {
             "type": "array",
@@ -132,11 +166,12 @@ TALENT_SCHEMA = {
             "required": ["city", "state"],
             "properties": {"city": {"type": ["string", "null"]}, "state": {"type": ["string", "null"]}},
         },
-        "bill_rate": {
+        "requested_salary": {
             "type": ["number", "null"],
             "description": (
-                "Hourly bill rate in USD. If rate is given per day, divide by 8. "
-                "If per week, divide by 40. If per month, divide by 160. If per year, divide by 2080."
+                "Requested or expected salary in annual USD. If rate is given hourly, multiply by 2080. "
+                "If per day, multiply by 260. If per week, multiply by 52. If per month, multiply by 12. "
+                "If already annual, use as-is. If no salary/rate mentioned, use null."
             ),
         },
     },
@@ -158,18 +193,81 @@ JSON Formatting Rules (IMPORTANT):
 - Keep evidence snippets SHORT (under 50 chars each) to avoid formatting issues
 - Limit to 2-3 evidence snippets per skill
 
-Bucket Assignment:
-- IT Resources: Developers, Network Engineers, Database Analysts, Cloud Experts, Project Managers, IT professionals
-- Accounting and Finance Resources: Accountants, Finance professionals, Data Analysts, Forensics specialists
-- HR Resources: Human Resources professionals, Recruiters, HR Managers
-- Business Development/Sales Resources: Sales, Business Development, Account Managers
+Company Service Category Assignment (pick exactly one):
+- IT: Developers, Network Engineers, Database Analysts, Cloud Experts,
+  Project Managers, IT professionals, Software Engineers
+- Accounting: Accountants, Finance professionals, Data Analysts, Forensics specialists, Auditors, Bookkeepers
+- FSP Headhunting: Executive-level placements, Senior leadership roles, C-suite candidates, Directors, VPs
+- Cybersecurity: Security Analysts, Penetration Testers, SOC Analysts, Security Engineers, CISO-track professionals
 
-Category options: Accounting, Finance, Data Analysis, Forensics, Developer,
-Network Engineer, Database Analyst, Cloud Expert, Project Manager, HR, Business Development, Sales
+Industry Category:
+- This represents the organizational/industry function the candidate works in.
+- Common values: HR, Accounting, Finance, IT Engineering, Manufacturing, Federal Government
+- If the resume clearly fits a DIFFERENT industry not listed above, use the most appropriate industry name.
+  For example: Healthcare, Education, Legal, Retail, Logistics, Energy, Telecommunications, etc.
+- The AI MAY create new industry categories when a resume doesn't fit existing ones.
+- Use null only if truly indeterminate.
+
+Job Title:
+- Extract the MOST SPECIFIC standard job title for this candidate's primary role.
+- Use standard industry titles (e.g., "Full Stack Developer", not "Code Ninja" or "Dev III").
+- Examples: Network Engineer, Full Stack Developer, ServiceNow Developer, Data Analyst,
+  Project Manager, Cybersecurity Analyst, HR Generalist, Staff Accountant, Cloud Architect.
+- Normalize to title case (e.g., "Network Engineer" not "network engineer" or "NETWORK ENGINEER").
+- Use null only if the role is truly unclear.
+
+Summary:
+- Write a professional summary of up to 1000 characters (not words).
+- Use line breaks (\n) to separate paragraphs or sections for readability.
+- Cover the candidate's key experience, technical skills, notable accomplishments, and career trajectory.
+- Be comprehensive but concise. Include specifics from the resume.
 
 Field guidance:
-- Evidence snippets: SHORT phrases from resume (not full sentences)
-- Certifications: list of strings like ["PMP", "AWS Solutions Architect"]
+- Skills: Extract MEANINGFUL, SPECIFIC skills from the resume. Include:
+  - Technical skills (languages, frameworks, tools, platforms)
+  - Domain skills (accounting, auditing, recruiting, compliance, etc.)
+  - Soft/management skills only if strongly evidenced (e.g., "led team of 12")
+  - QUALITY FILTER: Do NOT extract vague, generic, or trivially common terms as skills:
+    - BAD (too vague): Briefing, Documentation, Meetings, Reporting, Filing, Typing,
+      Multitasking, Phone Skills, Emailing, Travel, Scheduling, Research, Analysis,
+      Organization, Planning, Time Management, Teamwork, Collaboration, Detail-Oriented,
+      Self-Motivated, Critical Thinking, Interpersonal Skills, Customer Service, Training,
+      Presentations, Writing, Reading, Microsoft Windows, Internet, Basic Computer Skills
+    - GOOD (specific & searchable): Agile, Scrum, Amazon Web Services, Python, SQL, Power BI, ServiceNow,
+      ITIL, Six Sigma, Financial Modeling, Risk Assessment, Penetration Testing, SAP,
+      Tableau, Kubernetes, Terraform, JIRA, Salesforce, SOC 2 Compliance
+    - Rule of thumb: Would a recruiter search for this term? If not, skip it.
+  - Use FULL SPELLED-OUT canonical names (not abbreviations):
+    "Amazon Web Services" not "AWS", "Google Cloud Platform" not "GCP",
+    "Artificial Intelligence/Machine Learning" not "AI/ML",
+    "Business Intelligence" not "BI", "Computer Science" not "CS",
+    "JavaScript" not "JS", "PostgreSQL" not "Postgres", "CI/CD" not "CICD",
+    "React" not "ReactJS", "Node.js" not "NodeJS", ".NET" not "dotnet",
+    "CompTIA Security+" not "Sec+", "Power BI" not "PowerBI"
+  - EXCEPTIONS where the abbreviation IS the standard name (keep as-is):
+    "SQL", "HTML", "CSS", "API", "REST", "DevOps", "CI/CD", "Power BI", "SAP"
+  - CRITICAL DEDUPLICATION: Never create variations of the same skill:
+    - Use "Agile" not "Agile Methodologies" or "Agile Methodology" or "Agile Development"
+    - Use "Scrum" not "Scrum Framework" or "Scrum Methodology"
+    - Use "Project Management" not "Project Management Skills" or "PM"
+    - Use "Data Analysis" not "Data Analytics" or "Data Analytical Skills"
+    - Use "Microsoft Office" not "MS Office" or "Microsoft Office Suite" or "Office 365"
+    - Use "Microsoft Excel" not "MS Excel" or "Excel"
+    - Use "Communication" not "Communication Skills" or "Verbal Communication"
+    - Use "Leadership" not "Leadership Skills" or "Team Leadership"
+    - Use the FULL SPELLED-OUT canonical name for each skill
+    - If the existing skills list already contains a similar skill, use THAT exact name
+  - Preserve proper casing: "Amazon Web Services", "SQL", "DevOps", "ServiceNow", "Salesforce"
+  - Do NOT list the same skill twice under different names
+  - Evidence snippets: SHORT phrases from resume (not full sentences)
+- Certifications: Use the FULL official certification name (not abbreviations):
+  - "Project Management Professional (PMP)" not just "PMP"
+  - "Certified Information Systems Security Professional (CISSP)" not just "CISSP"
+  - "CompTIA Security+" not "Security+" or "Sec+"
+  - "Certified Scrum Master (CSM)" not just "CSM"
+  - "AWS Solutions Architect - Associate" not "AWS SAA"
+  - Format: "Full Name (ABBREV)" when a well-known abbreviation exists
+  - Do NOT list the same cert twice under different names
 - Clearance: Must be exactly one of: Secret, TS, TS/SCI, TS/SCI/FSP, TS/SCI/CI, Yankee White, or null
   - Secret: Standard Secret clearance
   - TS: Top Secret (no SCI)
@@ -182,13 +280,13 @@ Field guidance:
   - IMPORTANT: Only assign a clearance if the resume CLEARLY states one of these levels
   - If clearance is lower than Secret (e.g., Public Trust, Confidential, None) or unclear, use null
   - If no clearance mentioned, use null
-- bill_rate: hourly USD rate. IMPORTANT: Convert to hourly if given in other units:
-  - Daily rate: divide by 8 (e.g., $1200/day = $150/hour)
-  - Weekly rate: divide by 40 (e.g., $4000/week = $100/hour)
-  - Monthly rate: divide by 160 (e.g., $16000/month = $100/hour)
-  - Yearly rate: divide by 2080 (e.g., $208000/year = $100/hour)
-  - If already hourly, use as-is
-  - If no rate mentioned, use null
+- requested_salary: Annual salary in USD. IMPORTANT: Convert to annual if given in other units:
+  - Hourly rate: multiply by 2080 (e.g., $50/hour = $104,000/year)
+  - Daily rate: multiply by 260 (e.g., $400/day = $104,000/year)
+  - Weekly rate: multiply by 52 (e.g., $2000/week = $104,000/year)
+  - Monthly rate: multiply by 12 (e.g., $8333/month = $100,000/year)
+  - If already annual, use as-is
+  - If no salary/rate mentioned, use null
 - If a field cannot be determined, use null (or empty array [] for lists)
 """
 
@@ -210,18 +308,50 @@ def handler(event, context):
     bucket = event.get("bucket")
     key = event.get("key")
 
+    # Fetch existing lookup values to help Claude stay consistent
+    existing_skills = _fetch_lookup_values(SKILLS_LOOKUP_TABLE, "skill")
+    existing_certs = _fetch_lookup_values(CERTIFICATIONS_LOOKUP_TABLE, "certification")
+    existing_titles = _fetch_lookup_values(JOB_TITLES_LOOKUP_TABLE, "job_title")
+    existing_industries = _fetch_lookup_values(INDUSTRY_CATEGORIES_LOOKUP_TABLE, "industry_category")
+
+    lookups_context = ""
+    if existing_skills:
+        lookups_context += (
+            f"\nIMPORTANT — Existing skills in our database. "
+            f"You MUST use these exact names instead of creating variations. "
+            f"If 'Agile' exists, do NOT output 'Agile Methodologies': "
+            f"{', '.join(existing_skills)}\n"
+        )
+    if existing_certs:
+        lookups_context += (
+            f"\nExisting certifications in our database "
+            f"(use these exact names when matched): {', '.join(existing_certs)}\n"
+        )
+    if existing_titles:
+        lookups_context += (
+            f"\nExisting job titles in our database "
+            f"(use these exact names when matched, create new only if nothing fits): "
+            f"{', '.join(existing_titles)}\n"
+        )
+    if existing_industries:
+        lookups_context += (
+            f"\nExisting industry categories in our database "
+            f"(use these exact names when matched, create new only if nothing fits): "
+            f"{', '.join(existing_industries)}\n"
+        )
+
     schema_text = json.dumps(TALENT_SCHEMA, indent=2)
     user_prompt = f"""Target JSON schema:
   {schema_text}
-
+  {lookups_context}
   Resume text:
   {resume_text}
   """
 
     # Note: boto3 Converse does not accept outputConfig; enforce JSON via prompt and validate on parse.
     # Retry with exponential backoff for throttling
-    max_retries = 5
-    base_delay = 2
+    max_retries = 8
+    base_delay = 3
     resp = None
 
     for attempt in range(max_retries):
@@ -230,7 +360,7 @@ def handler(event, context):
                 modelId=MODEL_ID,
                 messages=[{"role": "user", "content": [{"text": user_prompt}]}],
                 system=[{"text": SYSTEM_INSTRUCTIONS}],
-                inferenceConfig={"maxTokens": 2500, "temperature": 0.1, "topP": 0.9},
+                inferenceConfig={"maxTokens": 4096, "temperature": 0.1, "topP": 0.9},
             )
             break  # Success, exit retry loop
         except ClientError as e:

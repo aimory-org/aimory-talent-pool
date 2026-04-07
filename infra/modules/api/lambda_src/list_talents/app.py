@@ -8,7 +8,7 @@ import json
 import os
 
 import boto3
-from opensearchpy import AWSV4SignerAuth, OpenSearch, RequestsHttpConnection
+from opensearchpy import AWSV4SignerAuth, NotFoundError, OpenSearch, RequestsHttpConnection
 
 OPENSEARCH_ENDPOINT = os.environ["OPENSEARCH_ENDPOINT"]
 INDEX_NAME = "talent-profiles"
@@ -24,6 +24,7 @@ def _get_client():
         use_ssl=True,
         verify_certs=True,
         connection_class=RequestsHttpConnection,
+        timeout=30,
     )
 
 
@@ -35,16 +36,17 @@ def handler(event, context):
         must = []
         filters = []
 
-        # Full-text search across name and summary.
-        # name: match_phrase_prefix — strict prefix matching, no fuzziness
-        # summary: match_phrase_prefix — strict prefix matching, 2+ chars required
+        # Full-text search across name and resume text only.
+        # Name hits are boosted heavily so they always sort first.
+        # resume_text uses match_phrase (not prefix) and requires 4+ chars
+        # to avoid noisy partial matches like "ben" → "benefit".
         if params.get("search"):
             search_term = params["search"]
             should_clauses = [
-                {"match_phrase_prefix": {"name": {"query": search_term, "boost": 3}}},
+                {"match_phrase_prefix": {"name": {"query": search_term, "boost": 10}}},
             ]
             if len(search_term.strip()) >= 2:
-                should_clauses.append({"match_phrase_prefix": {"summary": {"query": search_term}}})
+                should_clauses.append({"match_phrase": {"resume_text": {"query": search_term, "boost": 1}}})
             must.append(
                 {
                     "bool": {
@@ -57,8 +59,9 @@ def handler(event, context):
         # Exact keyword filters
         for field in (
             "status",
-            "talent_bucket",
-            "talent_category",
+            "service_category",
+            "industry_category",
+            "job_title",
             "clearance_level",
             "location_state",
         ):
@@ -78,6 +81,11 @@ def handler(event, context):
             for cert in [c.strip() for c in params["certifications"].split(",") if c.strip()]:
                 filters.append({"term": {"cert_names": cert}})
 
+        # Tags — each must be present (AND logic)
+        if params.get("tags"):
+            for tag in [t.strip() for t in params["tags"].split(",") if t.strip()]:
+                filters.append({"term": {"tags": tag}})
+
         # Years of experience range
         years_range = {}
         if params.get("minYears"):
@@ -87,6 +95,14 @@ def handler(event, context):
         if years_range:
             filters.append({"range": {"years_of_experience": years_range}})
 
+        # When searching, sort by relevance so name matches rank first;
+        # otherwise sort by newest received.
+        sort_clause = (
+            [{"_score": {"order": "desc"}}, {"date_received": {"order": "desc"}}]
+            if params.get("search")
+            else [{"date_received": {"order": "desc"}}]
+        )
+
         query = {
             "query": {
                 "bool": {
@@ -94,14 +110,34 @@ def handler(event, context):
                     "filter": filters,
                 }
             },
-            "sort": [{"date_received": {"order": "desc"}}],
+            "sort": sort_clause,
             "size": 1000,
         }
 
-        response = client.search(index=INDEX_NAME, body=query)
+        # Add highlighting when a search query is active
+        if params.get("search"):
+            query["highlight"] = {
+                "fields": {
+                    "resume_text": {"fragment_size": 80, "number_of_fragments": 1},
+                },
+                "pre_tags": ["<mark>"],
+                "post_tags": ["</mark>"],
+            }
+
+        try:
+            response = client.search(index=INDEX_NAME, body=query)
+        except NotFoundError:
+            # Index hasn't been created yet — no data processed
+            return {
+                "statusCode": 200,
+                "headers": {"Content-Type": "application/json"},
+                "body": json.dumps({"items": [], "count": 0}),
+            }
         items = []
         for hit in response["hits"]["hits"]:
             doc = hit["_source"]
+            if "highlight" in hit:
+                doc["_highlight"] = hit["highlight"]
             items.append(doc)
 
         return {
