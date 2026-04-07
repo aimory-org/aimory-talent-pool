@@ -93,6 +93,7 @@ def _aws_env(monkeypatch):
         "STALE_DAYS": "90",
         "JOB_TITLES_LOOKUP_TABLE": "job-titles-lookup",
         "INDUSTRY_CATEGORIES_LOOKUP_TABLE": "industry-categories-lookup",
+        "TAGS_LOOKUP_TABLE": "tags-lookup",
         "BEDROCK_MODEL_ID": "anthropic.claude-3-sonnet-20240229-v1:0",
     }
     for k, v in env.items():
@@ -246,6 +247,18 @@ def _create_industry_categories_lookup_table():
     return table
 
 
+def _create_tags_lookup_table():
+    ddb = boto3.resource("dynamodb", region_name="us-east-1")
+    table = ddb.create_table(
+        TableName="tags-lookup",
+        KeySchema=[{"AttributeName": "tag", "KeyType": "HASH"}],
+        AttributeDefinitions=[{"AttributeName": "tag", "AttributeType": "S"}],
+        BillingMode="PAY_PER_REQUEST",
+    )
+    table.meta.client.get_waiter("table_exists").wait(TableName="tags-lookup")
+    return table
+
+
 @pytest.fixture
 def talent_profiles_table(aws_mocks):
     return _create_talent_profiles_table()
@@ -277,8 +290,13 @@ def industry_categories_lookup_table(aws_mocks):
 
 
 @pytest.fixture
+def tags_lookup_table(aws_mocks):
+    return _create_tags_lookup_table()
+
+
+@pytest.fixture
 def all_tables(aws_mocks):
-    """Create all six DynamoDB tables inside one moto context."""
+    """Create all DynamoDB tables inside one moto context."""
     return {
         "talent_profiles": _create_talent_profiles_table(),
         "skills_lookup": _create_skills_lookup_table(),
@@ -286,6 +304,7 @@ def all_tables(aws_mocks):
         "cities_lookup": _create_cities_lookup_table(),
         "job_titles_lookup": _create_job_titles_lookup_table(),
         "industry_categories_lookup": _create_industry_categories_lookup_table(),
+        "tags_lookup": _create_tags_lookup_table(),
     }
 
 
