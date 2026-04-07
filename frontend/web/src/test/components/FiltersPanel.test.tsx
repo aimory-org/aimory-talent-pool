@@ -17,6 +17,8 @@ describe("FiltersPanel", () => {
     activeFilterCount: 0,
     lookupSkills: ["TypeScript", "React", "Python"],
     lookupCertifications: ["AWS", "PMP", "CSM"],
+    lookupJobTitles: ["Senior Software Engineer", "Project Manager"],
+    lookupIndustryCategories: ["IT Engineering", "Finance", "Manufacturing"],
     lookupCities: [
       { city: "New York", state: "NY" },
       { city: "Chicago", state: "IL" },
@@ -30,19 +32,15 @@ describe("FiltersPanel", () => {
       expect(screen.getByText("Filter Candidates")).toBeInTheDocument();
     });
 
-    it("renders all basic filter dropdowns", () => {
+    it("renders all filter dropdowns", () => {
       render(<FiltersPanel {...defaultProps} />);
 
       expect(screen.getByText("Status")).toBeInTheDocument();
-      expect(screen.getByText("Talent Bucket")).toBeInTheDocument();
-      expect(screen.getByText("Category")).toBeInTheDocument();
+      expect(screen.getByText("Service Category")).toBeInTheDocument();
+      expect(screen.getByText("Industry")).toBeInTheDocument();
+      expect(screen.getByText("Job Title")).toBeInTheDocument();
       expect(screen.getByText("Clearance")).toBeInTheDocument();
       expect(screen.getByText("State")).toBeInTheDocument();
-    });
-
-    it("renders advanced filter dropdowns", () => {
-      render(<FiltersPanel {...defaultProps} />);
-
       expect(screen.getByText("City")).toBeInTheDocument();
       expect(screen.getByText("Skills")).toBeInTheDocument();
       expect(screen.getByText("Certifications")).toBeInTheDocument();

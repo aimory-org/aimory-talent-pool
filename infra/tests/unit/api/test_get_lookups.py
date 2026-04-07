@@ -15,6 +15,8 @@ class TestGetLookupsHandler:
         all_tables["skills_lookup"].put_item(Item={"skill": "AWS"})
         all_tables["certifications_lookup"].put_item(Item={"certification": "PMP"})
         all_tables["cities_lookup"].put_item(Item={"city": "Herndon", "state": "VA"})
+        all_tables["job_titles_lookup"].put_item(Item={"job_title": "Software Engineer"})
+        all_tables["industry_categories_lookup"].put_item(Item={"industry_category": "IT Engineering"})
         app = _reload_app()
 
         resp = app.handler({"queryStringParameters": None}, None)
@@ -23,8 +25,12 @@ class TestGetLookupsHandler:
         assert "skills" in body
         assert "certifications" in body
         assert "cities" in body
+        assert "job_titles" in body
+        assert "industry_categories" in body
         assert sorted(body["skills"]) == ["AWS", "Python"]
         assert body["certifications"] == ["PMP"]
+        assert body["job_titles"] == ["Software Engineer"]
+        assert body["industry_categories"] == ["IT Engineering"]
 
     def test_include_skills_only(self, all_tables):
         all_tables["skills_lookup"].put_item(Item={"skill": "Go"})
@@ -81,6 +87,8 @@ class TestGetLookupsHandler:
         assert body["skills"] == []
         assert body["certifications"] == []
         assert body["cities"] == []
+        assert body["job_titles"] == []
+        assert body["industry_categories"] == []
 
     def test_multiple_include_params(self, all_tables):
         all_tables["skills_lookup"].put_item(Item={"skill": "Go"})

@@ -49,6 +49,26 @@ output "cities_lookup_table_arn" {
   value       = aws_dynamodb_table.cities_lookup.arn
 }
 
+output "job_titles_lookup_table_name" {
+  description = "DynamoDB table name for job titles lookup"
+  value       = aws_dynamodb_table.job_titles_lookup.name
+}
+
+output "job_titles_lookup_table_arn" {
+  description = "DynamoDB table ARN for job titles lookup"
+  value       = aws_dynamodb_table.job_titles_lookup.arn
+}
+
+output "industry_categories_lookup_table_name" {
+  description = "DynamoDB table name for industry categories lookup"
+  value       = aws_dynamodb_table.industry_categories_lookup.name
+}
+
+output "industry_categories_lookup_table_arn" {
+  description = "DynamoDB table ARN for industry categories lookup"
+  value       = aws_dynamodb_table.industry_categories_lookup.arn
+}
+
 output "talent_profiles_table_stream_arn" {
   description = "DynamoDB Stream ARN for talent profiles table"
   value       = aws_dynamodb_table.talent_profiles.stream_arn

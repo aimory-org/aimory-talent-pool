@@ -201,7 +201,7 @@ class TestLLMExtractThrottling:
             {"Error": {"Code": "ThrottlingException", "Message": "Rate exceeded"}},
             "Converse",
         )
-        mock_bedrock.converse.side_effect = [throttle_err] * 5
+        mock_bedrock.converse.side_effect = [throttle_err] * 8
 
         with pytest.raises(RuntimeError, match="Bedrock converse failed"):
             app.handler(_make_event(), None)

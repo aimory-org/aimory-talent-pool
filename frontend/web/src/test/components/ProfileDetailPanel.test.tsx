@@ -539,11 +539,11 @@ describe("ProfileDetailPanel", () => {
       expect(screen.getByText("10 years")).toBeInTheDocument();
     });
 
-    it("displays bill rate", () => {
+    it("displays requested salary", () => {
       renderPanel();
 
-      // Look for bill rate - check for both the amount and the label
-      expect(screen.getByText("$150")).toBeInTheDocument();
+      // Look for salary - check for the formatted amount
+      expect(screen.getByText("$150,000")).toBeInTheDocument();
     });
 
     it("displays location", () => {
@@ -751,7 +751,7 @@ describe("ProfileDetailPanel", () => {
       });
     });
 
-    it("shows number inputs for years and bill rate in edit mode", async () => {
+    it("shows number inputs for years and salary in edit mode", async () => {
       renderPanel();
 
       const editButton = screen.getByRole("button", { name: /edit/i });

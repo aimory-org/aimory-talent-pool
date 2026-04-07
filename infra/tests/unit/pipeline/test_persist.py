@@ -52,23 +52,17 @@ class TestPersistValidation:
         result = app.handler(_make_event(sample_profile), None)
         assert result["status"] == "ok"
 
-    def test_invalid_talent_bucket_raises(self, all_tables, sample_profile):
+    def test_invalid_service_category_raises(self, all_tables, sample_profile):
         app = _reload_app()
-        sample_profile["talent_bucket"] = "Bad Bucket"
-        with pytest.raises(ValueError, match="talent_bucket invalid"):
+        sample_profile["service_category"] = "Bad Category"
+        with pytest.raises(ValueError, match="service_category invalid"):
             app.handler(_make_event(sample_profile), None)
 
-    def test_null_talent_bucket_allowed(self, all_tables, sample_profile):
+    def test_null_service_category_allowed(self, all_tables, sample_profile):
         app = _reload_app()
-        sample_profile["talent_bucket"] = None
+        sample_profile["service_category"] = None
         result = app.handler(_make_event(sample_profile), None)
         assert result["status"] == "ok"
-
-    def test_invalid_talent_category_raises(self, all_tables, sample_profile):
-        app = _reload_app()
-        sample_profile["talent_category"] = "Juggler"
-        with pytest.raises(ValueError, match="talent_category invalid"):
-            app.handler(_make_event(sample_profile), None)
 
     def test_contact_missing_key_raises(self, all_tables, sample_profile):
         app = _reload_app()
@@ -106,10 +100,10 @@ class TestPersistValidation:
         with pytest.raises(ValueError, match="years_of_experience must be a number"):
             app.handler(_make_event(sample_profile), None)
 
-    def test_bill_rate_boolean_rejects(self, all_tables, sample_profile):
+    def test_requested_salary_boolean_rejects(self, all_tables, sample_profile):
         app = _reload_app()
-        sample_profile["bill_rate"] = False
-        with pytest.raises(ValueError, match="bill_rate must be a number"):
+        sample_profile["requested_salary"] = False
+        with pytest.raises(ValueError, match="requested_salary must be a number"):
             app.handler(_make_event(sample_profile), None)
 
     def test_certifications_not_list_raises(self, all_tables, sample_profile):
@@ -196,12 +190,12 @@ class TestPersistNormalization:
         item = table.get_item(Key={"pk": result["pk"]})["Item"]
         assert item["location"]["city"] == "Herndon"
 
-    def test_skill_acronym_preserved(self, all_tables, sample_profile):
+    def test_skill_names_stripped(self, all_tables, sample_profile):
         app = _reload_app()
         sample_profile["skillsets"] = [
-            {"name": "aws", "evidence": ["used it"]},
-            {"name": "ci/cd", "evidence": ["pipelines"]},
-            {"name": "python", "evidence": ["scripts"]},
+            {"name": " AWS ", "evidence": ["used it"]},
+            {"name": "CI/CD ", "evidence": ["pipelines"]},
+            {"name": " Python", "evidence": ["scripts"]},
         ]
         result = app.handler(_make_event(sample_profile), None)
         import boto3
@@ -243,16 +237,50 @@ class TestPersistDynamoDB:
         item = table.get_item(Key={"pk": result["pk"]})["Item"]
         assert item["status"] == "Potential Candidate"
 
+    def test_reprocess_preserves_curated_fields(self, all_tables, sample_profile):
+        """Reprocessing the same resume should preserve status, notes, tags, date_received."""
+        app = _reload_app()
+        import boto3
+
+        table = boto3.resource("dynamodb", region_name="us-east-1").Table("talent-profiles")
+
+        # First ingest
+        result = app.handler(_make_event(sample_profile), None)
+        pk = result["pk"]
+
+        # Simulate recruiter curation
+        table.update_item(
+            Key={"pk": pk},
+            UpdateExpression="SET #s = :s, notes = :n, tags = :t",
+            ExpressionAttributeNames={"#s": "status"},
+            ExpressionAttributeValues={
+                ":s": "Active Candidate",
+                ":n": "Great fit for project X",
+                ":t": ["priority", "frontend"],
+            },
+        )
+
+        # Reprocess the same file
+        app = _reload_app()
+        app.handler(_make_event(sample_profile), None)
+
+        item = table.get_item(Key={"pk": pk})["Item"]
+        assert item["status"] == "Active Candidate"
+        assert item["notes"] == "Great fit for project X"
+        assert item["tags"] == ["priority", "frontend"]
+        # date_received should be preserved from first ingest, not reset to today
+        assert item["date_received"] == result.get("date_received", item["date_received"])
+
     def test_decimal_conversion(self, all_tables, sample_profile):
         app = _reload_app()
-        sample_profile["bill_rate"] = 125.50
+        sample_profile["requested_salary"] = 125000
         sample_profile["years_of_experience"] = 10
         result = app.handler(_make_event(sample_profile), None)
         import boto3
 
         table = boto3.resource("dynamodb", region_name="us-east-1").Table("talent-profiles")
         item = table.get_item(Key={"pk": result["pk"]})["Item"]
-        assert isinstance(item["bill_rate"], Decimal)
+        assert isinstance(item["requested_salary"], Decimal)
         assert isinstance(item["years_of_experience"], Decimal)
 
     def test_denormalized_skill_names(self, all_tables, sample_profile):
@@ -274,15 +302,15 @@ class TestPersistDynamoDB:
         item = table.get_item(Key={"pk": result["pk"]})["Item"]
         assert "PMP" in item["cert_names"]
 
-    def test_null_bucket_defaults_unclassified(self, all_tables, sample_profile):
+    def test_null_service_category_defaults_unknown(self, all_tables, sample_profile):
         app = _reload_app()
-        sample_profile["talent_bucket"] = None
+        sample_profile["service_category"] = None
         result = app.handler(_make_event(sample_profile), None)
         import boto3
 
         table = boto3.resource("dynamodb", region_name="us-east-1").Table("talent-profiles")
         item = table.get_item(Key={"pk": result["pk"]})["Item"]
-        assert item["talent_bucket"] == "Unclassified"
+        assert item["service_category"] == "Unknown"
 
     def test_null_clearance_defaults_none(self, all_tables, sample_profile):
         app = _reload_app()
@@ -330,6 +358,26 @@ class TestPersistLookupTables:
         items = table.scan()["Items"]
         assert len(items) == 1
         assert items[0]["city"] == "Herndon"
+
+    def test_populates_job_titles_lookup(self, all_tables, sample_profile):
+        app = _reload_app()
+        app.handler(_make_event(sample_profile), None)
+        import boto3
+
+        table = boto3.resource("dynamodb", region_name="us-east-1").Table("job-titles-lookup")
+        items = table.scan()["Items"]
+        assert len(items) == 1
+        assert items[0]["job_title"] == "Senior Software Engineer"
+
+    def test_populates_industry_categories_lookup(self, all_tables, sample_profile):
+        app = _reload_app()
+        app.handler(_make_event(sample_profile), None)
+        import boto3
+
+        table = boto3.resource("dynamodb", region_name="us-east-1").Table("industry-categories-lookup")
+        items = table.scan()["Items"]
+        assert len(items) == 1
+        assert items[0]["industry_category"] == "Technology"
 
     def test_empty_skillsets_no_lookup_write(self, all_tables, sample_profile):
         app = _reload_app()

@@ -1,4 +1,4 @@
-import type { TalentProfile } from "@/types/talent"
+import type { TalentProfile } from "@/types/talent";
 
 // Mock data for prototyping - will be replaced with API calls
 export const mockTalentProfiles: TalentProfile[] = [
@@ -14,20 +14,34 @@ export const mockTalentProfiles: TalentProfile[] = [
       linkedin: "linkedin.com/in/sarahchen",
       github: "github.com/schen",
     },
-    summary: "Senior software developer with 8 years of experience in full-stack development, specializing in cloud-native applications and DevOps practices.",
-    talent_bucket: "IT Resources",
-    talent_category: "Developer",
+    summary:
+      "Senior software developer with 8 years of experience in full-stack development, specializing in cloud-native applications and DevOps practices.",
+    service_category: "IT",
+    industry_category: "Technology",
+    job_title: "Senior Software Developer",
     skillsets: [
-      { name: "Python", evidence: ["Built data pipelines using Python and AWS Lambda"] },
+      {
+        name: "Python",
+        evidence: ["Built data pipelines using Python and AWS Lambda"],
+      },
       { name: "AWS", evidence: ["Architected serverless applications on AWS"] },
-      { name: "React", evidence: ["Developed React frontends for enterprise applications"] },
-      { name: "PostgreSQL", evidence: ["Designed and optimized PostgreSQL databases"] },
+      {
+        name: "React",
+        evidence: ["Developed React frontends for enterprise applications"],
+      },
+      {
+        name: "PostgreSQL",
+        evidence: ["Designed and optimized PostgreSQL databases"],
+      },
       { name: "Docker", evidence: ["Containerized applications using Docker"] },
     ],
     skill_names: "Python,AWS,React,PostgreSQL,Docker",
     years_of_experience: 8,
     clearance_level: "Secret",
-    certifications: ["AWS Solutions Architect", "Certified Kubernetes Administrator"],
+    certifications: [
+      "AWS Solutions Architect",
+      "Certified Kubernetes Administrator",
+    ],
     cert_names: "AWS Solutions Architect,Certified Kubernetes Administrator",
     companies: [
       { name: "Tech Corp", evidence: ["Led development team at Tech Corp"] },
@@ -35,7 +49,10 @@ export const mockTalentProfiles: TalentProfile[] = [
     ],
     location: { city: "Arlington", state: "VA" },
     location_state: "VA",
-    bill_rate: 125,
+    requested_salary: 130000,
+    notes: "",
+    tags: ["full-stack", "cloud"],
+    resume_text: "",
     status: "Active Candidate",
     date_received: "2026-02-28",
     updated_at: "2026-02-28T10:00:00Z",
@@ -52,12 +69,20 @@ export const mockTalentProfiles: TalentProfile[] = [
       linkedin: "linkedin.com/in/mrodriguez",
       github: null,
     },
-    summary: "Cloud infrastructure expert with 12 years building enterprise-scale systems. Deep expertise in Kubernetes, Terraform, and multi-cloud architectures.",
-    talent_bucket: "IT Resources",
-    talent_category: "Cloud Expert",
+    summary:
+      "Cloud infrastructure expert with 12 years building enterprise-scale systems. Deep expertise in Kubernetes, Terraform, and multi-cloud architectures.",
+    service_category: "IT",
+    industry_category: "Government",
+    job_title: "Cloud Architect",
     skillsets: [
-      { name: "Kubernetes", evidence: ["Managed Kubernetes clusters for Fortune 500 company"] },
-      { name: "Terraform", evidence: ["Infrastructure as Code using Terraform"] },
+      {
+        name: "Kubernetes",
+        evidence: ["Managed Kubernetes clusters for Fortune 500 company"],
+      },
+      {
+        name: "Terraform",
+        evidence: ["Infrastructure as Code using Terraform"],
+      },
       { name: "AWS", evidence: ["AWS architecture and migration projects"] },
       { name: "Azure", evidence: ["Azure infrastructure design"] },
       { name: "Go", evidence: ["Built internal tooling in Go"] },
@@ -65,14 +90,24 @@ export const mockTalentProfiles: TalentProfile[] = [
     skill_names: "Kubernetes,Terraform,AWS,Azure,Go",
     years_of_experience: 12,
     clearance_level: "TS",
-    certifications: ["AWS DevOps Professional", "Azure Solutions Architect", "CKA"],
+    certifications: [
+      "AWS DevOps Professional",
+      "Azure Solutions Architect",
+      "CKA",
+    ],
     cert_names: "AWS DevOps Professional,Azure Solutions Architect,CKA",
     companies: [
-      { name: "Federal Agency", evidence: ["Cloud architect for federal agency"] },
+      {
+        name: "Federal Agency",
+        evidence: ["Cloud architect for federal agency"],
+      },
     ],
     location: { city: "Bethesda", state: "MD" },
     location_state: "MD",
-    bill_rate: 175,
+    requested_salary: 175000,
+    notes: "",
+    tags: [],
+    resume_text: "",
     status: "Potential Candidate",
     date_received: "2026-03-01",
     updated_at: "2026-03-01T09:00:00Z",
@@ -89,12 +124,20 @@ export const mockTalentProfiles: TalentProfile[] = [
       linkedin: "linkedin.com/in/ewatson",
       github: null,
     },
-    summary: "Network security engineer with TS/SCI clearance. 10 years experience in incident response, penetration testing, and security architecture.",
-    talent_bucket: "IT Resources",
-    talent_category: "Network Engineer",
+    summary:
+      "Network security engineer with TS/SCI clearance. 10 years experience in incident response, penetration testing, and security architecture.",
+    service_category: "Cybersecurity",
+    industry_category: "Defense",
+    job_title: "Network Security Engineer",
     skillsets: [
-      { name: "Network Security", evidence: ["Designed network security architecture"] },
-      { name: "Penetration Testing", evidence: ["Conducted penetration tests"] },
+      {
+        name: "Network Security",
+        evidence: ["Designed network security architecture"],
+      },
+      {
+        name: "Penetration Testing",
+        evidence: ["Conducted penetration tests"],
+      },
       { name: "SIEM", evidence: ["Implemented Splunk SIEM solutions"] },
       { name: "Python", evidence: ["Wrote security automation scripts"] },
     ],
@@ -104,11 +147,17 @@ export const mockTalentProfiles: TalentProfile[] = [
     certifications: ["CISSP", "CEH", "Security+"],
     cert_names: "CISSP,CEH,Security+",
     companies: [
-      { name: "Defense Contractor", evidence: ["Security lead at defense contractor"] },
+      {
+        name: "Defense Contractor",
+        evidence: ["Security lead at defense contractor"],
+      },
     ],
     location: { city: "Washington", state: "DC" },
     location_state: "DC",
-    bill_rate: 165,
+    requested_salary: 165000,
+    notes: "",
+    tags: ["cybersecurity"],
+    resume_text: "",
     status: "Active Candidate",
     date_received: "2026-02-25",
     updated_at: "2026-02-25T14:00:00Z",
@@ -125,11 +174,16 @@ export const mockTalentProfiles: TalentProfile[] = [
       linkedin: "linkedin.com/in/davidkim",
       github: null,
     },
-    summary: "Experienced IT project manager with PMP certification and 15 years leading complex technology initiatives in federal and commercial sectors.",
-    talent_bucket: "IT Resources",
-    talent_category: "Project Manager",
+    summary:
+      "Experienced IT project manager with PMP certification and 15 years leading complex technology initiatives in federal and commercial sectors.",
+    service_category: "IT",
+    industry_category: "Consulting",
+    job_title: "IT Project Manager",
     skillsets: [
-      { name: "Project Management", evidence: ["Led $10M IT modernization project"] },
+      {
+        name: "Project Management",
+        evidence: ["Led $10M IT modernization project"],
+      },
       { name: "Agile", evidence: ["Agile transformation lead"] },
       { name: "Scrum", evidence: ["Certified Scrum Master"] },
       { name: "JIRA", evidence: ["Managed projects in JIRA"] },
@@ -144,7 +198,10 @@ export const mockTalentProfiles: TalentProfile[] = [
     ],
     location: { city: "Reston", state: "VA" },
     location_state: "VA",
-    bill_rate: 145,
+    requested_salary: 145000,
+    notes: "",
+    tags: [],
+    resume_text: "",
     status: "Placed Candidate",
     date_received: "2026-02-20",
     updated_at: "2026-02-20T11:00:00Z",
@@ -161,9 +218,11 @@ export const mockTalentProfiles: TalentProfile[] = [
       linkedin: "linkedin.com/in/afoster",
       github: "github.com/afoster",
     },
-    summary: "Data analyst with expertise in financial data analysis, visualization, and reporting. Strong SQL and Python skills.",
-    talent_bucket: "Accounting and Finance Resources",
-    talent_category: "Data Analysis",
+    summary:
+      "Data analyst with expertise in financial data analysis, visualization, and reporting. Strong SQL and Python skills.",
+    service_category: "Accounting",
+    industry_category: "Financial Services",
+    job_title: "Data Analyst",
     skillsets: [
       { name: "SQL", evidence: ["Advanced SQL for financial reporting"] },
       { name: "Python", evidence: ["Python for data analysis"] },
@@ -176,11 +235,17 @@ export const mockTalentProfiles: TalentProfile[] = [
     certifications: ["Tableau Desktop Certified"],
     cert_names: "Tableau Desktop Certified",
     companies: [
-      { name: "Financial Services", evidence: ["Data analyst at financial services firm"] },
+      {
+        name: "Financial Services",
+        evidence: ["Data analyst at financial services firm"],
+      },
     ],
     location: { city: "Austin", state: "TX" },
     location_state: "TX",
-    bill_rate: 95,
+    requested_salary: 95000,
+    notes: "",
+    tags: [],
+    resume_text: "",
     status: "Active Candidate",
     date_received: "2026-02-15",
     updated_at: "2026-02-15T16:00:00Z",
@@ -197,9 +262,11 @@ export const mockTalentProfiles: TalentProfile[] = [
       linkedin: null,
       github: "github.com/jobrien",
     },
-    summary: "Full-stack developer specializing in Java and Spring Boot microservices. 5 years experience building scalable enterprise applications.",
-    talent_bucket: "IT Resources",
-    talent_category: "Developer",
+    summary:
+      "Full-stack developer specializing in Java and Spring Boot microservices. 5 years experience building scalable enterprise applications.",
+    service_category: "IT",
+    industry_category: "Technology",
+    job_title: "Full-Stack Developer",
     skillsets: [
       { name: "Java", evidence: ["Java enterprise development"] },
       { name: "Spring Boot", evidence: ["Spring Boot microservices"] },
@@ -216,7 +283,10 @@ export const mockTalentProfiles: TalentProfile[] = [
     ],
     location: { city: "San Jose", state: "CA" },
     location_state: "CA",
-    bill_rate: 110,
+    requested_salary: 110000,
+    notes: "",
+    tags: [],
+    resume_text: "",
     status: "Potential Candidate",
     date_received: "2026-02-22",
     updated_at: "2026-02-22T13:00:00Z",
@@ -233,9 +303,11 @@ export const mockTalentProfiles: TalentProfile[] = [
       linkedin: "linkedin.com/in/rpatel",
       github: null,
     },
-    summary: "Business development professional with 7 years driving growth in technology consulting. Strong track record of winning federal contracts.",
-    talent_bucket: "Business Development/Sales Resources",
-    talent_category: "Business Development",
+    summary:
+      "Business development professional with 7 years driving growth in technology consulting. Strong track record of winning federal contracts.",
+    service_category: "FSP Headhunting",
+    industry_category: "Consulting",
+    job_title: "Business Development Manager",
     skillsets: [
       { name: "Business Development", evidence: ["Won $50M in new business"] },
       { name: "Federal Sales", evidence: ["Federal contract capture"] },
@@ -247,11 +319,17 @@ export const mockTalentProfiles: TalentProfile[] = [
     certifications: [],
     cert_names: "",
     companies: [
-      { name: "Tech Consulting", evidence: ["BD lead at tech consulting firm"] },
+      {
+        name: "Tech Consulting",
+        evidence: ["BD lead at tech consulting firm"],
+      },
     ],
     location: { city: "New York", state: "NY" },
     location_state: "NY",
-    bill_rate: 130,
+    requested_salary: 130000,
+    notes: "",
+    tags: [],
+    resume_text: "",
     status: "Placed Candidate",
     date_received: "2026-01-15",
     updated_at: "2026-01-15T10:00:00Z",
@@ -268,9 +346,11 @@ export const mockTalentProfiles: TalentProfile[] = [
       linkedin: null,
       github: null,
     },
-    summary: "Senior accountant with CPA certification and 9 years experience in financial reporting and audit.",
-    talent_bucket: "Accounting and Finance Resources",
-    talent_category: "Accounting",
+    summary:
+      "Senior accountant with CPA certification and 9 years experience in financial reporting and audit.",
+    service_category: "Accounting",
+    industry_category: "Financial Services",
+    job_title: "Senior Accountant",
     skillsets: [
       { name: "Financial Reporting", evidence: ["Prepared SEC filings"] },
       { name: "Audit", evidence: ["Led internal audit function"] },
@@ -282,12 +362,13 @@ export const mockTalentProfiles: TalentProfile[] = [
     clearance_level: "Secret",
     certifications: ["CPA", "CIA"],
     cert_names: "CPA,CIA",
-    companies: [
-      { name: "Big 4 Firm", evidence: ["Senior auditor at Big 4"] },
-    ],
+    companies: [{ name: "Big 4 Firm", evidence: ["Senior auditor at Big 4"] }],
     location: { city: "Tampa", state: "FL" },
     location_state: "FL",
-    bill_rate: 105,
+    requested_salary: 105000,
+    notes: "",
+    tags: [],
+    resume_text: "",
     status: "Stale Candidate",
     date_received: "2025-11-01",
     updated_at: "2025-11-01T09:00:00Z",
@@ -304,13 +385,18 @@ export const mockTalentProfiles: TalentProfile[] = [
       linkedin: "linkedin.com/in/lchang",
       github: "github.com/lchang",
     },
-    summary: "Database analyst with expertise in Oracle and SQL Server. 4 years experience optimizing database performance and data warehousing.",
-    talent_bucket: "IT Resources",
-    talent_category: "Database Analyst",
+    summary:
+      "Database analyst with expertise in Oracle and SQL Server. 4 years experience optimizing database performance and data warehousing.",
+    service_category: "IT",
+    industry_category: "Technology",
+    job_title: "Database Analyst",
     skillsets: [
       { name: "Oracle", evidence: ["Oracle DBA and optimization"] },
       { name: "SQL Server", evidence: ["SQL Server administration"] },
-      { name: "Data Warehousing", evidence: ["Built enterprise data warehouse"] },
+      {
+        name: "Data Warehousing",
+        evidence: ["Built enterprise data warehouse"],
+      },
       { name: "ETL", evidence: ["ETL pipeline development"] },
     ],
     skill_names: "Oracle,SQL Server,Data Warehousing,ETL",
@@ -318,12 +404,13 @@ export const mockTalentProfiles: TalentProfile[] = [
     clearance_level: null,
     certifications: ["Oracle Certified Professional"],
     cert_names: "Oracle Certified Professional",
-    companies: [
-      { name: "Data Corp", evidence: ["DBA at Data Corp"] },
-    ],
+    companies: [{ name: "Data Corp", evidence: ["DBA at Data Corp"] }],
     location: { city: "Seattle", state: "WA" },
     location_state: "WA",
-    bill_rate: 100,
+    requested_salary: 100000,
+    notes: "",
+    tags: [],
+    resume_text: "",
     status: "Potential Candidate",
     date_received: "2026-02-28",
     updated_at: "2026-02-28T15:00:00Z",
@@ -340,11 +427,16 @@ export const mockTalentProfiles: TalentProfile[] = [
       linkedin: "linkedin.com/in/mjohnson",
       github: null,
     },
-    summary: "HR professional with 11 years experience in talent acquisition, employee relations, and HR technology implementation.",
-    talent_bucket: "HR Resources",
-    talent_category: "HR",
+    summary:
+      "HR professional with 11 years experience in talent acquisition, employee relations, and HR technology implementation.",
+    service_category: "FSP Headhunting",
+    industry_category: "Human Resources",
+    job_title: "HR Director",
     skillsets: [
-      { name: "Talent Acquisition", evidence: ["Led recruiting for 500+ hires"] },
+      {
+        name: "Talent Acquisition",
+        evidence: ["Led recruiting for 500+ hires"],
+      },
       { name: "Workday", evidence: ["Workday HCM implementation"] },
       { name: "Employee Relations", evidence: ["Managed employee relations"] },
     ],
@@ -358,7 +450,10 @@ export const mockTalentProfiles: TalentProfile[] = [
     ],
     location: { city: "Fairfax", state: "VA" },
     location_state: "VA",
-    bill_rate: 95,
+    requested_salary: 95000,
+    notes: "",
+    tags: [],
+    resume_text: "",
     status: "Active Candidate",
     date_received: "2026-02-26",
     updated_at: "2026-02-26T12:00:00Z",
@@ -375,9 +470,11 @@ export const mockTalentProfiles: TalentProfile[] = [
       linkedin: "linkedin.com/in/jmartinez",
       github: null,
     },
-    summary: "Forensic accountant with expertise in fraud investigation and financial crime analysis. CFE certified with 6 years experience.",
-    talent_bucket: "Accounting and Finance Resources",
-    talent_category: "Forensics",
+    summary:
+      "Forensic accountant with expertise in fraud investigation and financial crime analysis. CFE certified with 6 years experience.",
+    service_category: "Accounting",
+    industry_category: "Forensics",
+    job_title: "Forensic Accountant",
     skillsets: [
       { name: "Fraud Investigation", evidence: ["Led fraud investigations"] },
       { name: "Financial Analysis", evidence: ["Financial crime analysis"] },
@@ -393,7 +490,10 @@ export const mockTalentProfiles: TalentProfile[] = [
     ],
     location: { city: "Denver", state: "CO" },
     location_state: "CO",
-    bill_rate: 115,
+    requested_salary: 115000,
+    notes: "",
+    tags: [],
+    resume_text: "",
     status: "Active Candidate",
     date_received: "2026-02-18",
     updated_at: "2026-02-18T11:00:00Z",
@@ -410,12 +510,17 @@ export const mockTalentProfiles: TalentProfile[] = [
       linkedin: "linkedin.com/in/blee",
       github: null,
     },
-    summary: "Sales professional with 8 years experience in enterprise software sales. Consistent top performer with federal and commercial clients.",
-    talent_bucket: "Business Development/Sales Resources",
-    talent_category: "Sales",
+    summary:
+      "Sales professional with 8 years experience in enterprise software sales. Consistent top performer with federal and commercial clients.",
+    service_category: "FSP Headhunting",
+    industry_category: "Software",
+    job_title: "Regional Sales Manager",
     skillsets: [
       { name: "Enterprise Sales", evidence: ["Closed $20M in annual sales"] },
-      { name: "Account Management", evidence: ["Managed Fortune 500 accounts"] },
+      {
+        name: "Account Management",
+        evidence: ["Managed Fortune 500 accounts"],
+      },
       { name: "Salesforce", evidence: ["Salesforce CRM expert"] },
     ],
     skill_names: "Enterprise Sales,Account Management,Salesforce",
@@ -428,22 +533,25 @@ export const mockTalentProfiles: TalentProfile[] = [
     ],
     location: { city: "Portland", state: "OR" },
     location_state: "OR",
-    bill_rate: 120,
+    requested_salary: 120000,
+    notes: "",
+    tags: [],
+    resume_text: "",
     status: "Do Not Contact",
     date_received: "2026-03-01",
     updated_at: "2026-03-01T08:00:00Z",
   },
-]
+];
 
 // Extract unique values from mock data for filter dropdowns
 export const mockSkills = Array.from(
-  new Set(mockTalentProfiles.flatMap((p) => p.skillsets.map((s) => s.name)))
-).sort()
+  new Set(mockTalentProfiles.flatMap((p) => p.skillsets.map((s) => s.name))),
+).sort();
 
 export const mockCities = Array.from(
-  new Set(mockTalentProfiles.map((p) => p.location.city).filter(Boolean))
-).sort() as string[]
+  new Set(mockTalentProfiles.map((p) => p.location.city).filter(Boolean)),
+).sort() as string[];
 
 export const mockCertifications = Array.from(
-  new Set(mockTalentProfiles.flatMap((p) => p.certifications))
-).sort()
+  new Set(mockTalentProfiles.flatMap((p) => p.certifications)),
+).sort();

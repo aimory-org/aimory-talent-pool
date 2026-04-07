@@ -30,12 +30,13 @@ def _get_client():
         use_ssl=True,
         verify_certs=True,
         connection_class=RequestsHttpConnection,
+        timeout=30,
     )
 
 
 def _ensure_index(client):
     """Create talent-profiles index with explicit mappings if it doesn't exist."""
-    if client.indices.exists(INDEX_NAME):
+    if client.indices.exists(index=INDEX_NAME):
         return
     client.indices.create(
         index=INDEX_NAME,
@@ -46,9 +47,11 @@ def _ensure_index(client):
                     "name": {"type": "text"},
                     "name_lower": {"type": "keyword"},
                     "summary": {"type": "text"},
+                    "resume_text": {"type": "text"},
                     "status": {"type": "keyword"},
-                    "talent_bucket": {"type": "keyword"},
-                    "talent_category": {"type": "keyword"},
+                    "service_category": {"type": "keyword"},
+                    "industry_category": {"type": "keyword"},
+                    "job_title": {"type": "keyword"},
                     "clearance_level": {"type": "keyword"},
                     "location_state": {"type": "keyword"},
                     "location": {
@@ -59,10 +62,12 @@ def _ensure_index(client):
                     },
                     "skill_names": {"type": "keyword"},
                     "cert_names": {"type": "keyword"},
+                    "tags": {"type": "keyword"},
                     "years_of_experience": {"type": "float"},
-                    "bill_rate": {"type": "float"},
+                    "requested_salary": {"type": "float"},
                     "date_received": {"type": "keyword"},
                     "updated_at": {"type": "keyword"},
+                    "possible_duplicate_of": {"type": "keyword"},
                 }
             }
         },
@@ -93,6 +98,9 @@ def _prepare_document(item):
         item["skill_names"] = [s.strip() for s in item["skill_names"].split(",") if s.strip()]
     if isinstance(item.get("cert_names"), str):
         item["cert_names"] = [c.strip() for c in item["cert_names"].split(",") if c.strip()]
+    # Ensure tags is a list
+    if not isinstance(item.get("tags"), list):
+        item["tags"] = []
     return item
 
 

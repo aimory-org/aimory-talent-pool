@@ -1,7 +1,8 @@
 """
 Update a talent profile's editable fields.
-Supports: status, bill_rate, name, contact, summary, talent_bucket, talent_category,
-          clearance_level, skillsets, certifications, companies, location, years_of_experience
+Supports: status, requested_salary, name, contact, summary, service_category,
+          industry_category, job_title, clearance_level, skillsets, certifications,
+          companies, location, years_of_experience, notes, tags
 """
 
 import json
@@ -14,6 +15,13 @@ import boto3
 dynamodb = boto3.resource("dynamodb")
 table = dynamodb.Table(os.environ["TALENT_PROFILES_TABLE"])
 
+# Lookup tables for populating filter dropdowns when recruiters add new values
+SKILLS_LOOKUP_TABLE = os.environ.get("SKILLS_LOOKUP_TABLE", "")
+CERTIFICATIONS_LOOKUP_TABLE = os.environ.get("CERTIFICATIONS_LOOKUP_TABLE", "")
+CITIES_LOOKUP_TABLE = os.environ.get("CITIES_LOOKUP_TABLE", "")
+JOB_TITLES_LOOKUP_TABLE = os.environ.get("JOB_TITLES_LOOKUP_TABLE", "")
+INDUSTRY_CATEGORIES_LOOKUP_TABLE = os.environ.get("INDUSTRY_CATEGORIES_LOOKUP_TABLE", "")
+
 VALID_STATUSES = {
     "Active Candidate",
     "Do Not Contact",
@@ -22,28 +30,12 @@ VALID_STATUSES = {
     "Stale Candidate",
 }
 
-VALID_BUCKETS = {
-    "IT Resources",
-    "Accounting and Finance Resources",
-    "HR Resources",
-    "Business Development/Sales Resources",
-    "Unclassified",
-}
-
-VALID_CATEGORIES = {
+VALID_SERVICE_CATEGORIES = {
+    "IT",
     "Accounting",
-    "Finance",
-    "Data Analysis",
-    "Forensics",
-    "Developer",
-    "Network Engineer",
-    "Database Analyst",
-    "Cloud Expert",
-    "Project Manager",
-    "HR",
-    "Business Development",
-    "Sales",
-    "Unclassified",
+    "FSP Headhunting",
+    "Cybersecurity",
+    "Unknown",
 }
 
 VALID_CLEARANCES = {
@@ -244,6 +236,48 @@ def _decimal_converter(obj):
     raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
 
 
+def _populate_lookups(body):
+    """Populate lookup tables with any new values from the update."""
+    now = datetime.now(timezone.utc).isoformat()
+    try:
+        if SKILLS_LOOKUP_TABLE and "skillsets" in body:
+            skills_table = dynamodb.Table(SKILLS_LOOKUP_TABLE)
+            for skill in body["skillsets"]:
+                name = skill.get("name", "").strip()
+                if name:
+                    skills_table.put_item(Item={"skill": name, "updated_at": now})
+
+        if CERTIFICATIONS_LOOKUP_TABLE and "certifications" in body:
+            certs_table = dynamodb.Table(CERTIFICATIONS_LOOKUP_TABLE)
+            for cert in body["certifications"]:
+                cert = cert.strip() if cert else ""
+                if cert:
+                    certs_table.put_item(Item={"certification": cert, "updated_at": now})
+
+        if CITIES_LOOKUP_TABLE and "location" in body:
+            loc = body["location"]
+            city = loc.get("city", "").strip() if loc.get("city") else ""
+            state = loc.get("state", "").strip() if loc.get("state") else ""
+            if city and state:
+                cities_table = dynamodb.Table(CITIES_LOOKUP_TABLE)
+                cities_table.put_item(Item={"city": city, "state": state, "updated_at": now})
+
+        if JOB_TITLES_LOOKUP_TABLE and "job_title" in body:
+            title = body["job_title"].strip() if body["job_title"] else ""
+            if title and title != "Unknown":
+                titles_table = dynamodb.Table(JOB_TITLES_LOOKUP_TABLE)
+                titles_table.put_item(Item={"job_title": title, "updated_at": now})
+
+        if INDUSTRY_CATEGORIES_LOOKUP_TABLE and "industry_category" in body:
+            industry = body["industry_category"].strip() if body["industry_category"] else ""
+            if industry and industry != "Unknown":
+                industries_table = dynamodb.Table(INDUSTRY_CATEGORIES_LOOKUP_TABLE)
+                industries_table.put_item(Item={"industry_category": industry, "updated_at": now})
+    except Exception as e:
+        # Don't fail the update over lookup population
+        print(f"Warning: failed to populate lookups: {e}")
+
+
 def handler(event, context):
     try:
         query_params = event.get("queryStringParameters") or {}
@@ -275,22 +309,22 @@ def handler(event, context):
             expression_names["#status"] = "status"
             expression_values[":status"] = new_status
 
-        # Handle bill_rate update
-        if "bill_rate" in body:
-            bill_rate = body["bill_rate"]
-            if bill_rate is not None:
+        # Handle requested_salary update
+        if "requested_salary" in body:
+            salary = body["requested_salary"]
+            if salary is not None:
                 try:
-                    bill_rate = Decimal(str(bill_rate))
-                    if bill_rate < 0:
-                        raise ValueError("Bill rate cannot be negative")
+                    salary = Decimal(str(salary))
+                    if salary < 0:
+                        raise ValueError("Requested salary cannot be negative")
                 except (ValueError, TypeError) as e:
                     return {
                         "statusCode": 400,
                         "headers": {"Content-Type": "application/json"},
-                        "body": json.dumps({"error": f"Invalid bill_rate: {e}"}),
+                        "body": json.dumps({"error": f"Invalid requested_salary: {e}"}),
                     }
-            update_parts.append("bill_rate = :bill_rate")
-            expression_values[":bill_rate"] = bill_rate
+            update_parts.append("requested_salary = :requested_salary")
+            expression_values[":requested_salary"] = salary
 
         # Handle name update
         if "name" in body:
@@ -314,29 +348,31 @@ def handler(event, context):
             update_parts.append("summary = :summary")
             expression_values[":summary"] = body["summary"].strip() if body["summary"] else ""
 
-        # Handle talent_bucket update
-        if "talent_bucket" in body:
-            bucket = body["talent_bucket"]
-            if bucket not in VALID_BUCKETS:
+        # Handle service_category update
+        if "service_category" in body:
+            svc = body["service_category"]
+            if svc not in VALID_SERVICE_CATEGORIES:
                 return {
                     "statusCode": 400,
                     "headers": {"Content-Type": "application/json"},
-                    "body": json.dumps({"error": f"Invalid talent_bucket. Must be one of: {VALID_BUCKETS}"}),
+                    "body": json.dumps(
+                        {"error": f"Invalid service_category. Must be one of: {sorted(VALID_SERVICE_CATEGORIES)}"}
+                    ),
                 }
-            update_parts.append("talent_bucket = :talent_bucket")
-            expression_values[":talent_bucket"] = bucket
+            update_parts.append("service_category = :service_category")
+            expression_values[":service_category"] = svc
 
-        # Handle talent_category update
-        if "talent_category" in body:
-            category = body["talent_category"]
-            if category not in VALID_CATEGORIES:
-                return {
-                    "statusCode": 400,
-                    "headers": {"Content-Type": "application/json"},
-                    "body": json.dumps({"error": f"Invalid talent_category. Must be one of: {VALID_CATEGORIES}"}),
-                }
-            update_parts.append("talent_category = :talent_category")
-            expression_values[":talent_category"] = category
+        # Handle industry_category update (free-text, AI-detected)
+        if "industry_category" in body:
+            category = body["industry_category"].strip() if body["industry_category"] else "Unknown"
+            update_parts.append("industry_category = :industry_category")
+            expression_values[":industry_category"] = category
+
+        # Handle job_title update (free-text, AI-detected)
+        if "job_title" in body:
+            title = body["job_title"].strip() if body["job_title"] else "Unknown"
+            update_parts.append("job_title = :job_title")
+            expression_values[":job_title"] = title
 
         # Handle clearance_level update
         if "clearance_level" in body:
@@ -404,6 +440,17 @@ def handler(event, context):
             update_parts.append("years_of_experience = :yoe")
             expression_values[":yoe"] = yoe
 
+        # Handle notes update
+        if "notes" in body:
+            update_parts.append("notes = :notes")
+            expression_values[":notes"] = body["notes"].strip() if body["notes"] else ""
+
+        # Handle tags update
+        if "tags" in body:
+            tags = [t.strip() for t in body["tags"] if t and t.strip()]
+            update_parts.append("tags = :tags")
+            expression_values[":tags"] = tags
+
         if not update_parts:
             return {
                 "statusCode": 400,
@@ -411,9 +458,10 @@ def handler(event, context):
                 "body": json.dumps(
                     {
                         "error": (
-                            "No valid fields to update. Supported: status, bill_rate, name, "
-                            "contact, summary, talent_bucket, talent_category, clearance_level, "
-                            "skillsets, certifications, companies, location, years_of_experience"
+                            "No valid fields to update. Supported: status, requested_salary, name, "
+                            "contact, summary, service_category, industry_category, job_title, "
+                            "clearance_level, skillsets, certifications, companies, location, "
+                            "years_of_experience, notes, tags"
                         )
                     }
                 ),
@@ -439,6 +487,9 @@ def handler(event, context):
 
         response = table.update_item(**update_kwargs)
         updated_item = response.get("Attributes", {})
+
+        # Populate lookup tables so new values appear in filter dropdowns
+        _populate_lookups(body)
 
         return {
             "statusCode": 200,

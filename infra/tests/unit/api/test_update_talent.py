@@ -37,16 +37,10 @@ class TestUpdateTalentValidation:
         resp = app.handler(_make_event("b#k", {"status": "BadStatus"}), None)
         assert resp["statusCode"] == 400
 
-    def test_invalid_talent_bucket_returns_400(self, talent_profiles_table):
+    def test_invalid_service_category_returns_400(self, talent_profiles_table):
         talent_profiles_table.put_item(Item={"pk": "b#k"})
         app = _reload_app()
-        resp = app.handler(_make_event("b#k", {"talent_bucket": "Nope"}), None)
-        assert resp["statusCode"] == 400
-
-    def test_invalid_talent_category_returns_400(self, talent_profiles_table):
-        talent_profiles_table.put_item(Item={"pk": "b#k"})
-        app = _reload_app()
-        resp = app.handler(_make_event("b#k", {"talent_category": "Nope"}), None)
+        resp = app.handler(_make_event("b#k", {"service_category": "Nope"}), None)
         assert resp["statusCode"] == 400
 
     def test_invalid_clearance_returns_400(self, talent_profiles_table):
@@ -55,10 +49,10 @@ class TestUpdateTalentValidation:
         resp = app.handler(_make_event("b#k", {"clearance_level": "Nope"}), None)
         assert resp["statusCode"] == 400
 
-    def test_negative_bill_rate_returns_400(self, talent_profiles_table):
+    def test_negative_requested_salary_returns_400(self, talent_profiles_table):
         talent_profiles_table.put_item(Item={"pk": "b#k"})
         app = _reload_app()
-        resp = app.handler(_make_event("b#k", {"bill_rate": -50}), None)
+        resp = app.handler(_make_event("b#k", {"requested_salary": -50}), None)
         assert resp["statusCode"] == 400
 
     def test_negative_years_returns_400(self, talent_profiles_table):
@@ -82,16 +76,16 @@ class TestUpdateTalentSuccess:
         body = json.loads(resp["body"])
         assert body["profile"]["status"] == "Active Candidate"
 
-    def test_update_bill_rate_decimal(self, talent_profiles_table):
+    def test_update_requested_salary_decimal(self, talent_profiles_table):
         talent_profiles_table.put_item(Item={"pk": "b#k"})
         app = _reload_app()
-        resp = app.handler(_make_event("b#k", {"bill_rate": 125.50}), None)
+        resp = app.handler(_make_event("b#k", {"requested_salary": 125000}), None)
         assert resp["statusCode"] == 200
 
-    def test_bill_rate_null_allowed(self, talent_profiles_table):
-        talent_profiles_table.put_item(Item={"pk": "b#k", "bill_rate": Decimal("100")})
+    def test_requested_salary_null_allowed(self, talent_profiles_table):
+        talent_profiles_table.put_item(Item={"pk": "b#k", "requested_salary": Decimal("100000")})
         app = _reload_app()
-        resp = app.handler(_make_event("b#k", {"bill_rate": None}), None)
+        resp = app.handler(_make_event("b#k", {"requested_salary": None}), None)
         assert resp["statusCode"] == 200
 
     def test_years_null_allowed(self, talent_profiles_table):
@@ -146,3 +140,45 @@ class TestUpdateTalentNormalization:
         resp = app.handler(_make_event("b#k", {"companies": [{"name": "acme corp"}]}), None)
         body = json.loads(resp["body"])
         assert body["profile"]["companies"][0]["name"] == "Acme Corp"
+
+
+class TestUpdateTalentLookupPopulation:
+    def test_new_skills_added_to_lookup(self, all_tables):
+        all_tables["talent_profiles"].put_item(Item={"pk": "b#k"})
+        app = _reload_app()
+        resp = app.handler(_make_event("b#k", {"skillsets": [{"name": "NewFramework"}]}), None)
+        assert resp["statusCode"] == 200
+        item = all_tables["skills_lookup"].get_item(Key={"skill": "Newframework"})
+        assert "Item" in item
+
+    def test_new_cert_added_to_lookup(self, all_tables):
+        all_tables["talent_profiles"].put_item(Item={"pk": "b#k"})
+        app = _reload_app()
+        resp = app.handler(_make_event("b#k", {"certifications": ["New Cert Pro"]}), None)
+        assert resp["statusCode"] == 200
+        item = all_tables["certifications_lookup"].get_item(Key={"certification": "New Cert Pro"})
+        assert "Item" in item
+
+    def test_new_job_title_added_to_lookup(self, all_tables):
+        all_tables["talent_profiles"].put_item(Item={"pk": "b#k"})
+        app = _reload_app()
+        resp = app.handler(_make_event("b#k", {"job_title": "Chief AI Officer"}), None)
+        assert resp["statusCode"] == 200
+        item = all_tables["job_titles_lookup"].get_item(Key={"job_title": "Chief AI Officer"})
+        assert "Item" in item
+
+    def test_new_location_added_to_lookup(self, all_tables):
+        all_tables["talent_profiles"].put_item(Item={"pk": "b#k"})
+        app = _reload_app()
+        resp = app.handler(_make_event("b#k", {"location": {"city": "Austin", "state": "TX"}}), None)
+        assert resp["statusCode"] == 200
+        item = all_tables["cities_lookup"].get_item(Key={"city": "Austin", "state": "TX"})
+        assert "Item" in item
+
+    def test_new_industry_added_to_lookup(self, all_tables):
+        all_tables["talent_profiles"].put_item(Item={"pk": "b#k"})
+        app = _reload_app()
+        resp = app.handler(_make_event("b#k", {"industry_category": "Aerospace"}), None)
+        assert resp["statusCode"] == 200
+        item = all_tables["industry_categories_lookup"].get_item(Key={"industry_category": "Aerospace"})
+        assert "Item" in item

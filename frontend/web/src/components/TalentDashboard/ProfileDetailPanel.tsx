@@ -34,13 +34,12 @@ import { getResumeUrl, updateTalent, deleteTalent } from "@/lib/api";
 import type {
   TalentProfile,
   CandidateStatus,
-  TalentBucket,
-  TalentCategory,
+  ClearanceLevel,
+  ServiceCategory,
 } from "@/types/talent";
 import {
   CANDIDATE_STATUSES,
-  TALENT_BUCKETS,
-  TALENT_CATEGORIES,
+  SERVICE_CATEGORIES,
   CLEARANCE_LEVELS,
   US_STATES,
 } from "@/types/talent";
@@ -63,8 +62,9 @@ interface EditableProfile {
     github: string;
   };
   summary: string;
-  talent_bucket: TalentBucket;
-  talent_category: TalentCategory;
+  service_category: ServiceCategory;
+  industry_category: string;
+  job_title: string;
   clearance_level: string;
   skillsets: { name: string }[];
   certifications: string[];
@@ -74,7 +74,9 @@ interface EditableProfile {
     state: string;
   };
   years_of_experience: string;
-  bill_rate: string;
+  requested_salary: string;
+  notes: string;
+  tags: string[];
   status: CandidateStatus;
 }
 
@@ -88,8 +90,9 @@ function profileToEditable(profile: TalentProfile): EditableProfile {
       github: profile.contact.github || "",
     },
     summary: profile.summary || "",
-    talent_bucket: profile.talent_bucket,
-    talent_category: profile.talent_category,
+    service_category: profile.service_category as ServiceCategory,
+    industry_category: profile.industry_category || "",
+    job_title: profile.job_title || "",
     clearance_level: profile.clearance_level || "",
     skillsets: profile.skillsets.map((s) => ({ name: s.name })),
     certifications: [...profile.certifications],
@@ -99,7 +102,9 @@ function profileToEditable(profile: TalentProfile): EditableProfile {
       state: profile.location.state || profile.location_state || "",
     },
     years_of_experience: profile.years_of_experience?.toString() || "",
-    bill_rate: profile.bill_rate?.toString() || "",
+    requested_salary: profile.requested_salary?.toString() || "",
+    notes: profile.notes || "",
+    tags: [...(profile.tags || [])],
     status: profile.status,
   };
 }
@@ -146,11 +151,11 @@ export function ProfileDetailPanel({
         updates.status = editData.status;
       }
 
-      const newBillRate = editData.bill_rate
-        ? parseFloat(editData.bill_rate)
+      const newSalary = editData.requested_salary
+        ? parseFloat(editData.requested_salary)
         : null;
-      if (newBillRate !== profile.bill_rate) {
-        updates.bill_rate = newBillRate;
+      if (newSalary !== profile.requested_salary) {
+        updates.requested_salary = newSalary;
       }
 
       // Contact
@@ -172,12 +177,16 @@ export function ProfileDetailPanel({
         updates.summary = editData.summary || null;
       }
 
-      if (editData.talent_bucket !== profile.talent_bucket) {
-        updates.talent_bucket = editData.talent_bucket;
+      if (editData.service_category !== (profile.service_category as string)) {
+        updates.service_category = editData.service_category;
       }
 
-      if (editData.talent_category !== profile.talent_category) {
-        updates.talent_category = editData.talent_category;
+      if (editData.industry_category !== (profile.industry_category || "")) {
+        updates.industry_category = editData.industry_category;
+      }
+
+      if (editData.job_title !== (profile.job_title || "")) {
+        updates.job_title = editData.job_title;
       }
 
       const newClearance = editData.clearance_level || null;
@@ -246,6 +255,19 @@ export function ProfileDetailPanel({
         : null;
       if (newYoe !== profile.years_of_experience) {
         updates.years_of_experience = newYoe;
+      }
+
+      if (editData.notes !== (profile.notes || "")) {
+        updates.notes = editData.notes;
+      }
+
+      const oldTags = [...(profile.tags || [])].sort().join(",");
+      const newTags = editData.tags
+        .filter((t) => t.trim())
+        .sort()
+        .join(",");
+      if (newTags !== oldTags) {
+        updates.tags = editData.tags.filter((t) => t.trim());
       }
 
       if (Object.keys(updates).length > 0) {
@@ -370,42 +392,636 @@ export function ProfileDetailPanel({
     }));
   };
 
-  // Resume viewer
+  // Resume viewer — side-by-side split layout: resume left, profile right (editable)
   if (showResume && resumeUrl) {
     return (
-      <div className="fixed inset-y-0 right-0 w-full max-w-4xl bg-white/95 dark:bg-slate-800/95 backdrop-blur-lg border-l border-black/10 dark:border-white/10 shadow-2xl z-50 flex flex-col">
-        <div className="flex-none bg-white/95 dark:bg-slate-800/95 backdrop-blur-lg border-b border-black/10 dark:border-white/10 p-4 flex items-center justify-between">
+      <div className="fixed inset-y-0 right-0 w-full bg-white/95 dark:bg-slate-800/95 backdrop-blur-lg border-l border-black/10 dark:border-white/10 shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300">
+        {/* Top bar */}
+        <div className="flex-none bg-white/95 dark:bg-slate-800/95 backdrop-blur-lg border-b border-black/10 dark:border-white/10 px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-full bg-linear-to-br from-indigo-500/30 to-purple-500/30 flex items-center justify-center border border-black/10 dark:border-white/10 text-foreground font-semibold text-sm">
+              {(profile.name || "?").charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-foreground">
+                {profile.name || "Unknown"}
+              </h2>
+              <p className="text-xs text-foreground/40">
+                Resume &middot;{" "}
+                {profile.job_title || profile.industry_category || "Candidate"}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setShowResume(false)}
+              className="px-3 py-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-500/20 transition-colors text-sm font-medium flex items-center gap-1.5"
+            >
+              <FileText className="h-3.5 w-3.5" />
+              Back to Profile
+            </button>
+            <button
+              onClick={onClose}
               className="p-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors text-foreground/60 hover:text-foreground"
             >
               <X className="h-5 w-5" />
             </button>
-            <h2 className="text-lg font-semibold text-foreground">
-              {profile.name || "Unknown"} - Resume
-            </h2>
           </div>
-          <button
-            onClick={onClose}
-            className="px-3 py-1.5 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground/60 hover:bg-black/10 dark:hover:bg-white/10 hover:text-foreground transition-colors text-sm"
-          >
-            Close Panel
-          </button>
         </div>
-        <div className="flex-1 bg-white">
-          <iframe
-            src={resumeUrl}
-            className="w-full h-full border-0"
-            title={`Resume - ${profile.name || "Unknown"}`}
-          />
+        {/* Split content: resume (left) + editable profile (right) */}
+        <div className="flex-1 flex min-h-0">
+          {/* Resume iframe — takes majority of space */}
+          <div className="flex-1 bg-white dark:bg-slate-900 border-r border-black/10 dark:border-white/10">
+            <iframe
+              src={resumeUrl}
+              className="w-full h-full border-0"
+              title={`Resume - ${profile.name || "Unknown"}`}
+            />
+          </div>
+          {/* Editable profile sidebar */}
+          <div className="w-96 shrink-0 overflow-y-auto bg-white/50 dark:bg-slate-800/50">
+            <div className="p-4 space-y-4">
+              {/* Edit toggle + status header */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <StatusBadge
+                    status={isEditMode ? editData.status : profile.status}
+                  />
+                  <ClearanceBadge
+                    level={
+                      (isEditMode
+                        ? editData.clearance_level
+                        : profile.clearance_level) as ClearanceLevel
+                    }
+                  />
+                </div>
+                {!isEditMode ? (
+                  <button
+                    onClick={() => setIsEditMode(true)}
+                    className="p-1.5 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors text-foreground/50 hover:text-indigo-500"
+                    title="Edit profile"
+                  >
+                    <Edit3 className="h-4 w-4" />
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={handleSave}
+                      disabled={isSaving}
+                      className="px-2 py-1 rounded-md bg-green-500/20 border border-green-500/30 text-green-600 dark:text-green-400 hover:bg-green-500/30 transition-colors text-xs font-medium disabled:opacity-50"
+                    >
+                      {isSaving ? "…" : "Save"}
+                    </button>
+                    <button
+                      onClick={handleCancelEdit}
+                      className="p-1.5 rounded-md hover:bg-black/10 dark:hover:bg-white/10 transition-colors text-foreground/50"
+                    >
+                      <XCircle className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Name */}
+              {isEditMode ? (
+                <Input
+                  value={editData.name}
+                  onChange={(e) =>
+                    setEditData((prev) => ({ ...prev, name: e.target.value }))
+                  }
+                  className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground text-sm font-semibold"
+                  placeholder="Full name"
+                />
+              ) : (
+                <h3 className="text-base font-bold text-foreground">
+                  {profile.name || "Unknown"}
+                </h3>
+              )}
+
+              {/* Status (edit only) */}
+              {isEditMode && (
+                <div className="space-y-1">
+                  <Label className="text-foreground/50 text-[10px]">
+                    Status
+                  </Label>
+                  <Select
+                    value={editData.status}
+                    onChange={(e) =>
+                      setEditData((prev) => ({
+                        ...prev,
+                        status: e.target.value as CandidateStatus,
+                      }))
+                    }
+                    className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground text-xs"
+                    options={CANDIDATE_STATUSES}
+                  />
+                </div>
+              )}
+
+              {/* Summary */}
+              {isEditMode ? (
+                <div className="space-y-1">
+                  <Label className="text-foreground/50 text-[10px]">
+                    Summary
+                  </Label>
+                  <textarea
+                    value={editData.summary}
+                    onChange={(e) =>
+                      setEditData((prev) => ({
+                        ...prev,
+                        summary: e.target.value,
+                      }))
+                    }
+                    rows={4}
+                    className="w-full px-2 py-1.5 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground text-xs placeholder-foreground/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all resize-none"
+                    placeholder="Professional summary"
+                  />
+                </div>
+              ) : profile.summary ? (
+                <div className="bg-black/5 dark:bg-white/5 rounded-lg p-3 border border-black/5 dark:border-white/5">
+                  <p className="text-foreground/70 text-xs leading-relaxed italic line-clamp-6">
+                    &ldquo;{profile.summary}&rdquo;
+                  </p>
+                </div>
+              ) : null}
+
+              {/* Notes & Tags */}
+              <div className="space-y-2">
+                <h4 className="text-[10px] font-semibold text-foreground/40 uppercase tracking-wider flex items-center gap-1">
+                  <FileText className="h-2.5 w-2.5" /> Notes
+                </h4>
+                {isEditMode ? (
+                  <textarea
+                    value={editData.notes}
+                    onChange={(e) =>
+                      setEditData((prev) => ({
+                        ...prev,
+                        notes: e.target.value,
+                      }))
+                    }
+                    rows={3}
+                    className="w-full px-2 py-1.5 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground text-xs placeholder-foreground/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all resize-none"
+                    placeholder="Internal notes..."
+                  />
+                ) : (
+                  <p className="text-xs text-foreground/50 line-clamp-3">
+                    {profile.notes || (
+                      <span className="italic text-foreground/30">
+                        No notes
+                      </span>
+                    )}
+                  </p>
+                )}
+                {isEditMode ? (
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap gap-1">
+                      {editData.tags.map((tag, i) => (
+                        <span
+                          key={i}
+                          className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-purple-500/15 text-purple-700 dark:text-purple-300 text-[10px] border border-purple-500/20"
+                        >
+                          {tag}
+                          <button
+                            onClick={() =>
+                              setEditData((prev) => ({
+                                ...prev,
+                                tags: prev.tags.filter((_, j) => j !== i),
+                              }))
+                            }
+                            className="hover:text-foreground ml-0.5"
+                          >
+                            <Minus className="h-2.5 w-2.5" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                    <Input
+                      placeholder="Add tag + Enter"
+                      className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground text-xs"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          const val = (
+                            e.target as HTMLInputElement
+                          ).value.trim();
+                          if (val && !editData.tags.includes(val)) {
+                            setEditData((prev) => ({
+                              ...prev,
+                              tags: [...prev.tags, val],
+                            }));
+                            (e.target as HTMLInputElement).value = "";
+                          }
+                        }
+                      }}
+                    />
+                  </div>
+                ) : profile.tags && profile.tags.length > 0 ? (
+                  <div className="flex flex-wrap gap-1">
+                    {profile.tags.map((tag, i) => (
+                      <span
+                        key={i}
+                        className="px-1.5 py-0.5 rounded text-[10px] bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+
+              {/* Contact & details */}
+              <div className="space-y-2">
+                <h4 className="text-[10px] font-semibold text-foreground/40 uppercase tracking-wider">
+                  Details
+                </h4>
+                {isEditMode ? (
+                  <div className="space-y-2">
+                    <Input
+                      value={editData.job_title}
+                      onChange={(e) =>
+                        setEditData((prev) => ({
+                          ...prev,
+                          job_title: e.target.value,
+                        }))
+                      }
+                      className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground text-xs"
+                      placeholder="Job title"
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input
+                        type="email"
+                        value={editData.contact.email}
+                        onChange={(e) =>
+                          setEditData((prev) => ({
+                            ...prev,
+                            contact: { ...prev.contact, email: e.target.value },
+                          }))
+                        }
+                        className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground text-xs"
+                        placeholder="Email"
+                      />
+                      <Input
+                        type="tel"
+                        value={editData.contact.phone}
+                        onChange={(e) =>
+                          setEditData((prev) => ({
+                            ...prev,
+                            contact: { ...prev.contact, phone: e.target.value },
+                          }))
+                        }
+                        className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground text-xs"
+                        placeholder="Phone"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input
+                        value={editData.location.city}
+                        onChange={(e) =>
+                          setEditData((prev) => ({
+                            ...prev,
+                            location: {
+                              ...prev.location,
+                              city: e.target.value,
+                            },
+                          }))
+                        }
+                        className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground text-xs"
+                        placeholder="City"
+                      />
+                      <Select
+                        value={editData.location.state}
+                        onChange={(e) =>
+                          setEditData((prev) => ({
+                            ...prev,
+                            location: {
+                              ...prev.location,
+                              state: e.target.value,
+                            },
+                          }))
+                        }
+                        className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground text-xs"
+                        options={[{ value: "", label: "State" }, ...US_STATES]}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input
+                        type="number"
+                        min="0"
+                        value={editData.years_of_experience}
+                        onChange={(e) =>
+                          setEditData((prev) => ({
+                            ...prev,
+                            years_of_experience: e.target.value,
+                          }))
+                        }
+                        className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground text-xs"
+                        placeholder="Years exp."
+                      />
+                      <Input
+                        type="number"
+                        min="0"
+                        step="1000"
+                        value={editData.requested_salary}
+                        onChange={(e) =>
+                          setEditData((prev) => ({
+                            ...prev,
+                            requested_salary: e.target.value,
+                          }))
+                        }
+                        className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground text-xs"
+                        placeholder="Salary $/yr"
+                      />
+                    </div>
+                    <Select
+                      value={editData.service_category}
+                      onChange={(e) =>
+                        setEditData((prev) => ({
+                          ...prev,
+                          service_category: e.target.value as ServiceCategory,
+                        }))
+                      }
+                      className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground text-xs"
+                      options={SERVICE_CATEGORIES}
+                    />
+                    <Input
+                      value={editData.industry_category}
+                      onChange={(e) =>
+                        setEditData((prev) => ({
+                          ...prev,
+                          industry_category: e.target.value,
+                        }))
+                      }
+                      className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground text-xs"
+                      placeholder="Industry category"
+                    />
+                    <Select
+                      value={editData.clearance_level}
+                      onChange={(e) =>
+                        setEditData((prev) => ({
+                          ...prev,
+                          clearance_level: e.target.value,
+                        }))
+                      }
+                      className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground text-xs"
+                      options={[
+                        { value: "", label: "No clearance" },
+                        ...CLEARANCE_LEVELS,
+                      ]}
+                    />
+                    <Input
+                      value={editData.contact.linkedin}
+                      onChange={(e) =>
+                        setEditData((prev) => ({
+                          ...prev,
+                          contact: {
+                            ...prev.contact,
+                            linkedin: e.target.value,
+                          },
+                        }))
+                      }
+                      className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground text-xs"
+                      placeholder="LinkedIn URL"
+                    />
+                    <Input
+                      value={editData.contact.github}
+                      onChange={(e) =>
+                        setEditData((prev) => ({
+                          ...prev,
+                          contact: { ...prev.contact, github: e.target.value },
+                        }))
+                      }
+                      className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground text-xs"
+                      placeholder="GitHub URL"
+                    />
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-1.5 text-xs">
+                    {profile.job_title && (
+                      <div className="flex items-center gap-2 text-foreground/70">
+                        <Briefcase className="h-3 w-3 text-foreground/30 shrink-0" />
+                        <span className="truncate">{profile.job_title}</span>
+                      </div>
+                    )}
+                    {(profile.location?.city || profile.location_state) && (
+                      <div className="flex items-center gap-2 text-foreground/70">
+                        <MapPin className="h-3 w-3 text-foreground/30 shrink-0" />
+                        <span className="truncate">
+                          {profile.location?.city
+                            ? `${profile.location.city}, `
+                            : ""}
+                          {profile.location_state}
+                        </span>
+                      </div>
+                    )}
+                    {profile.contact?.email && (
+                      <div className="flex items-center gap-2 text-foreground/70">
+                        <Mail className="h-3 w-3 text-foreground/30 shrink-0" />
+                        <span className="truncate">
+                          {profile.contact.email}
+                        </span>
+                      </div>
+                    )}
+                    {profile.contact?.phone && (
+                      <div className="flex items-center gap-2 text-foreground/70">
+                        <Phone className="h-3 w-3 text-foreground/30 shrink-0" />
+                        <span>{profile.contact.phone}</span>
+                      </div>
+                    )}
+                    {profile.years_of_experience && (
+                      <div className="flex items-center gap-2 text-foreground/70">
+                        <Clock className="h-3 w-3 text-foreground/30 shrink-0" />
+                        <span>
+                          {profile.years_of_experience} years experience
+                        </span>
+                      </div>
+                    )}
+                    {profile.requested_salary && (
+                      <div className="flex items-center gap-2 text-foreground/70">
+                        <DollarSign className="h-3 w-3 text-foreground/30 shrink-0" />
+                        <span className="text-emerald-500 font-medium">
+                          ${profile.requested_salary.toLocaleString()}/yr
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Skills */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-[10px] font-semibold text-foreground/40 uppercase tracking-wider">
+                    Skills
+                  </h4>
+                  {isEditMode && (
+                    <button
+                      onClick={addSkill}
+                      className="p-0.5 rounded text-indigo-500 hover:bg-indigo-500/10 transition-colors"
+                    >
+                      <Plus className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+                {isEditMode ? (
+                  <div className="space-y-1">
+                    {editData.skillsets.map((skill, i) => (
+                      <div key={i} className="flex items-center gap-1">
+                        <Input
+                          value={skill.name}
+                          onChange={(e) => updateSkill(i, e.target.value)}
+                          className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground text-xs flex-1"
+                          placeholder="Skill"
+                        />
+                        <button
+                          onClick={() => removeSkill(i)}
+                          className="p-1 text-red-400 hover:text-red-500 transition-colors"
+                        >
+                          <Minus className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-1">
+                    {profile.skillsets.slice(0, 12).map((skill, i) => (
+                      <span
+                        key={i}
+                        className="px-1.5 py-0.5 rounded text-[10px] bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20"
+                      >
+                        {skill.name}
+                      </span>
+                    ))}
+                    {profile.skillsets.length > 12 && (
+                      <span className="px-1.5 py-0.5 rounded text-[10px] text-foreground/40">
+                        +{profile.skillsets.length - 12} more
+                      </span>
+                    )}
+                    {profile.skillsets.length === 0 && (
+                      <span className="text-foreground/30 text-[10px] italic">
+                        None
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Certifications */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-[10px] font-semibold text-foreground/40 uppercase tracking-wider">
+                    Certifications
+                  </h4>
+                  {isEditMode && (
+                    <button
+                      onClick={addCertification}
+                      className="p-0.5 rounded text-amber-500 hover:bg-amber-500/10 transition-colors"
+                    >
+                      <Plus className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+                {isEditMode ? (
+                  <div className="space-y-1">
+                    {editData.certifications.map((cert, i) => (
+                      <div key={i} className="flex items-center gap-1">
+                        <Input
+                          value={cert}
+                          onChange={(e) =>
+                            updateCertification(i, e.target.value)
+                          }
+                          className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground text-xs flex-1"
+                          placeholder="Certification"
+                        />
+                        <button
+                          onClick={() => removeCertification(i)}
+                          className="p-1 text-red-400 hover:text-red-500 transition-colors"
+                        >
+                          <Minus className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-1">
+                    {profile.certifications.slice(0, 8).map((cert, i) => (
+                      <span
+                        key={i}
+                        className="px-1.5 py-0.5 rounded text-[10px] bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20"
+                      >
+                        {cert}
+                      </span>
+                    ))}
+                    {profile.certifications.length > 8 && (
+                      <span className="px-1.5 py-0.5 rounded text-[10px] text-foreground/40">
+                        +{profile.certifications.length - 8} more
+                      </span>
+                    )}
+                    {profile.certifications.length === 0 && (
+                      <span className="text-foreground/30 text-[10px] italic">
+                        None
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Work history */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-[10px] font-semibold text-foreground/40 uppercase tracking-wider">
+                    Work History
+                  </h4>
+                  {isEditMode && (
+                    <button
+                      onClick={addCompany}
+                      className="p-0.5 rounded text-amber-500 hover:bg-amber-500/10 transition-colors"
+                    >
+                      <Plus className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+                {isEditMode ? (
+                  <div className="space-y-1">
+                    {editData.companies.map((c, i) => (
+                      <div key={i} className="flex items-center gap-1">
+                        <Input
+                          value={c.name}
+                          onChange={(e) => updateCompany(i, e.target.value)}
+                          className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground text-xs flex-1"
+                          placeholder="Company"
+                        />
+                        <button
+                          onClick={() => removeCompany(i)}
+                          className="p-1 text-red-400 hover:text-red-500 transition-colors"
+                        >
+                          <Minus className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : profile.companies.length > 0 ? (
+                  <div className="space-y-1 text-xs text-foreground/60">
+                    {profile.companies.slice(0, 5).map((c, i) => (
+                      <div key={i} className="flex items-center gap-1.5">
+                        <Building className="h-3 w-3 text-foreground/25 shrink-0" />
+                        <span className="truncate">{c.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="text-foreground/30 text-[10px] italic">
+                    None
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-y-0 right-0 w-full max-w-md bg-white/98 dark:bg-slate-800/98 backdrop-blur-2xl border-l border-black/10 dark:border-white/10 shadow-2xl z-50 overflow-y-auto animate-in slide-in-from-right duration-300">
+    <div className="fixed inset-y-0 right-0 w-full max-w-2xl bg-white/98 dark:bg-slate-800/98 backdrop-blur-2xl border-l border-black/10 dark:border-white/10 shadow-2xl z-50 overflow-y-auto animate-in slide-in-from-right duration-300">
       {/* Gradient accent */}
       <div className="absolute inset-y-0 left-0 w-px bg-gradient-to-b from-indigo-500/50 via-purple-500/50 to-transparent" />
 
@@ -420,7 +1036,7 @@ export function ProfileDetailPanel({
               {isEditMode ? "Edit Profile" : "Profile Details"}
             </h2>
             <p className="text-xs text-foreground/40">
-              {profile.talent_category}
+              {profile.job_title || profile.industry_category}
             </p>
           </div>
         </div>
@@ -547,6 +1163,119 @@ export function ProfileDetailPanel({
             </button>
           )}
         </div>
+
+        {/* Notes & Tags (positioned high for recruiter visibility) */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-green-500/20 rounded-lg">
+              <FileText className="h-3.5 w-3.5 text-green-400" />
+            </div>
+            <h4 className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
+              Recruiter Notes
+            </h4>
+          </div>
+
+          {isEditMode ? (
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label className="text-foreground/60 text-xs">Notes</Label>
+                <textarea
+                  value={editData.notes}
+                  onChange={(e) =>
+                    setEditData((prev) => ({
+                      ...prev,
+                      notes: e.target.value,
+                    }))
+                  }
+                  rows={4}
+                  className="w-full px-3 py-2 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground placeholder-foreground/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all resize-none"
+                  placeholder="Internal notes about this candidate..."
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-foreground/60 text-xs">Tags</Label>
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {editData.tags.map((tag, i) => (
+                    <span
+                      key={i}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-700 dark:text-purple-300 text-xs border border-purple-500/30"
+                    >
+                      {tag}
+                      <button
+                        onClick={() =>
+                          setEditData((prev) => ({
+                            ...prev,
+                            tags: prev.tags.filter((_, j) => j !== i),
+                          }))
+                        }
+                        className="hover:text-foreground ml-0.5"
+                      >
+                        <Minus className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Add tag and press Enter..."
+                    className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground flex-1"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        const val = (e.target as HTMLInputElement).value.trim();
+                        if (val && !editData.tags.includes(val)) {
+                          setEditData((prev) => ({
+                            ...prev,
+                            tags: [...prev.tags, val],
+                          }));
+                          (e.target as HTMLInputElement).value = "";
+                        }
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {profile.notes ? (
+                <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4 border border-black/5 dark:border-white/5">
+                  <p className="text-foreground/70 text-sm whitespace-pre-wrap">
+                    {profile.notes}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-foreground/30 text-sm italic">
+                  No notes yet — click edit to add
+                </p>
+              )}
+              {profile.tags && profile.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {profile.tags.map((tag, i) => (
+                    <Badge
+                      key={i}
+                      variant="outline"
+                      className="bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/30"
+                    >
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Possible Duplicate Warning */}
+        {!isEditMode && profile.possible_duplicate_of && (
+          <div className="bg-amber-500/10 rounded-xl p-4 border border-amber-500/30">
+            <p className="text-amber-700 dark:text-amber-300 text-sm font-medium">
+              ⚠ Possible duplicate of another candidate record
+            </p>
+            <p className="text-amber-600/70 dark:text-amber-400/70 text-xs mt-1">
+              ID: {profile.possible_duplicate_of}
+            </p>
+          </div>
+        )}
 
         {/* Contact Section */}
         <div className="space-y-3">
@@ -727,34 +1456,48 @@ export function ProfileDetailPanel({
             <div className="space-y-3">
               <div className="space-y-2">
                 <Label className="text-foreground/60 text-xs">
-                  Talent Bucket
+                  Service Category
                 </Label>
                 <Select
-                  value={editData.talent_bucket}
+                  value={editData.service_category}
                   onChange={(e) =>
                     setEditData((prev) => ({
                       ...prev,
-                      talent_bucket: e.target.value as TalentBucket,
+                      service_category: e.target.value as ServiceCategory,
                     }))
                   }
                   className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
-                  options={TALENT_BUCKETS}
+                  options={SERVICE_CATEGORIES}
                 />
               </div>
               <div className="space-y-2">
                 <Label className="text-foreground/60 text-xs">
-                  Talent Category
+                  Industry Category
                 </Label>
-                <Select
-                  value={editData.talent_category}
+                <Input
+                  value={editData.industry_category}
                   onChange={(e) =>
                     setEditData((prev) => ({
                       ...prev,
-                      talent_category: e.target.value as TalentCategory,
+                      industry_category: e.target.value,
                     }))
                   }
                   className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
-                  options={TALENT_CATEGORIES}
+                  placeholder="e.g. Healthcare, Government"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-foreground/60 text-xs">Job Title</Label>
+                <Input
+                  value={editData.job_title}
+                  onChange={(e) =>
+                    setEditData((prev) => ({
+                      ...prev,
+                      job_title: e.target.value,
+                    }))
+                  }
+                  className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
+                  placeholder="e.g. Senior Software Engineer"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -778,21 +1521,21 @@ export function ProfileDetailPanel({
                 </div>
                 <div className="space-y-2">
                   <Label className="text-foreground/60 text-xs">
-                    Bill Rate ($/hr)
+                    Requested Salary ($/yr)
                   </Label>
                   <Input
                     type="number"
                     min="0"
-                    step="0.01"
-                    value={editData.bill_rate}
+                    step="1000"
+                    value={editData.requested_salary}
                     onChange={(e) =>
                       setEditData((prev) => ({
                         ...prev,
-                        bill_rate: e.target.value,
+                        requested_salary: e.target.value,
                       }))
                     }
                     className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
-                    placeholder="Rate"
+                    placeholder="Annual salary"
                   />
                 </div>
               </div>
@@ -819,10 +1562,13 @@ export function ProfileDetailPanel({
                 <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4 border border-black/5 dark:border-white/5">
                   <div className="flex items-center gap-2 text-foreground/50 text-xs mb-2">
                     <Briefcase className="h-3.5 w-3.5" />
-                    <span>Talent Bucket</span>
+                    <span>Job Title</span>
                   </div>
                   <p className="text-foreground font-semibold text-sm">
-                    {profile.talent_bucket}
+                    {profile.job_title || "—"}
+                  </p>
+                  <p className="text-foreground/40 text-xs mt-1">
+                    {profile.service_category}
                   </p>
                 </div>
                 <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4 border border-black/5 dark:border-white/5">
@@ -837,6 +1583,17 @@ export function ProfileDetailPanel({
                   </p>
                 </div>
               </div>
+              {profile.industry_category && (
+                <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4 border border-black/5 dark:border-white/5">
+                  <div className="flex items-center gap-2 text-foreground/50 text-xs mb-2">
+                    <Briefcase className="h-3.5 w-3.5" />
+                    <span>Industry</span>
+                  </div>
+                  <p className="text-foreground font-semibold text-sm">
+                    {profile.industry_category}
+                  </p>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4 border border-black/5 dark:border-white/5">
                   <div className="flex items-center gap-2 text-foreground/50 text-xs mb-2">
@@ -852,13 +1609,13 @@ export function ProfileDetailPanel({
                 <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4 border border-black/5 dark:border-white/5">
                   <div className="flex items-center gap-2 text-foreground/50 text-xs mb-2">
                     <DollarSign className="h-3.5 w-3.5" />
-                    <span>Bill Rate</span>
+                    <span>Requested Salary</span>
                   </div>
-                  {profile.bill_rate ? (
+                  {profile.requested_salary ? (
                     <p className="text-emerald-400 font-semibold">
-                      ${profile.bill_rate}
+                      ${profile.requested_salary.toLocaleString()}
                       <span className="text-foreground/40 font-normal">
-                        /hr
+                        /yr
                       </span>
                     </p>
                   ) : (

@@ -177,3 +177,30 @@ class TestS3Health:
         s3 = boto3.client("s3", region_name=REGION)
         resp = s3.list_objects_v2(Bucket=RESUME_BUCKET, MaxKeys=1)
         assert "ResponseMetadata" in resp
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# Lambda Health Checks — invoke scheduled jobs with dry_run
+# ═════════════════════════════════════════════════════════════════════════════
+
+
+class TestScheduledJobs:
+    def _lambda(self):
+        return boto3.client("lambda", region_name=REGION)
+
+    def test_lookup_dedup_dry_run(self):
+        fn_name = os.environ.get("LOOKUP_DEDUP_FUNCTION_NAME", "")
+        if not fn_name:
+            pytest.skip("LOOKUP_DEDUP_FUNCTION_NAME not set")
+        client = self._lambda()
+        import json
+
+        resp = client.invoke(
+            FunctionName=fn_name,
+            InvocationType="RequestResponse",
+            Payload=json.dumps({"dry_run": True}),
+        )
+        assert resp["StatusCode"] == 200
+        payload = json.loads(resp["Payload"].read())
+        assert payload["status"] == "ok"
+        assert payload["dry_run"] is True
