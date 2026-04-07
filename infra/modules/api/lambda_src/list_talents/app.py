@@ -37,13 +37,21 @@ def handler(event, context):
         filters = []
 
         # Full-text search across name and resume text only.
-        # Name hits are boosted heavily so they always sort first.
-        # resume_text uses match_phrase (not prefix) and requires 4+ chars
-        # to avoid noisy partial matches like "ben" → "benefit".
+        # Name uses match_phrase_prefix (prefix on last token).
+        # resume_text uses match_phrase (exact phrase only) to avoid
+        # noisy prefix expansion (e.g. "ben" → "benefit", "best").
         if params.get("search"):
             search_term = params["search"]
             should_clauses = [
-                {"match_phrase_prefix": {"name": {"query": search_term, "boost": 10}}},
+                {
+                    "match_phrase_prefix": {
+                        "name": {
+                            "query": search_term,
+                            "boost": 10,
+                            "max_expansions": 10,
+                        }
+                    }
+                },
             ]
             if len(search_term.strip()) >= 2:
                 should_clauses.append({"match_phrase": {"resume_text": {"query": search_term, "boost": 1}}})
@@ -118,7 +126,7 @@ def handler(event, context):
         if params.get("search"):
             query["highlight"] = {
                 "fields": {
-                    "resume_text": {"fragment_size": 80, "number_of_fragments": 1},
+                    "resume_text": {"fragment_size": 200, "number_of_fragments": 1},
                 },
                 "pre_tags": ["<mark>"],
                 "post_tags": ["</mark>"],
