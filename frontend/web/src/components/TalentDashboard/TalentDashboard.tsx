@@ -198,21 +198,21 @@ export function TalentDashboard() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="border-b border-black/10 dark:border-white/15 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl sticky top-0 z-40">
+      <div className="border-b border-black/10 dark:border-white/15 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl sticky top-14 z-40">
         {/* Animated gradient accent bar */}
         <div className="h-1 bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500 animate-gradient-x" />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             {/* Title Section */}
             <div className="flex items-center gap-4">
               <div className="relative">
                 <div className="absolute inset-0 bg-linear-to-br from-indigo-500 to-purple-600 rounded-xl blur-lg opacity-50" />
-                <div className="relative p-3 bg-linear-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg">
-                  <Users className="h-6 w-6 text-white" />
+                <div className="relative p-2 bg-linear-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg">
+                  <Users className="h-5 w-5 text-white" />
                 </div>
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-foreground tracking-tight">
+                <h1 className="text-xl font-bold text-foreground tracking-tight">
                   Talent Pool
                 </h1>
                 <p className="text-sm text-foreground/50">
