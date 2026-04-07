@@ -15,6 +15,7 @@ certifications_table = dynamodb.Table(os.environ["CERTIFICATIONS_LOOKUP_TABLE"])
 cities_table = dynamodb.Table(os.environ["CITIES_LOOKUP_TABLE"])
 job_titles_table = dynamodb.Table(os.environ["JOB_TITLES_LOOKUP_TABLE"])
 industry_categories_table = dynamodb.Table(os.environ["INDUSTRY_CATEGORIES_LOOKUP_TABLE"])
+tags_table = dynamodb.Table(os.environ["TAGS_LOOKUP_TABLE"])
 
 
 def scan_all(table, key_attr):
@@ -66,6 +67,9 @@ def handler(event, context):
 
         if "all" in include or "industry_categories" in include:
             result["industry_categories"] = scan_all(industry_categories_table, "industry_category")
+
+        if "all" in include or "tags" in include:
+            result["tags"] = scan_all(tags_table, "tag")
 
         return {
             "statusCode": 200,

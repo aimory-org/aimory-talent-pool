@@ -51,6 +51,7 @@ interface ProfileDetailPanelProps {
   onClose: () => void;
   onRefresh: () => Promise<void>;
   onProfileUpdated?: (updated: TalentProfile) => void;
+  lookupTags?: string[];
 }
 
 interface EditableProfile {
@@ -114,6 +115,7 @@ export function ProfileDetailPanel({
   onClose,
   onRefresh,
   onProfileUpdated,
+  lookupTags = [],
 }: ProfileDetailPanelProps) {
   const [resumeLoading, setResumeLoading] = useState(false);
   const [resumeUrl, setResumeUrl] = useState<string | null>(null);
@@ -572,6 +574,11 @@ export function ProfileDetailPanel({
                     )}
                   </p>
                 )}
+
+                {/* Tags */}
+                <h4 className="text-[10px] font-semibold text-foreground/40 uppercase tracking-wider flex items-center gap-1 pt-1">
+                  <Plus className="h-2.5 w-2.5" /> Tags
+                </h4>
                 {isEditMode ? (
                   <div className="space-y-1">
                     <div className="flex flex-wrap gap-1">
@@ -595,11 +602,13 @@ export function ProfileDetailPanel({
                         </span>
                       ))}
                     </div>
-                    <Input
-                      placeholder="Add tag + Enter"
-                      className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground text-xs"
+                    <input
+                      list={`tags-datalist-${profile.pk.replace(/[^a-zA-Z0-9-_]/g, "-")}`}
+                      placeholder="Select or type new tag…"
+                      className="flex h-8 w-full rounded-lg border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 px-2 py-1.5 text-xs text-foreground placeholder-foreground/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
+                          e.preventDefault();
                           const val = (
                             e.target as HTMLInputElement
                           ).value.trim();
@@ -612,20 +621,48 @@ export function ProfileDetailPanel({
                           }
                         }
                       }}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (
+                          lookupTags.includes(val) &&
+                          !editData.tags.includes(val)
+                        ) {
+                          setEditData((prev) => ({
+                            ...prev,
+                            tags: [...prev.tags, val],
+                          }));
+                          e.target.value = "";
+                        }
+                      }}
                     />
+                    <datalist
+                      id={`tags-datalist-${profile.pk.replace(/[^a-zA-Z0-9-_]/g, "-")}`}
+                    >
+                      {lookupTags
+                        .filter((t) => !editData.tags.includes(t))
+                        .map((t) => (
+                          <option key={t} value={t} />
+                        ))}
+                    </datalist>
                   </div>
-                ) : profile.tags && profile.tags.length > 0 ? (
-                  <div className="flex flex-wrap gap-1">
-                    {profile.tags.map((tag, i) => (
-                      <span
-                        key={i}
-                        className="px-1.5 py-0.5 rounded text-[10px] bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20"
-                      >
-                        {tag}
+                ) : (
+                  <div className="flex flex-wrap gap-1 min-h-[1.5rem]">
+                    {profile.tags && profile.tags.length > 0 ? (
+                      profile.tags.map((tag, i) => (
+                        <span
+                          key={i}
+                          className="px-1.5 py-0.5 rounded text-[10px] bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20"
+                        >
+                          {tag}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="italic text-[10px] text-foreground/30">
+                        No tags
                       </span>
-                    ))}
+                    )}
                   </div>
-                ) : null}
+                )}
               </div>
 
               {/* Contact & details */}
@@ -1216,11 +1253,13 @@ export function ProfileDetailPanel({
                   ))}
                 </div>
                 <div className="flex gap-2">
-                  <Input
-                    placeholder="Add tag and press Enter..."
-                    className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground flex-1"
+                  <input
+                    list={`tags-datalist-full-${profile.pk.replace(/[^a-zA-Z0-9-_]/g, "-")}`}
+                    placeholder="Select or type new tag…"
+                    className="flex h-9 w-full rounded-lg border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 px-3 py-2 text-sm text-foreground placeholder-foreground/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
+                        e.preventDefault();
                         const val = (e.target as HTMLInputElement).value.trim();
                         if (val && !editData.tags.includes(val)) {
                           setEditData((prev) => ({
@@ -1231,8 +1270,30 @@ export function ProfileDetailPanel({
                         }
                       }
                     }}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (
+                        lookupTags.includes(val) &&
+                        !editData.tags.includes(val)
+                      ) {
+                        setEditData((prev) => ({
+                          ...prev,
+                          tags: [...prev.tags, val],
+                        }));
+                        e.target.value = "";
+                      }
+                    }}
                   />
                 </div>
+                <datalist
+                  id={`tags-datalist-full-${profile.pk.replace(/[^a-zA-Z0-9-_]/g, "-")}`}
+                >
+                  {lookupTags
+                    .filter((t) => !editData.tags.includes(t))
+                    .map((t) => (
+                      <option key={t} value={t} />
+                    ))}
+                </datalist>
               </div>
             </div>
           ) : (
@@ -1245,22 +1306,29 @@ export function ProfileDetailPanel({
                 </div>
               ) : (
                 <p className="text-foreground/30 text-sm italic">
-                  No notes yet — click edit to add
+                  No notes yet
                 </p>
               )}
-              {profile.tags && profile.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {profile.tags.map((tag, i) => (
-                    <Badge
-                      key={i}
-                      variant="outline"
-                      className="bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/30"
-                    >
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-              )}
+              <div>
+                <p className="text-xs font-semibold text-foreground/40 uppercase tracking-wider mb-1.5">
+                  Tags
+                </p>
+                {profile.tags && profile.tags.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {profile.tags.map((tag, i) => (
+                      <Badge
+                        key={i}
+                        variant="outline"
+                        className="bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/30"
+                      >
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-foreground/30 text-sm italic">No tags</p>
+                )}
+              </div>
             </div>
           )}
         </div>

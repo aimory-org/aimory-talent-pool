@@ -91,3 +91,20 @@ resource "aws_dynamodb_table" "industry_categories_lookup" {
     ManagedBy   = "terraform"
   }
 }
+
+resource "aws_dynamodb_table" "tags_lookup" {
+  name         = "${var.project_name}-${var.environment}-tags-lookup"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "tag"
+
+  attribute {
+    name = "tag"
+    type = "S"
+  }
+
+  tags = {
+    Project     = var.project_name
+    Environment = var.environment
+    ManagedBy   = "terraform"
+  }
+}

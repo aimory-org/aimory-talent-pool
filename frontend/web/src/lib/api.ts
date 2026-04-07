@@ -82,6 +82,7 @@ export interface LookupsResponse {
   job_titles: string[];
   industry_categories: string[];
   cities: { city: string; state: string }[];
+  tags: string[];
 }
 
 // -----------------------------------------------------------------------------
@@ -199,6 +200,17 @@ export async function updateTalent(
  */
 export async function deleteTalent(pk: string): Promise<void> {
   await apiFetch(`/talents?pk=${encodeURIComponent(pk)}`, {
+    method: "DELETE",
+  });
+}
+
+/**
+ * Permanently delete a tag from the lookup table and remove it from all profiles.
+ */
+export async function deleteTag(
+  tag: string,
+): Promise<{ message: string; profiles_updated: number }> {
+  return apiFetch(`/tags?tag=${encodeURIComponent(tag)}`, {
     method: "DELETE",
   });
 }

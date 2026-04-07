@@ -87,6 +87,9 @@ module "api" {
   industry_categories_lookup_table_name = module.storage.industry_categories_lookup_table_name
   industry_categories_lookup_table_arn  = module.storage.industry_categories_lookup_table_arn
 
+  tags_lookup_table_name = module.storage.tags_lookup_table_name
+  tags_lookup_table_arn  = module.storage.tags_lookup_table_arn
+
   resume_bucket_name = module.storage.resume_bucket_name
   resume_bucket_arn  = module.storage.resume_bucket_arn
 

@@ -50,7 +50,7 @@ class TestListTalentsHandler:
         mock_get_client.return_value = mc
         app.handler({"queryStringParameters": {"search": "A"}}, None)
         should = mc.search.call_args[1]["body"]["query"]["bool"]["must"][0]["bool"]["should"]
-        assert len(should) == 1  # only name, not summary
+        assert len(should) == 2  # name prefix + tags match, but not resume_text (too short)
 
     @patch("app._get_client")
     def test_keyword_filter_status(self, mock_get_client):
