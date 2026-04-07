@@ -36,7 +36,8 @@ LOOKUP_CONFIGS = [
     ("industry_categories", INDUSTRY_CAT_TABLE, "industry_category"),
 ]
 
-DEDUP_PROMPT = """You are a data quality assistant. Given this list of {item_type} values extracted from resumes, identify groups of duplicates or near-duplicates.
+DEDUP_PROMPT = """You are a data quality assistant. Given this list of {item_type} values
+extracted from resumes, identify groups of duplicates or near-duplicates.
 
 For each group, pick ONE canonical name (the most professional, standard, commonly-used form).
 
@@ -48,18 +49,21 @@ If no duplicates exist, return: {{"rename": {{}}}}
 
 Rules:
 - Case-only differences are duplicates: "agile" should map to "Agile"
-- Abbreviation pairs are duplicates — prefer the FULL spelled-out name: "AWS" → "Amazon Web Services", "GCP" → "Google Cloud Platform"
+- Abbreviation pairs — prefer the FULL spelled-out name:
+  "AWS" → "Amazon Web Services", "GCP" → "Google Cloud Platform"
 - Wording variations are duplicates: "Project Management Skills" → "Project Management"
 - Suffix variations are duplicates: "Agile Methodologies" → "Agile"
 - DO NOT group genuinely different concepts (e.g., "Python" and "Java" are NOT duplicates)
 - Prefer the FULL, spelled-out canonical name (not abbreviations)
-- EXCEPTIONS where the abbreviation IS the standard name: "SQL", "HTML", "CSS", "API", "REST", "DevOps", "CI/CD", "Power BI", "SAP"
+- EXCEPTIONS where the abbreviation IS the standard name:
+  "SQL", "HTML", "CSS", "API", "REST", "DevOps", "CI/CD", "Power BI", "SAP"
 - The canonical name itself must NOT appear as a key (only duplicates are keys)
 
 Current {item_type} list ({count} items):
 {items_json}"""
 
-SKILLS_DEDUP_PROMPT = """You are a data quality assistant for a talent/recruiting platform. Given this list of skills extracted from resumes, do TWO things:
+SKILLS_DEDUP_PROMPT = """You are a data quality assistant for a talent/recruiting platform.
+Given this list of skills extracted from resumes, do TWO things:
 
 1. Identify groups of duplicates or near-duplicates. For each group, pick ONE canonical name.
 2. Identify skills that are too vague or generic to be useful for recruiter search and should be REMOVED entirely.
@@ -70,11 +74,14 @@ Return ONLY a JSON object with two keys:
 
 Rename rules:
 - Case-only differences are duplicates: "agile" → "Agile"
-- Abbreviation pairs — prefer FULL names: "AWS" → "Amazon Web Services", "GCP" → "Google Cloud Platform", "AI/ML" → "Artificial Intelligence/Machine Learning"
+- Abbreviation pairs — prefer FULL names:
+  "AWS" → "Amazon Web Services", "GCP" → "Google Cloud Platform",
+  "AI/ML" → "Artificial Intelligence/Machine Learning"
 - Wording variations are duplicates: "Project Management Skills" → "Project Management"
 - DO NOT group genuinely different concepts
 - Prefer the FULL, spelled-out canonical name (not abbreviations)
-- EXCEPTIONS where the abbreviation IS the standard name: "SQL", "HTML", "CSS", "API", "REST", "DevOps", "CI/CD", "Power BI", "SAP"
+- EXCEPTIONS where the abbreviation IS the standard name:
+  "SQL", "HTML", "CSS", "API", "REST", "DevOps", "CI/CD", "Power BI", "SAP"
 - The canonical name itself must NOT appear as a rename key
 
 Removal rules — flag skills that a recruiter would NEVER search for:
@@ -94,7 +101,8 @@ If nothing to rename or remove, use empty values: {{"rename": {{}}, "remove": []
 Current skills list ({count} items):
 {items_json}"""
 
-CERTS_DEDUP_PROMPT = """You are a data quality assistant for a talent/recruiting platform. Given this list of certifications extracted from resumes, do TWO things:
+CERTS_DEDUP_PROMPT = """You are a data quality assistant for a talent/recruiting platform.
+Given this list of certifications extracted from resumes, do TWO things:
 
 1. Identify groups of duplicates or near-duplicates. For each group, pick ONE canonical name.
 2. Identify entries that are NOT actual certifications and should be REMOVED entirely.
@@ -105,12 +113,15 @@ Return ONLY a JSON object with two keys:
 
 Rename rules:
 - Only rename when there are TRUE duplicates (two entries meaning the same thing)
-- Use FULL official names with abbreviation in parentheses: "CSM" → "Certified Scrum Master (CSM)", "PMP" → "Project Management Professional (PMP)"
+- Use FULL official names with abbreviation in parentheses:
+  "CSM" → "Certified Scrum Master (CSM)", "PMP" → "Project Management Professional (PMP)"
 - Normalize versions: "ITIL v3" and "ITIL v3 Foundation" → "ITIL V3 Foundation"
 - Merge synonyms: "CompTIA Security+ CE" → "CompTIA Security+"
 - Prefer the FULL spelled-out name, not abbreviations
 - Format: "Full Name (ABBREV)" when a well-known abbreviation exists
-- IMPORTANT: If a name already contains both a descriptive name AND an abbreviation in parentheses, it is ALREADY in the correct format — do NOT rename it. Examples of CORRECT names that should NOT be renamed:
+- IMPORTANT: If a name already contains both a descriptive name AND an abbreviation in
+  parentheses, it is ALREADY in the correct format — do NOT rename it.
+  Examples of CORRECT names that should NOT be renamed:
   "SAFe Agilist (SA)", "SAFe Scrum Master (SSM)", "SAFe DevOps Practitioner (SDP)",
   "Project Management Professional (PMP)", "Certified Scrum Master (CSM)"
 - DO NOT append framework names, organization names, or other suffixes to cert names
@@ -132,7 +143,8 @@ If nothing to rename or remove, use empty values: {{"rename": {{}}, "remove": []
 Current certifications list ({count} items):
 {items_json}"""
 
-JOB_TITLES_DEDUP_PROMPT = """You are a data quality assistant for a talent/recruiting platform. Given this list of job titles extracted from resumes, identify groups of duplicates or near-duplicates.
+JOB_TITLES_DEDUP_PROMPT = """You are a data quality assistant for a talent/recruiting platform.
+Given this list of job titles extracted from resumes, identify groups of duplicates or near-duplicates.
 
 For each group, pick ONE canonical name (the most standard, commonly-used form).
 
@@ -149,7 +161,8 @@ Rules:
 - Level normalization: "Dev III" → "Senior Developer" (use standard titles)
 - Prefer the FULL, spelled-out title form (no abbreviations)
 - DO NOT group genuinely different roles (e.g., "Data Analyst" and "Data Engineer" are NOT duplicates)
-- DO NOT merge titles that differ only by seniority level (e.g., "Systems Engineer" and "Senior Systems Engineer" are DIFFERENT titles — keep both)
+- DO NOT merge titles that differ only by seniority level
+  (e.g., "Systems Engineer" and "Senior Systems Engineer" are DIFFERENT titles — keep both)
 - The canonical name itself must NOT appear as a rename key
 
 Current job titles list ({count} items):
@@ -477,7 +490,7 @@ def handler(event, context):
         print(f"  Found {len(items)} unique values")
 
         if len(items) <= 1:
-            print(f"  Nothing to dedup")
+            print("  Nothing to dedup")
             continue
 
         rename_map, removals = _get_rename_map(type_name, items)
@@ -492,7 +505,7 @@ def handler(event, context):
                 print(f"    {name!r}")
             all_removals[type_name] = removals
         if not rename_map and not removals:
-            print(f"  No duplicates or useless entries found")
+            print("  No duplicates or useless entries found")
 
     if not all_renames and not all_removals:
         print("\nNo duplicates or useless entries found across any lookup tables. Done.")
@@ -512,7 +525,7 @@ def handler(event, context):
     profiles_updated = _update_profiles(all_renames, all_removals, dry_run)
 
     # Step 3: Clean up lookup tables (renames)
-    print(f"\n--- Cleaning up lookup tables ---")
+    print("\n--- Cleaning up lookup tables ---")
     for type_name, table_name, key_attr in LOOKUP_CONFIGS:
         if type_name not in all_renames:
             continue
@@ -534,7 +547,7 @@ def handler(event, context):
                 table.delete_item(Key={key_attr: name})
                 print(f"  Deleted: {name!r}")
 
-    print(f"\n=== Done ===")
+    print("\n=== Done ===")
     return {
         "status": "ok",
         "dry_run": dry_run,

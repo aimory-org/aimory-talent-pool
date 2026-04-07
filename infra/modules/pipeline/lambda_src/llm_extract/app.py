@@ -70,7 +70,10 @@ TALENT_SCHEMA = {
             "type": ["string", "null"],
             "minLength": 1,
             "maxLength": 1000,
-            "description": "Professional summary of up to 1000 characters covering key experience, skills, and accomplishments. May include line breaks.",
+            "description": (
+                "Professional summary of up to 1000 characters covering key experience, "
+                "skills, and accomplishments. May include line breaks."
+            ),
         },
         "service_category": {
             "type": ["string", "null"],
@@ -138,7 +141,12 @@ TALENT_SCHEMA = {
         "certifications": {
             "type": "array",
             "items": {"type": "string", "minLength": 1},
-            "description": "List of certifications using full official names, e.g. 'Project Management Professional (PMP)', 'Certified Information Systems Security Professional (CISSP)', 'AWS Solutions Architect - Associate'",
+            "description": (
+                "List of certifications using full official names, e.g. "
+                "'Project Management Professional (PMP)', "
+                "'Certified Information Systems Security Professional (CISSP)', "
+                "'AWS Solutions Architect - Associate'"
+            ),
         },
         "companies": {
             "type": "array",
@@ -186,7 +194,8 @@ JSON Formatting Rules (IMPORTANT):
 - Limit to 2-3 evidence snippets per skill
 
 Company Service Category Assignment (pick exactly one):
-- IT: Developers, Network Engineers, Database Analysts, Cloud Experts, Project Managers, IT professionals, Software Engineers
+- IT: Developers, Network Engineers, Database Analysts, Cloud Experts,
+  Project Managers, IT professionals, Software Engineers
 - Accounting: Accountants, Finance professionals, Data Analysts, Forensics specialists, Auditors, Bookkeepers
 - FSP Headhunting: Executive-level placements, Senior leadership roles, C-suite candidates, Directors, VPs
 - Cybersecurity: Security Analysts, Penetration Testers, SOC Analysts, Security Engineers, CISO-track professionals
@@ -308,15 +317,28 @@ def handler(event, context):
     lookups_context = ""
     if existing_skills:
         lookups_context += (
-            f"\nIMP0RTANT — Existing skills in our database. You MUST use these exact names instead of creating variations. "
-            f"For example if 'Agile' exists, do NOT output 'Agile Methodologies': {', '.join(existing_skills)}\n"
+            f"\nIMPORTANT — Existing skills in our database. "
+            f"You MUST use these exact names instead of creating variations. "
+            f"If 'Agile' exists, do NOT output 'Agile Methodologies': "
+            f"{', '.join(existing_skills)}\n"
         )
     if existing_certs:
-        lookups_context += f"\nExisting certifications in our database (you MUST use these exact names when the skill matches): {', '.join(existing_certs)}\n"
+        lookups_context += (
+            f"\nExisting certifications in our database "
+            f"(use these exact names when matched): {', '.join(existing_certs)}\n"
+        )
     if existing_titles:
-        lookups_context += f"\nExisting job titles in our database (you MUST use these exact names when they match, only create new if nothing fits): {', '.join(existing_titles)}\n"
+        lookups_context += (
+            f"\nExisting job titles in our database "
+            f"(use these exact names when matched, create new only if nothing fits): "
+            f"{', '.join(existing_titles)}\n"
+        )
     if existing_industries:
-        lookups_context += f"\nExisting industry categories in our database (you MUST use these exact names when they match, only create new if nothing fits): {', '.join(existing_industries)}\n"
+        lookups_context += (
+            f"\nExisting industry categories in our database "
+            f"(use these exact names when matched, create new only if nothing fits): "
+            f"{', '.join(existing_industries)}\n"
+        )
 
     schema_text = json.dumps(TALENT_SCHEMA, indent=2)
     user_prompt = f"""Target JSON schema:
