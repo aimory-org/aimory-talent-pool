@@ -52,6 +52,14 @@ def handler(event, context):
                         }
                     }
                 },
+                {
+                    "match": {
+                        "tags": {
+                            "query": search_term,
+                            "boost": 5,
+                        }
+                    }
+                },
             ]
             if len(search_term.strip()) >= 2:
                 should_clauses.append({"match_phrase": {"resume_text": {"query": search_term, "boost": 1}}})

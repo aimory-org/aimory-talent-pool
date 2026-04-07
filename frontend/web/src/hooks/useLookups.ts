@@ -10,6 +10,7 @@ export interface UseLookupsResult {
   job_titles: string[];
   industry_categories: string[];
   cities: { city: string; state: string }[];
+  tags: string[];
   isLoading: boolean;
   error: Error | null;
   refresh: () => Promise<void>;
@@ -26,6 +27,7 @@ export function useLookups(): UseLookupsResult {
     job_titles: [],
     industry_categories: [],
     cities: [],
+    tags: [],
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -51,6 +53,7 @@ export function useLookups(): UseLookupsResult {
         cities: [...response.cities].sort((a, b) =>
           `${a.city}, ${a.state}`.localeCompare(`${b.city}, ${b.state}`),
         ),
+        tags: [...(response.tags || [])].sort((a, b) => a.localeCompare(b)),
       });
     } catch (err) {
       setError(

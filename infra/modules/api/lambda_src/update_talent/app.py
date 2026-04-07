@@ -21,6 +21,7 @@ CERTIFICATIONS_LOOKUP_TABLE = os.environ.get("CERTIFICATIONS_LOOKUP_TABLE", "")
 CITIES_LOOKUP_TABLE = os.environ.get("CITIES_LOOKUP_TABLE", "")
 JOB_TITLES_LOOKUP_TABLE = os.environ.get("JOB_TITLES_LOOKUP_TABLE", "")
 INDUSTRY_CATEGORIES_LOOKUP_TABLE = os.environ.get("INDUSTRY_CATEGORIES_LOOKUP_TABLE", "")
+TAGS_LOOKUP_TABLE = os.environ.get("TAGS_LOOKUP_TABLE", "")
 
 VALID_STATUSES = {
     "Active Candidate",
@@ -273,6 +274,13 @@ def _populate_lookups(body):
             if industry and industry != "Unknown":
                 industries_table = dynamodb.Table(INDUSTRY_CATEGORIES_LOOKUP_TABLE)
                 industries_table.put_item(Item={"industry_category": industry, "updated_at": now})
+
+        if TAGS_LOOKUP_TABLE and "tags" in body:
+            tags_table = dynamodb.Table(TAGS_LOOKUP_TABLE)
+            for tag in body["tags"]:
+                tag = tag.strip() if tag else ""
+                if tag:
+                    tags_table.put_item(Item={"tag": tag, "updated_at": now})
     except Exception as e:
         # Don't fail the update over lookup population
         print(f"Warning: failed to populate lookups: {e}")

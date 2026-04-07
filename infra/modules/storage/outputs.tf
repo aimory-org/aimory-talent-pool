@@ -69,6 +69,16 @@ output "industry_categories_lookup_table_arn" {
   value       = aws_dynamodb_table.industry_categories_lookup.arn
 }
 
+output "tags_lookup_table_name" {
+  description = "DynamoDB table name for tags lookup"
+  value       = aws_dynamodb_table.tags_lookup.name
+}
+
+output "tags_lookup_table_arn" {
+  description = "DynamoDB table ARN for tags lookup"
+  value       = aws_dynamodb_table.tags_lookup.arn
+}
+
 output "talent_profiles_table_stream_arn" {
   description = "DynamoDB Stream ARN for talent profiles table"
   value       = aws_dynamodb_table.talent_profiles.stream_arn

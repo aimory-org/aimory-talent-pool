@@ -78,6 +78,16 @@ variable "industry_categories_lookup_table_arn" {
   description = "DynamoDB table ARN for industry categories lookup"
 }
 
+variable "tags_lookup_table_name" {
+  type        = string
+  description = "DynamoDB table name for tags lookup"
+}
+
+variable "tags_lookup_table_arn" {
+  type        = string
+  description = "DynamoDB table ARN for tags lookup"
+}
+
 variable "resume_bucket_name" {
   type        = string
   description = "S3 bucket name for resumes"

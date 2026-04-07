@@ -61,7 +61,14 @@ export function TalentDashboard() {
     job_titles: lookupJobTitles,
     industry_categories: lookupIndustryCategories,
     cities: lookupCities,
+    tags: lookupTagsFromApi,
   } = useLookups();
+
+  // Local override for lookup tags so deletions are reflected immediately
+  const [lookupTagsOverride, setLookupTagsOverride] = useState<string[] | null>(
+    null,
+  );
+  const lookupTags = lookupTagsOverride ?? lookupTagsFromApi;
 
   // Handle a profile update from the detail panel by immediately merging
   // the DynamoDB response into the local list (avoids OpenSearch replication lag).
@@ -99,6 +106,14 @@ export function TalentDashboard() {
 
   const handleCertificationsChange = useCallback((certifications: string[]) => {
     setFilters((prev) => ({ ...prev, certifications }));
+  }, []);
+
+  const handleTagsChange = useCallback((tags: string[]) => {
+    setFilters((prev) => ({ ...prev, tags }));
+  }, []);
+
+  const handleTagsLookupChange = useCallback((tags: string[]) => {
+    setLookupTagsOverride(tags);
   }, []);
 
   const clearFilters = useCallback(() => {
@@ -236,7 +251,7 @@ export function TalentDashboard() {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-foreground/40 group-focus-within:text-indigo-400 transition-colors" />
               <input
                 type="text"
-                placeholder="Search names, summaries, and resume content..."
+                placeholder="Search by name, tags, and resume content..."
                 value={filters.search}
                 onChange={(e) => handleFilterChange("search", e.target.value)}
                 className="w-full h-12 pl-12 pr-4 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground placeholder-foreground/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 focus:bg-black/10 dark:focus:bg-white/10 transition-all duration-300"
@@ -269,12 +284,15 @@ export function TalentDashboard() {
             onClearFilters={clearFilters}
             onSkillsChange={handleSkillsChange}
             onCertificationsChange={handleCertificationsChange}
+            onTagsChange={handleTagsChange}
+            onTagsLookupChange={handleTagsLookupChange}
             activeFilterCount={activeFilterCount}
             lookupSkills={lookupSkills}
             lookupCertifications={lookupCertifications}
             lookupJobTitles={lookupJobTitles}
             lookupIndustryCategories={lookupIndustryCategories}
             lookupCities={lookupCities}
+            lookupTags={lookupTags}
           />
         )}
 
@@ -345,6 +363,7 @@ export function TalentDashboard() {
             onClose={() => setSelectedProfile(null)}
             onRefresh={refreshTalents}
             onProfileUpdated={handleProfileUpdated}
+            lookupTags={lookupTags}
           />
         </>
       )}

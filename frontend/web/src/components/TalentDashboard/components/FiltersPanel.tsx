@@ -1,7 +1,8 @@
 /**
  * Filters panel component for filtering talent pool results.
  */
-import { Filter, X } from "lucide-react";
+import { useState } from "react";
+import { Filter, X, Trash2, Settings } from "lucide-react";
 import { Select } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import {
@@ -10,6 +11,7 @@ import {
   CLEARANCE_LEVELS,
   US_STATES,
 } from "@/types/talent";
+import { deleteTag } from "@/lib/api";
 import type { Filters } from "../types";
 
 interface City {
@@ -23,12 +25,15 @@ interface FiltersPanelProps {
   onClearFilters: () => void;
   onSkillsChange: (skills: string[]) => void;
   onCertificationsChange: (certifications: string[]) => void;
+  onTagsChange?: (tags: string[]) => void;
+  onTagsLookupChange?: (tags: string[]) => void;
   activeFilterCount: number;
   lookupSkills: string[];
   lookupCertifications: string[];
   lookupJobTitles: string[];
   lookupIndustryCategories: string[];
   lookupCities: City[];
+  lookupTags?: string[];
 }
 
 export function FiltersPanel({
@@ -37,13 +42,40 @@ export function FiltersPanel({
   onClearFilters,
   onSkillsChange,
   onCertificationsChange,
+  onTagsChange,
+  onTagsLookupChange,
   activeFilterCount,
   lookupSkills,
   lookupCertifications,
   lookupJobTitles,
   lookupIndustryCategories,
   lookupCities,
+  lookupTags = [],
 }: FiltersPanelProps) {
+  const [managingTags, setManagingTags] = useState(false);
+  const [confirmDeleteTag, setConfirmDeleteTag] = useState<string | null>(null);
+  const [deletingTag, setDeletingTag] = useState<string | null>(null);
+
+  const handleDeleteTag = async (tag: string) => {
+    if (confirmDeleteTag !== tag) {
+      setConfirmDeleteTag(tag);
+      return;
+    }
+    setDeletingTag(tag);
+    setConfirmDeleteTag(null);
+    try {
+      await deleteTag(tag);
+      // Remove from active filters if selected
+      onTagsChange?.(filters.tags.filter((t) => t !== tag));
+      // Remove from lookup list
+      onTagsLookupChange?.(lookupTags.filter((t) => t !== tag));
+    } catch (err) {
+      console.error("Failed to delete tag:", err);
+    } finally {
+      setDeletingTag(null);
+    }
+  };
+
   return (
     <div className="relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl border border-black/10 dark:border-white/15 p-6 mb-6 shadow-xl shadow-black/5">
       {/* Subtle gradient overlay */}
@@ -245,6 +277,122 @@ export function FiltersPanel({
                   </span>
                 ))}
               </div>
+            )}
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-foreground/70">
+                Tags{" "}
+                {filters.tags.length > 0 && (
+                  <span className="text-purple-600 dark:text-purple-400">
+                    ({filters.tags.length})
+                  </span>
+                )}
+              </Label>
+              {lookupTags.length > 0 && (
+                <button
+                  onClick={() => {
+                    setManagingTags((v) => !v);
+                    setConfirmDeleteTag(null);
+                  }}
+                  className={`flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded transition-colors ${
+                    managingTags
+                      ? "bg-red-500/10 text-red-500 border border-red-500/20"
+                      : "text-foreground/40 hover:text-foreground/70"
+                  }`}
+                  title="Manage tags"
+                >
+                  <Settings className="h-3 w-3" />
+                  Manage
+                </button>
+              )}
+            </div>
+
+            {managingTags ? (
+              <div className="space-y-1.5">
+                <p className="text-[10px] text-foreground/40">
+                  Click trash to delete permanently from all candidates.
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {lookupTags.map((tag) => {
+                    const isConfirming = confirmDeleteTag === tag;
+                    const isDeleting = deletingTag === tag;
+                    return (
+                      <span
+                        key={tag}
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border transition-colors ${
+                          isConfirming
+                            ? "bg-red-500/20 text-red-600 dark:text-red-400 border-red-500/40"
+                            : "bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/20"
+                        }`}
+                      >
+                        {tag}
+                        <button
+                          onClick={() => handleDeleteTag(tag)}
+                          disabled={isDeleting}
+                          title={
+                            isConfirming
+                              ? "Click again to confirm"
+                              : "Delete tag permanently"
+                          }
+                          className={`ml-0.5 transition-colors ${
+                            isConfirming
+                              ? "text-red-500 hover:text-red-700"
+                              : "text-foreground/40 hover:text-red-500"
+                          }`}
+                        >
+                          {isDeleting ? (
+                            <span className="inline-block h-3 w-3 border border-current border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3 w-3" />
+                          )}
+                        </button>
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <>
+                <Select
+                  value=""
+                  onChange={(e) => {
+                    const tag = e.target.value;
+                    if (tag && !filters.tags.includes(tag)) {
+                      onTagsChange?.([...filters.tags, tag]);
+                    }
+                  }}
+                  options={lookupTags
+                    .filter((t) => !filters.tags.includes(t))
+                    .map((t) => ({ value: t, label: t }))}
+                  placeholder={
+                    lookupTags.length === 0 ? "No tags yet" : "Add tag..."
+                  }
+                  disabled={lookupTags.length === 0}
+                />
+                {filters.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {filters.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-700 dark:text-purple-300 text-xs border border-purple-500/30 hover:bg-purple-500/30 transition-colors"
+                      >
+                        {tag}
+                        <button
+                          onClick={() =>
+                            onTagsChange?.(
+                              filters.tags.filter((t) => t !== tag),
+                            )
+                          }
+                          className="hover:text-foreground ml-0.5"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </div>
           <div className="space-y-2">
