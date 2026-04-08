@@ -15,7 +15,7 @@ import type { TalentProfile } from "@/types/talent";
 import type { Filters, SortField, SortDirection } from "./types";
 import { DEFAULT_FILTERS } from "./types";
 import { StatsCards } from "./components/StatsCards";
-import { TotalCardWithAction } from "./components/ManualUploadButton";
+import { ManualUploadButton } from "./components/ManualUploadButton";
 import { FiltersPanel } from "./components/FiltersPanel";
 import { TalentTable } from "./components/TalentTable";
 import { ProfileDetailPanel } from "./ProfileDetailPanel";
@@ -94,11 +94,6 @@ export function TalentDashboard() {
   const handleManualUpload = useCallback(() => {
     // TODO: wire to upload flow (modal/dialog + API endpoint)
     console.log("Manual upload clicked");
-  }, []);
-
-  const handleViewResumes = useCallback(() => {
-    // For example connect this to a resume view modal or filter behavior.
-    console.log("View resumes clicked");
   }, []);
 
   const handleSort = useCallback(
@@ -215,14 +210,7 @@ export function TalentDashboard() {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 w-full">
-              <TotalCardWithAction
-                total={stats.total}
-                onManualUpload={handleManualUpload}
-                onViewResumes={handleViewResumes}
-              />
-              <StatsCards stats={stats} />
-            </div>
+            <StatsCards stats={stats} />
           </div>
         </div>
       </div>
@@ -299,6 +287,7 @@ export function TalentDashboard() {
                     {activeFilterCount === 1 ? "filter" : "filters"} active
                   </span>
                 )}
+                <ManualUploadButton onManualUpload={handleManualUpload} />
               </>
             )}
           </div>
