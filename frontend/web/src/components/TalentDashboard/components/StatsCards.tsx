@@ -17,7 +17,7 @@ interface StatsCardsProps {
 export function StatsCards({ stats }: StatsCardsProps) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      <div className="group relative bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 backdrop-blur-lg rounded-xl p-3 min-h-[100px] border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20 transition-all duration-300 cursor-default">
+      <div className="group relative bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 backdrop-blur-lg rounded-xl p-3 min-h-25 border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20 transition-all duration-300 cursor-default">
         <div className="absolute inset-0 bg-linear-to-br from-slate-500/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
         <div className="relative">
           <div className="flex items-center gap-2 mb-1">

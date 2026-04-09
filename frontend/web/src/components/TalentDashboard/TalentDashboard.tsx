@@ -16,6 +16,7 @@ import type { Filters, SortField, SortDirection } from "./types";
 import { DEFAULT_FILTERS } from "./types";
 import { StatsCards } from "./components/StatsCards";
 import { ManualUploadButton } from "./components/ManualUploadButton";
+import { UploadModal } from "./components/UploadModal";
 import { FiltersPanel } from "./components/FiltersPanel";
 import { TalentTable } from "./components/TalentTable";
 import { ProfileDetailPanel } from "./ProfileDetailPanel";
@@ -31,6 +32,7 @@ export function TalentDashboard() {
     null,
   );
   const [showFilters, setShowFilters] = useState(true);
+  const [showUploadModal, setShowUploadModal] = useState(false);
 
   // Fetch data from API
   const {
@@ -92,9 +94,22 @@ export function TalentDashboard() {
   }, []);
 
   const handleManualUpload = useCallback(() => {
-    // TODO: wire to upload flow (modal/dialog + API endpoint)
-    console.log("Manual upload clicked");
+    setShowUploadModal(true);
   }, []);
+
+  const handleUploadSubmit = useCallback(
+    async (file: File | null) => {
+      try {
+        // TODO: Call API to upload file and create candidate
+        console.log("Uploading file:", file);
+        // For now, just refresh the list
+        refreshTalents();
+      } catch (error) {
+        console.error("Upload failed:", error);
+      }
+    },
+    [refreshTalents],
+  );
 
   const handleSort = useCallback(
     (field: SortField) => {
@@ -333,6 +348,13 @@ export function TalentDashboard() {
           />
         </>
       )}
+
+      {/* Upload Modal */}
+      <UploadModal
+        isOpen={showUploadModal}
+        onClose={() => setShowUploadModal(false)}
+        onUpload={handleUploadSubmit}
+      />
     </div>
   );
 }

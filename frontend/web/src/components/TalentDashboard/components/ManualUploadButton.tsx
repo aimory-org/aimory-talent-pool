@@ -9,7 +9,7 @@ export function ManualUploadButton({
 }: ManualUploadButtonProps) {
   return (
     <Button variant="secondary" size="sm" onClick={onManualUpload}>
-      Upload A New Candidate
+      Upload Resume
     </Button>
   );
 }
