@@ -8,7 +8,7 @@ import json
 import os
 
 import boto3
-from opensearchpy import OpenSearch, RequestsHttpConnection, AWSV4SignerAuth
+from opensearchpy import AWSV4SignerAuth, NotFoundError, OpenSearch, RequestsHttpConnection
 
 OPENSEARCH_ENDPOINT = os.environ["OPENSEARCH_ENDPOINT"]
 INDEX_NAME = "talent-profiles"
@@ -24,6 +24,7 @@ def _get_client():
         use_ssl=True,
         verify_certs=True,
         connection_class=RequestsHttpConnection,
+        timeout=30,
     )
 
 
@@ -35,31 +36,37 @@ def handler(event, context):
         must = []
         filters = []
 
-        # Full-text search across name and summary.
-        # name: match_phrase_prefix always (handles "ben" → "Benjamin", last name tokens)
-        # summary: exact token match always; fuzziness only for 5+ char terms
-        #   ("aws" → exact token "aws" in summary ✓, no "a" false positives)
+        # Full-text search across name and resume text only.
+        # Name uses match_phrase_prefix (prefix on last token).
+        # resume_text uses match_phrase (exact phrase only) to avoid
+        # noisy prefix expansion (e.g. "ben" → "benefit", "best").
         if params.get("search"):
             search_term = params["search"]
+            should_clauses = [
+                {
+                    "match_phrase_prefix": {
+                        "name": {
+                            "query": search_term,
+                            "boost": 10,
+                            "max_expansions": 10,
+                        }
+                    }
+                },
+                {
+                    "match": {
+                        "tags": {
+                            "query": search_term,
+                            "boost": 5,
+                        }
+                    }
+                },
+            ]
+            if len(search_term.strip()) >= 2:
+                should_clauses.append({"match_phrase": {"resume_text": {"query": search_term, "boost": 1}}})
             must.append(
                 {
                     "bool": {
-                        "should": [
-                            {
-                                "match_phrase_prefix": {
-                                    "name": {"query": search_term, "boost": 3}
-                                }
-                            },
-                            {
-                                "match": {
-                                    "summary": {
-                                        "query": search_term,
-                                        # fuzz only kicks in for 5+ char terms
-                                        "fuzziness": "AUTO:5,8",
-                                    }
-                                }
-                            },
-                        ],
+                        "should": should_clauses,
                         "minimum_should_match": 1,
                     }
                 }
@@ -68,8 +75,9 @@ def handler(event, context):
         # Exact keyword filters
         for field in (
             "status",
-            "talent_bucket",
-            "talent_category",
+            "service_category",
+            "industry_category",
+            "job_title",
             "clearance_level",
             "location_state",
         ):
@@ -86,10 +94,13 @@ def handler(event, context):
 
         # Certifications — each must be present (AND logic)
         if params.get("certifications"):
-            for cert in [
-                c.strip() for c in params["certifications"].split(",") if c.strip()
-            ]:
+            for cert in [c.strip() for c in params["certifications"].split(",") if c.strip()]:
                 filters.append({"term": {"cert_names": cert}})
+
+        # Tags — each must be present (AND logic)
+        if params.get("tags"):
+            for tag in [t.strip() for t in params["tags"].split(",") if t.strip()]:
+                filters.append({"term": {"tags": tag}})
 
         # Years of experience range
         years_range = {}
@@ -100,7 +111,13 @@ def handler(event, context):
         if years_range:
             filters.append({"range": {"years_of_experience": years_range}})
 
-        search_active = bool(params.get("search"))
+        # When searching, sort by relevance so name matches rank first;
+        # otherwise sort by newest received.
+        sort_clause = (
+            [{"_score": {"order": "desc"}}, {"date_received": {"order": "desc"}}]
+            if params.get("search")
+            else [{"date_received": {"order": "desc"}}]
+        )
 
         query = {
             "query": {
@@ -109,27 +126,33 @@ def handler(event, context):
                     "filter": filters,
                 }
             },
-            "sort": [{"date_received": {"order": "desc"}}],
+            "sort": sort_clause,
             "size": 1000,
         }
 
-        if search_active:
+        # Add highlighting when a search query is active
+        if params.get("search"):
             query["highlight"] = {
-                "pre_tags": ["<em>"],
-                "post_tags": ["</em>"],
-                "number_of_fragments": 1,
-                "fragment_size": 120,
                 "fields": {
-                    "name": {"number_of_fragments": 0},
-                    "summary": {},
+                    "resume_text": {"fragment_size": 200, "number_of_fragments": 1},
                 },
+                "pre_tags": ["<mark>"],
+                "post_tags": ["</mark>"],
             }
 
-        response = client.search(index=INDEX_NAME, body=query)
+        try:
+            response = client.search(index=INDEX_NAME, body=query)
+        except NotFoundError:
+            # Index hasn't been created yet — no data processed
+            return {
+                "statusCode": 200,
+                "headers": {"Content-Type": "application/json"},
+                "body": json.dumps({"items": [], "count": 0}),
+            }
         items = []
         for hit in response["hits"]["hits"]:
             doc = hit["_source"]
-            if search_active and hit.get("highlight"):
+            if "highlight" in hit:
                 doc["_highlight"] = hit["highlight"]
             items.append(doc)
 

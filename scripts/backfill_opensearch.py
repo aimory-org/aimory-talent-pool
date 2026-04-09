@@ -49,13 +49,9 @@ def _convert_decimals(obj):
 def _prepare_document(item):
     """Convert comma-separated skill/cert strings to lists for term queries."""
     if isinstance(item.get("skill_names"), str):
-        item["skill_names"] = [
-            s.strip() for s in item["skill_names"].split(",") if s.strip()
-        ]
+        item["skill_names"] = [s.strip() for s in item["skill_names"].split(",") if s.strip()]
     if isinstance(item.get("cert_names"), str):
-        item["cert_names"] = [
-            c.strip() for c in item["cert_names"].split(",") if c.strip()
-        ]
+        item["cert_names"] = [c.strip() for c in item["cert_names"].split(",") if c.strip()]
     return item
 
 
@@ -84,13 +80,9 @@ def _generate_actions(items):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Backfill talent profiles into OpenSearch"
-    )
+    parser = argparse.ArgumentParser(description="Backfill talent profiles into OpenSearch")
     parser.add_argument("--table", required=True, help="DynamoDB table name")
-    parser.add_argument(
-        "--endpoint", required=True, help="OpenSearch endpoint (no https://)"
-    )
+    parser.add_argument("--endpoint", required=True, help="OpenSearch endpoint (no https://)")
     parser.add_argument("--region", default="us-east-1", help="AWS region")
     args = parser.parse_args()
 
@@ -118,9 +110,11 @@ def main():
                         "name": {"type": "text"},
                         "name_lower": {"type": "keyword"},
                         "summary": {"type": "text"},
+                        "resume_text": {"type": "text"},
                         "status": {"type": "keyword"},
-                        "talent_bucket": {"type": "keyword"},
-                        "talent_category": {"type": "keyword"},
+                        "service_category": {"type": "keyword"},
+                        "industry_category": {"type": "keyword"},
+                        "job_title": {"type": "keyword"},
                         "clearance_level": {"type": "keyword"},
                         "location_state": {"type": "keyword"},
                         "location": {
@@ -131,19 +125,19 @@ def main():
                         },
                         "skill_names": {"type": "keyword"},
                         "cert_names": {"type": "keyword"},
+                        "tags": {"type": "keyword"},
                         "years_of_experience": {"type": "float"},
-                        "bill_rate": {"type": "float"},
+                        "requested_salary": {"type": "float"},
                         "date_received": {"type": "keyword"},
                         "updated_at": {"type": "keyword"},
+                        "possible_duplicate_of": {"type": "keyword"},
                     }
                 }
             },
         )
         print(f"Created index: {INDEX_NAME}")
 
-    success, failed = bulk(
-        client, _generate_actions(items), chunk_size=200, raise_on_error=False
-    )
+    success, failed = bulk(client, _generate_actions(items), chunk_size=200, raise_on_error=False)
     print(f"Indexed: {success}  Failed: {len(failed)}")
     if failed:
         for err in failed:

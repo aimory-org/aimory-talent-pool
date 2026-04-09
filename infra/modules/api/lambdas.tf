@@ -28,9 +28,12 @@ locals {
       memory  = 256
       layers  = []
       env = {
-        SKILLS_LOOKUP_TABLE         = var.skills_lookup_table_name
-        CERTIFICATIONS_LOOKUP_TABLE = var.certifications_lookup_table_name
-        CITIES_LOOKUP_TABLE         = var.cities_lookup_table_name
+        SKILLS_LOOKUP_TABLE              = var.skills_lookup_table_name
+        CERTIFICATIONS_LOOKUP_TABLE      = var.certifications_lookup_table_name
+        CITIES_LOOKUP_TABLE              = var.cities_lookup_table_name
+        JOB_TITLES_LOOKUP_TABLE          = var.job_titles_lookup_table_name
+        INDUSTRY_CATEGORIES_LOOKUP_TABLE = var.industry_categories_lookup_table_name
+        TAGS_LOOKUP_TABLE                = var.tags_lookup_table_name
       }
     }
     get_resume_url = {
@@ -48,7 +51,13 @@ locals {
       memory  = 256
       layers  = []
       env = {
-        TALENT_PROFILES_TABLE = var.talent_profiles_table_name
+        TALENT_PROFILES_TABLE            = var.talent_profiles_table_name
+        SKILLS_LOOKUP_TABLE              = var.skills_lookup_table_name
+        CERTIFICATIONS_LOOKUP_TABLE      = var.certifications_lookup_table_name
+        CITIES_LOOKUP_TABLE              = var.cities_lookup_table_name
+        JOB_TITLES_LOOKUP_TABLE          = var.job_titles_lookup_table_name
+        INDUSTRY_CATEGORIES_LOOKUP_TABLE = var.industry_categories_lookup_table_name
+        TAGS_LOOKUP_TABLE                = var.tags_lookup_table_name
       }
     }
     delete_talent = {
@@ -59,6 +68,16 @@ locals {
       env = {
         TALENT_PROFILES_TABLE = var.talent_profiles_table_name
         RESUME_BUCKET         = var.resume_bucket_name
+      }
+    }
+    delete_tag = {
+      route   = "DELETE /tags"
+      timeout = 30
+      memory  = 256
+      layers  = []
+      env = {
+        TAGS_LOOKUP_TABLE     = var.tags_lookup_table_name
+        TALENT_PROFILES_TABLE = var.talent_profiles_table_name
       }
     }
   }

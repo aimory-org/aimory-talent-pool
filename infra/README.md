@@ -26,7 +26,8 @@ infra/
     │   │   ├── lambda_src/   # Python handlers (9 functions)
     │   │   └── layers/       # Custom Lambda layers (pdfminer)
     │   └── step_functions/   # State machine orchestration
-    └── storage/              # DynamoDB tables + S3 buckets
+    └── storage/              # DynamoDB tables + S3 buckets + OpenSearch domain
+        └── lambda_src/       # DynamoDB→OpenSearch sync Lambda
 ```
 
 ## Architecture
@@ -34,46 +35,53 @@ infra/
 ### System Overview
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                                   Users                                      │
-└─────────────────────────────────────┬───────────────────────────────────────┘
-                                      │
-                    ┌─────────────────▼─────────────────┐
-                    │           CloudFront              │
-                    │      (CDN + SPA Hosting)          │
-                    └─────────────────┬─────────────────┘
-                                      │
-                    ┌─────────────────▼─────────────────┐
-                    │         S3 Static Site            │
-                    │        (React Frontend)           │
-                    └─────────────────┬─────────────────┘
-                                      │
-          ┌───────────────────────────┼───────────────────────────┐
-          │                           │                           │
-          ▼                           ▼                           ▼
-┌──────────────────┐      ┌──────────────────┐      ┌──────────────────┐
-│  Microsoft       │      │   API Gateway    │      │   S3 Resumes     │
-│  Entra ID        │      │  (REST API)      │      │   Bucket         │
-│  (Login)         │      └────────┬─────────┘      │                  │
-└────────┬─────────┘               │                └────────┬─────────┘
-         │                         │                         │
-         ▼               ┌─────────▼─────────┐               │
-┌──────────────────┐     │  JWT Authorizer   │               │
-│  AWS Cognito     │◀───▶│  (validates token │               │
-│  (Token Issuer)  │     │   against Cognito)│               │
-└──────────────────┘     └─────────┬─────────┘               │
-                                   │                         │
-                                   ▼                         │
-                         ┌──────────────────┐                │
-                         │   Lambda APIs    │                │
-                         │   (CRUD ops)     │                │
-                         └────────┬─────────┘                │
-                                  │                          │
-                                  ▼                          ▼
-                         ┌──────────────────┐      ┌──────────────────┐
-                         │    DynamoDB      │      │  Step Functions  │
-                         │ (Talent Profiles)│◀─────│  (Pipeline)      │
-                         └──────────────────┘      └──────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                                Users                                     │
+└────────────────────────────────────┬────────────────────────────────────┘
+                                     │
+                   ┌─────────────────▼─────────────────┐
+                   │           CloudFront              │
+                   │      (CDN + SPA Hosting)          │
+                   └─────────────────┬─────────────────┘
+                                     │
+                   ┌─────────────────▼─────────────────┐
+                   │         S3 Static Site            │
+                   │        (React Frontend)           │
+                   └─────────────────┬─────────────────┘
+                                     │
+         ┌───────────────────────────┼───────────────────────────┐
+         │                           │                           │
+         ▼                           ▼                           ▼
+┌─────────────────┐      ┌──────────────────┐      ┌──────────────────┐
+│  Microsoft      │      │   API Gateway    │      │   S3 Resumes     │
+│  Entra ID       │      │   (REST API)     │      │   Bucket         │
+│  (Login)        │      └────────┬─────────┘      └────────┬─────────┘
+└────────┬────────┘               │                         │
+         │                        │                         │ S3 Event
+         ▼              ┌─────────▼─────────┐               │
+┌─────────────────┐     │  JWT Authorizer   │               ▼
+│  AWS Cognito    │◀───▶│  (validates token │      ┌──────────────────┐
+│  (Token Issuer) │     │   against Cognito)│      │  Step Functions  │
+└─────────────────┘     └─────────┬─────────┘      │  (Pipeline)      │
+                                  │                └────────┬─────────┘
+                                  ▼                         │
+                        ┌──────────────────┐                │
+                        │   Lambda APIs    │                │
+                        │  (CRUD + Search) │                │
+                        └───┬──────────┬───┘                │
+                            │          │                    │
+                   read/write│          │ search query       │ persist
+                            │          │                    │
+                            ▼          ▼                    ▼
+                   ┌─────────────┐  ┌─────────────┐
+                   │  DynamoDB   │  │ OpenSearch   │
+                   │  (Talent    │  │ (Search      │
+                   │  Profiles)  │  │  Index)      │
+                   └──────┬──────┘  └──────▲──────┘
+                          │                │
+                          │  DynamoDB      │
+                          └──Streams───────┘
+                            (real-time sync)
 ```
 
 ### Authentication Flow
@@ -331,13 +339,18 @@ terraform output cognito_domain
 
 ### storage
 
-Creates data persistence layer:
+Creates data persistence and search layer:
 - **S3 Bucket:** `{project}-{env}-resumes` — raw uploads, extracted text, resumes
 - **DynamoDB Tables:**
-  - `talent_profiles` — candidate records with GSIs for search
+  - `talent_profiles` — candidate records (primary data store)
   - `skills_lookup` — normalized skill names
   - `certifications_lookup` — normalized cert names
   - `cities_lookup` — location normalization
+- **OpenSearch Domain:** `{project}-{env}` — full-text search index (`talent-profiles`)
+  - Engine: OpenSearch 2.11, `t3.small.search`, 10GB gp3
+  - Real-time sync from DynamoDB via Streams + Lambda
+  - Index mapping: `name` (text), `summary` (text), `skill_names` (keyword array), `cert_names` (keyword array), plus keyword filters for status, bucket, category, clearance, location
+- **Sync Lambda:** Triggered by DynamoDB Streams on INSERT/MODIFY/REMOVE, upserts or deletes documents in OpenSearch
 
 ### pipeline/lambdas
 
@@ -365,7 +378,7 @@ AWS Step Functions state machine orchestrating the pipeline with:
 ### api
 
 HTTP API Gateway with Cognito authorizer:
-- `GET /talents` — List/search profiles
+- `GET /talents` — List/search profiles (queries OpenSearch; supports full-text search, fuzzy matching, and keyword filters)
 - `GET /talents/{pk}` — Get single profile
 - `PATCH /talents/{pk}` — Update profile fields
 - `DELETE /talents/{pk}` — Remove profile

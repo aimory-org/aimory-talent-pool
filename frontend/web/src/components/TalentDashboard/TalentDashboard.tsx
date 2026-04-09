@@ -40,10 +40,12 @@ export function TalentDashboard() {
     isLoading: talentsLoading,
     error: talentsError,
     refresh: refreshTalents,
+    mergeTalent,
   } = useTalents({
     status: filters.status || undefined,
-    talent_bucket: filters.talent_bucket || undefined,
-    talent_category: filters.talent_category || undefined,
+    service_category: filters.service_category || undefined,
+    industry_category: filters.industry_category || undefined,
+    job_title: filters.job_title || undefined,
     clearance_level: filters.clearance_level || undefined,
     location_state: filters.location_state || undefined,
     city: filters.city || undefined,
@@ -51,6 +53,7 @@ export function TalentDashboard() {
     skills: filters.skills.length > 0 ? filters.skills : undefined,
     certifications:
       filters.certifications.length > 0 ? filters.certifications : undefined,
+    tags: filters.tags.length > 0 ? filters.tags : undefined,
     minYears: filters.minYears ? parseInt(filters.minYears, 10) : undefined,
     maxYears: filters.maxYears ? parseInt(filters.maxYears, 10) : undefined,
   });
@@ -58,8 +61,27 @@ export function TalentDashboard() {
   const {
     skills: lookupSkills,
     certifications: lookupCertifications,
+    job_titles: lookupJobTitles,
+    industry_categories: lookupIndustryCategories,
     cities: lookupCities,
+    tags: lookupTagsFromApi,
   } = useLookups();
+
+  // Local override for lookup tags so deletions are reflected immediately
+  const [lookupTagsOverride, setLookupTagsOverride] = useState<string[] | null>(
+    null,
+  );
+  const lookupTags = lookupTagsOverride ?? lookupTagsFromApi;
+
+  // Handle a profile update from the detail panel by immediately merging
+  // the DynamoDB response into the local list (avoids OpenSearch replication lag).
+  const handleProfileUpdated = useCallback(
+    (updated: TalentProfile) => {
+      mergeTalent(updated);
+      setSelectedProfile(updated);
+    },
+    [mergeTalent],
+  );
 
   // Filter change handler with city reset logic
   const handleFilterChange = useCallback(
@@ -87,6 +109,14 @@ export function TalentDashboard() {
 
   const handleCertificationsChange = useCallback((certifications: string[]) => {
     setFilters((prev) => ({ ...prev, certifications }));
+  }, []);
+
+  const handleTagsChange = useCallback((tags: string[]) => {
+    setFilters((prev) => ({ ...prev, tags }));
+  }, []);
+
+  const handleTagsLookupChange = useCallback((tags: string[]) => {
+    setLookupTagsOverride(tags);
   }, []);
 
   const clearFilters = useCallback(() => {
@@ -135,9 +165,13 @@ export function TalentDashboard() {
           aVal = a.name_lower;
           bVal = b.name_lower;
           break;
-        case "talent_category":
-          aVal = a.talent_category || "";
-          bVal = b.talent_category || "";
+        case "job_title":
+          aVal = a.job_title || "";
+          bVal = b.job_title || "";
+          break;
+        case "industry_category":
+          aVal = a.industry_category || "";
+          bVal = b.industry_category || "";
           break;
         case "location_state":
           aVal = a.location_state || "";
@@ -147,9 +181,9 @@ export function TalentDashboard() {
           aVal = a.clearance_level || "";
           bVal = b.clearance_level || "";
           break;
-        case "bill_rate":
-          aVal = a.bill_rate || 0;
-          bVal = b.bill_rate || 0;
+        case "requested_salary":
+          aVal = a.requested_salary || 0;
+          bVal = b.requested_salary || 0;
           break;
         case "years_of_experience":
           aVal = a.years_of_experience || 0;
@@ -176,7 +210,7 @@ export function TalentDashboard() {
   // Calculate active filter count
   const activeFilterCount = useMemo(() => {
     return Object.entries(filters).filter(([key, v]) =>
-      key === "skills" || key === "certifications"
+      key === "skills" || key === "certifications" || key === "tags"
         ? (v as string[]).length > 0
         : v !== "",
     ).length;
@@ -199,23 +233,22 @@ export function TalentDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Animated gradient accent bar */}
-      <div className="h-1 bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500 animate-gradient-x" />
-
       {/* Header */}
-      <div className="border-b border-black/10 dark:border-white/15 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+      <div className="border-b border-black/10 dark:border-white/15 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl sticky top-14 z-40">
+        {/* Animated gradient accent bar */}
+        <div className="h-1 bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500 animate-gradient-x" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             {/* Title Section */}
             <div className="flex items-center gap-4">
               <div className="relative">
                 <div className="absolute inset-0 bg-linear-to-br from-indigo-500 to-purple-600 rounded-xl blur-lg opacity-50" />
-                <div className="relative p-3 bg-linear-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg">
-                  <Users className="h-6 w-6 text-white" />
+                <div className="relative p-2 bg-linear-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg">
+                  <Users className="h-5 w-5 text-white" />
                 </div>
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-foreground tracking-tight">
+                <h1 className="text-xl font-bold text-foreground tracking-tight">
                   Talent Pool
                 </h1>
                 <p className="text-sm text-foreground/50">
@@ -239,7 +272,7 @@ export function TalentDashboard() {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-foreground/40 group-focus-within:text-indigo-400 transition-colors" />
               <input
                 type="text"
-                placeholder="Search by name or summary..."
+                placeholder="Search by name, tags, and resume content..."
                 value={filters.search}
                 onChange={(e) => handleFilterChange("search", e.target.value)}
                 className="w-full h-12 pl-12 pr-4 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground placeholder-foreground/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 focus:bg-black/10 dark:focus:bg-white/10 transition-all duration-300"
@@ -272,10 +305,15 @@ export function TalentDashboard() {
             onClearFilters={clearFilters}
             onSkillsChange={handleSkillsChange}
             onCertificationsChange={handleCertificationsChange}
+            onTagsChange={handleTagsChange}
+            onTagsLookupChange={handleTagsLookupChange}
             activeFilterCount={activeFilterCount}
             lookupSkills={lookupSkills}
             lookupCertifications={lookupCertifications}
+            lookupJobTitles={lookupJobTitles}
+            lookupIndustryCategories={lookupIndustryCategories}
             lookupCities={lookupCities}
+            lookupTags={lookupTags}
           />
         )}
 
@@ -331,6 +369,7 @@ export function TalentDashboard() {
           activeFilterCount={activeFilterCount}
           onClearFilters={clearFilters}
           searchActive={!!filters.search}
+          searchTerm={filters.search || ""}
         />
       </div>
 
@@ -345,6 +384,8 @@ export function TalentDashboard() {
             profile={selectedProfile}
             onClose={() => setSelectedProfile(null)}
             onRefresh={refreshTalents}
+            onProfileUpdated={handleProfileUpdated}
+            lookupTags={lookupTags}
           />
         </>
       )}

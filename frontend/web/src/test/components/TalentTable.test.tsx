@@ -38,7 +38,7 @@ describe("TalentTable", () => {
     it("displays category for each profile", () => {
       render(<TalentTable {...defaultProps} />);
 
-      expect(screen.getByText("Developer")).toBeInTheDocument();
+      expect(screen.getByText("Senior Software Engineer")).toBeInTheDocument();
     });
 
     it("displays status badges", () => {
@@ -62,11 +62,11 @@ describe("TalentTable", () => {
       render(<TalentTable {...defaultProps} />);
 
       expect(screen.getByText("Candidate")).toBeInTheDocument();
-      expect(screen.getByText("Category")).toBeInTheDocument();
+      expect(screen.getByText("Job Title")).toBeInTheDocument();
       expect(screen.getByText("Location")).toBeInTheDocument();
       expect(screen.getByText("Clearance")).toBeInTheDocument();
-      expect(screen.getByText("Rate")).toBeInTheDocument();
-      expect(screen.getByText("Experience")).toBeInTheDocument();
+      expect(screen.getByText("Req. Salary")).toBeInTheDocument();
+      expect(screen.getByText("Exp.")).toBeInTheDocument();
       expect(screen.getByText("Status")).toBeInTheDocument();
       expect(screen.getByText("Received")).toBeInTheDocument();
     });

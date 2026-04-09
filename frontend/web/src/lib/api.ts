@@ -57,13 +57,15 @@ async function apiFetch<T>(
 
 export interface ListTalentsParams {
   status?: string;
-  talent_bucket?: string;
-  talent_category?: string;
+  service_category?: string;
+  industry_category?: string;
+  job_title?: string;
   clearance_level?: string;
   location_state?: string;
   city?: string;
   skills?: string[];
   certifications?: string[];
+  tags?: string[];
   search?: string;
   minYears?: number;
   maxYears?: number;
@@ -77,7 +79,10 @@ export interface ListTalentsResponse {
 export interface LookupsResponse {
   skills: string[];
   certifications: string[];
+  job_titles: string[];
+  industry_categories: string[];
   cities: { city: string; state: string }[];
+  tags: string[];
 }
 
 // -----------------------------------------------------------------------------
@@ -93,10 +98,11 @@ export async function listTalents(
   const searchParams = new URLSearchParams();
 
   if (params.status) searchParams.set("status", params.status);
-  if (params.talent_bucket)
-    searchParams.set("talent_bucket", params.talent_bucket);
-  if (params.talent_category)
-    searchParams.set("talent_category", params.talent_category);
+  if (params.service_category)
+    searchParams.set("service_category", params.service_category);
+  if (params.industry_category)
+    searchParams.set("industry_category", params.industry_category);
+  if (params.job_title) searchParams.set("job_title", params.job_title);
   if (params.clearance_level)
     searchParams.set("clearance_level", params.clearance_level);
   if (params.location_state)
@@ -106,6 +112,7 @@ export async function listTalents(
     searchParams.set("skills", params.skills.join(","));
   if (params.certifications?.length)
     searchParams.set("certifications", params.certifications.join(","));
+  if (params.tags?.length) searchParams.set("tags", params.tags.join(","));
   if (params.search) searchParams.set("search", params.search);
   if (params.minYears !== undefined)
     searchParams.set("minYears", params.minYears.toString());
@@ -127,7 +134,7 @@ export async function getTalent(pk: string): Promise<TalentProfile> {
  * Get lookup data for dropdowns (skills, certifications, cities).
  */
 export async function getLookups(
-  include?: ("skills" | "certifications" | "cities")[],
+  include?: ("skills" | "certifications" | "job_titles" | "cities")[],
 ): Promise<LookupsResponse> {
   const query = include?.length ? `?include=${include.join(",")}` : "";
   return apiFetch<LookupsResponse>(`/lookups${query}`);
@@ -149,7 +156,7 @@ export async function getResumeUrl(
  */
 export interface UpdateTalentParams {
   status?: CandidateStatus;
-  bill_rate?: number | null;
+  requested_salary?: number | null;
   name?: string;
   contact?: {
     email?: string | null;
@@ -158,8 +165,9 @@ export interface UpdateTalentParams {
     github?: string | null;
   };
   summary?: string | null;
-  talent_bucket?: string;
-  talent_category?: string;
+  service_category?: string;
+  industry_category?: string;
+  job_title?: string;
   clearance_level?: string | null;
   skillsets?: { name: string; evidence?: string[] }[];
   certifications?: string[];
@@ -169,16 +177,22 @@ export interface UpdateTalentParams {
     state?: string | null;
   };
   years_of_experience?: number | null;
+  notes?: string;
+  tags?: string[];
 }
 
 export async function updateTalent(
   pk: string,
   updates: UpdateTalentParams,
-): Promise<void> {
-  await apiFetch(`/talents?pk=${encodeURIComponent(pk)}`, {
-    method: "PATCH",
-    body: JSON.stringify(updates),
-  });
+): Promise<TalentProfile> {
+  const result = await apiFetch<{ profile: TalentProfile }>(
+    `/talents?pk=${encodeURIComponent(pk)}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(updates),
+    },
+  );
+  return result.profile;
 }
 
 /**
@@ -186,6 +200,17 @@ export async function updateTalent(
  */
 export async function deleteTalent(pk: string): Promise<void> {
   await apiFetch(`/talents?pk=${encodeURIComponent(pk)}`, {
+    method: "DELETE",
+  });
+}
+
+/**
+ * Permanently delete a tag from the lookup table and remove it from all profiles.
+ */
+export async function deleteTag(
+  tag: string,
+): Promise<{ message: string; profiles_updated: number }> {
+  return apiFetch(`/tags?tag=${encodeURIComponent(tag)}`, {
     method: "DELETE",
   });
 }

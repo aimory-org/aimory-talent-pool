@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Upload, FileText, Image } from "lucide-react";
+import { Upload, FileText} from "lucide-react";
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -48,7 +48,7 @@ export function UploadModal({ isOpen, onClose, onUpload }: UploadModalProps) {
   };
 
   const isValidFile = (file: File) => {
-    const validTypes = ["application/pdf", "image/png"];
+    const validTypes = ["application/pdf", "application/docx"];
     return validTypes.includes(file.type);
   };
 
@@ -62,8 +62,8 @@ export function UploadModal({ isOpen, onClose, onUpload }: UploadModalProps) {
     if (file.type === "application/pdf") {
       return <FileText className="h-8 w-8 text-red-500" />;
     }
-    if (file.type === "image/png") {
-      return <Image className="h-8 w-8 text-blue-500" />;
+    if (file.type === "application/docx") {
+      return <FileText className="h-8 w-8 text-green-500" />;
     }
     return <Upload className="h-8 w-8 text-gray-500" />;
   };
@@ -87,7 +87,7 @@ export function UploadModal({ isOpen, onClose, onUpload }: UploadModalProps) {
                 Upload Resume
               </h2>
               <p className="text-sm text-muted-foreground mt-1">
-                Drop a PDF or Image file here, or click to browse
+                Drop a PDF or Docx file here, or click to browse
               </p>
             </div>
 
@@ -124,7 +124,7 @@ export function UploadModal({ isOpen, onClose, onUpload }: UploadModalProps) {
                     Click to browse or drag and drop
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    PDF or PNG files only
+                    PDF or DocX files only
                   </p>
                 </div>
               )}
@@ -134,7 +134,7 @@ export function UploadModal({ isOpen, onClose, onUpload }: UploadModalProps) {
             <input
               ref={fileInputRef}
               type="file"
-              accept=".pdf,.png"
+              accept=".pdf, .docx"
               onChange={handleFileSelect}
               className="hidden"
             />

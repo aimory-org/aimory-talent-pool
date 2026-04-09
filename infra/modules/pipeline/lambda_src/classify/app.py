@@ -1,8 +1,9 @@
-import os
 import io
+import os
 import re
-import zipfile
 import xml.etree.ElementTree as ET
+import zipfile
+
 import boto3
 
 try:

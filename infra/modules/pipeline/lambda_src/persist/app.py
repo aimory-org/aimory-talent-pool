@@ -8,23 +8,65 @@ TABLE_NAME = os.environ["TALENT_PROFILES_TABLE"]
 SKILLS_LOOKUP_TABLE = os.environ.get("SKILLS_LOOKUP_TABLE", "")
 CERTIFICATIONS_LOOKUP_TABLE = os.environ.get("CERTIFICATIONS_LOOKUP_TABLE", "")
 CITIES_LOOKUP_TABLE = os.environ.get("CITIES_LOOKUP_TABLE", "")
+JOB_TITLES_LOOKUP_TABLE = os.environ.get("JOB_TITLES_LOOKUP_TABLE", "")
+INDUSTRY_CATEGORIES_LOOKUP_TABLE = os.environ.get("INDUSTRY_CATEGORIES_LOOKUP_TABLE", "")
 
 dynamodb = boto3.resource("dynamodb")
 table = dynamodb.Table(TABLE_NAME)
 
 # State name to abbreviation mapping
 _STATE_ABBREVS = {
-    "alabama": "AL", "alaska": "AK", "arizona": "AZ", "arkansas": "AR", "california": "CA",
-    "colorado": "CO", "connecticut": "CT", "delaware": "DE", "florida": "FL", "georgia": "GA",
-    "hawaii": "HI", "idaho": "ID", "illinois": "IL", "indiana": "IN", "iowa": "IA",
-    "kansas": "KS", "kentucky": "KY", "louisiana": "LA", "maine": "ME", "maryland": "MD",
-    "massachusetts": "MA", "michigan": "MI", "minnesota": "MN", "mississippi": "MS",
-    "missouri": "MO", "montana": "MT", "nebraska": "NE", "nevada": "NV", "new hampshire": "NH",
-    "new jersey": "NJ", "new mexico": "NM", "new york": "NY", "north carolina": "NC",
-    "north dakota": "ND", "ohio": "OH", "oklahoma": "OK", "oregon": "OR", "pennsylvania": "PA",
-    "rhode island": "RI", "south carolina": "SC", "south dakota": "SD", "tennessee": "TN",
-    "texas": "TX", "utah": "UT", "vermont": "VT", "virginia": "VA", "washington": "WA",
-    "west virginia": "WV", "wisconsin": "WI", "wyoming": "WY", "washington dc": "DC",
+    "alabama": "AL",
+    "alaska": "AK",
+    "arizona": "AZ",
+    "arkansas": "AR",
+    "california": "CA",
+    "colorado": "CO",
+    "connecticut": "CT",
+    "delaware": "DE",
+    "florida": "FL",
+    "georgia": "GA",
+    "hawaii": "HI",
+    "idaho": "ID",
+    "illinois": "IL",
+    "indiana": "IN",
+    "iowa": "IA",
+    "kansas": "KS",
+    "kentucky": "KY",
+    "louisiana": "LA",
+    "maine": "ME",
+    "maryland": "MD",
+    "massachusetts": "MA",
+    "michigan": "MI",
+    "minnesota": "MN",
+    "mississippi": "MS",
+    "missouri": "MO",
+    "montana": "MT",
+    "nebraska": "NE",
+    "nevada": "NV",
+    "new hampshire": "NH",
+    "new jersey": "NJ",
+    "new mexico": "NM",
+    "new york": "NY",
+    "north carolina": "NC",
+    "north dakota": "ND",
+    "ohio": "OH",
+    "oklahoma": "OK",
+    "oregon": "OR",
+    "pennsylvania": "PA",
+    "rhode island": "RI",
+    "south carolina": "SC",
+    "south dakota": "SD",
+    "tennessee": "TN",
+    "texas": "TX",
+    "utah": "UT",
+    "vermont": "VT",
+    "virginia": "VA",
+    "washington": "WA",
+    "west virginia": "WV",
+    "wisconsin": "WI",
+    "wyoming": "WY",
+    "washington dc": "DC",
     "district of columbia": "DC",
 }
 _VALID_ABBREVS = set(_STATE_ABBREVS.values())
@@ -70,9 +112,9 @@ def _normalize_phone(phone: str) -> str:
     if not phone:
         return phone
     # Extract only digits
-    digits = ''.join(c for c in phone if c.isdigit())
+    digits = "".join(c for c in phone if c.isdigit())
     # Handle US numbers with country code
-    if len(digits) == 11 and digits.startswith('1'):
+    if len(digits) == 11 and digits.startswith("1"):
         digits = digits[1:]
     # Format as (XXX) XXX-XXXX if we have 10 digits
     if len(digits) == 10:
@@ -82,22 +124,115 @@ def _normalize_phone(phone: str) -> str:
 
 
 def _normalize_skill(skill: str) -> str:
-    """Normalize skill name - title case but preserve common acronyms."""
+    """Normalize skill names to canonical forms to prevent duplicates."""
     if not skill:
         return skill
     skill = skill.strip()
-    # Common tech acronyms to preserve
-    acronyms = {'AWS', 'GCP', 'API', 'REST', 'SQL', 'NoSQL', 'HTML', 'CSS', 'JSON', 'XML', 
-                'CI/CD', 'DevOps', 'AI', 'ML', 'NLP', 'ETL', 'SaaS', 'PaaS', 'IaaS', 'IAM',
-                'VPN', 'DNS', 'TCP', 'UDP', 'HTTP', 'HTTPS', 'SSH', 'SSL', 'TLS', 'OAuth',
-                'JWT', 'LDAP', 'AD', 'SSO', 'MFA', 'SIEM', 'SOC', 'NIST', 'ISO', 'PCI',
-                'HIPAA', 'SOX', 'GDPR', 'FedRAMP', 'FISMA', 'RMF', 'SCRUM', 'SAFe', 'PMI',
-                'ITIL', 'COBIT', 'TOGAF', 'UML', 'OOP', 'TDD', 'BDD', 'DDD', 'UI', 'UX'}
-    # Check if it's an acronym (all uppercase and short)
-    if skill.upper() in acronyms:
-        return skill.upper()
-    # Title case for regular skills
-    return skill.title()
+    # Check the canonical map (case-insensitive)
+    return _SKILL_CANONICAL_MAP.get(skill.lower(), skill)
+
+
+# Map of common skill variations -> canonical name.
+# Keys must be lowercase; values are the desired output.
+_SKILL_CANONICAL_MAP = {
+    # Agile variations
+    "agile methodologies": "Agile",
+    "agile methodology": "Agile",
+    "agile development": "Agile",
+    "agile project management": "Agile",
+    "agile/scrum": "Agile",
+    # Scrum variations
+    "scrum framework": "Scrum",
+    "scrum methodology": "Scrum",
+    "scrum master": "Scrum",
+    # Project Management variations
+    "project management skills": "Project Management",
+    "program management": "Program Management",
+    "pm": "Project Management",
+    # Data Analysis variations
+    "data analytics": "Data Analysis",
+    "data analytical skills": "Data Analysis",
+    # Microsoft Office variations
+    "ms office": "Microsoft Office",
+    "microsoft office suite": "Microsoft Office",
+    "office 365": "Microsoft 365",
+    "ms office suite": "Microsoft Office",
+    "microsoft office 365": "Microsoft 365",
+    # Excel variations
+    "ms excel": "Microsoft Excel",
+    "excel": "Microsoft Excel",
+    # Word variations
+    "ms word": "Microsoft Word",
+    "word": "Microsoft Word",
+    # PowerPoint variations
+    "ms powerpoint": "Microsoft PowerPoint",
+    "powerpoint": "Microsoft PowerPoint",
+    # Communication variations
+    "communication skills": "Communication",
+    "verbal communication": "Communication",
+    "written communication": "Communication",
+    "oral communication": "Communication",
+    # Leadership variations
+    "leadership skills": "Leadership",
+    "team leadership": "Leadership",
+    # Problem Solving variations
+    "problem solving skills": "Problem Solving",
+    "problem-solving": "Problem Solving",
+    "problem-solving skills": "Problem Solving",
+    # AWS variations
+    "amazon web services": "AWS",
+    "amazon web services (aws)": "AWS",
+    # JavaScript variations
+    "js": "JavaScript",
+    "javascript (js)": "JavaScript",
+    # TypeScript variations
+    "ts": "TypeScript",
+    # Python variations
+    "python 3": "Python",
+    "python3": "Python",
+    # SQL variations
+    "sql server": "SQL Server",
+    "ms sql server": "SQL Server",
+    "microsoft sql server": "SQL Server",
+    "mysql": "MySQL",
+    "postgres": "PostgreSQL",
+    "postgresql": "PostgreSQL",
+    # React variations
+    "reactjs": "React",
+    "react.js": "React",
+    # Node variations
+    "nodejs": "Node.js",
+    "node": "Node.js",
+    # CI/CD variations
+    "cicd": "CI/CD",
+    "ci / cd": "CI/CD",
+    "continuous integration/continuous deployment": "CI/CD",
+    # Kubernetes variations
+    "k8s": "Kubernetes",
+    # Docker variations
+    "docker containers": "Docker",
+    # .NET variations
+    "dotnet": ".NET",
+    ".net framework": ".NET",
+    ".net core": ".NET",
+    # Power BI variations
+    "powerbi": "Power BI",
+    "microsoft power bi": "Power BI",
+}
+
+
+def _normalize_certification(cert: str) -> str:
+    """Light normalization — Claude handles canonicalization via prompt."""
+    if not cert:
+        return cert
+    return cert.strip()
+
+
+def _normalize_job_title(job_title: str) -> str:
+    """Light normalization — Claude handles canonicalization via prompt."""
+    if not job_title:
+        return job_title
+    return job_title.strip()
 
 
 def _normalize_company(company: str) -> str:
@@ -112,54 +247,76 @@ def _normalize_profile(profile: dict) -> dict:
     # Normalize name
     if profile.get("name"):
         profile["name"] = _normalize_name(profile["name"])
-    
+
     # Normalize contact info
     if profile.get("contact"):
         if profile["contact"].get("email"):
             profile["contact"]["email"] = _normalize_email(profile["contact"]["email"])
         if profile["contact"].get("phone"):
             profile["contact"]["phone"] = _normalize_phone(profile["contact"]["phone"])
-    
+
     # Normalize location
     if profile.get("location"):
         if profile["location"].get("city"):
             profile["location"]["city"] = _normalize_city(profile["location"]["city"])
         if profile["location"].get("state"):
             profile["location"]["state"] = _normalize_state(profile["location"]["state"])
-    
-    # Normalize skills
+
+    # Deduplicate skills by normalized name
     if profile.get("skillsets"):
+        seen = {}
+        deduped = []
         for skill in profile["skillsets"]:
             if skill.get("name"):
                 skill["name"] = _normalize_skill(skill["name"])
-    
+                key = skill["name"].lower()
+                if key not in seen:
+                    seen[key] = True
+                    deduped.append(skill)
+        profile["skillsets"] = deduped
+
+    # Deduplicate certifications by normalized name
+    if profile.get("certifications"):
+        seen = {}
+        deduped = []
+        for cert in profile["certifications"]:
+            normalized = _normalize_certification(cert)
+            if normalized:
+                key = normalized.lower()
+                if key not in seen:
+                    seen[key] = True
+                    deduped.append(normalized)
+        profile["certifications"] = deduped
+
     # Normalize companies
     if profile.get("companies"):
         for company in profile["companies"]:
             if company.get("name"):
                 company["name"] = _normalize_company(company["name"])
-    
+
+    # Normalize job title
+    if profile.get("job_title"):
+        profile["job_title"] = _normalize_job_title(profile["job_title"])
+
+    # Normalize industry category
+    if profile.get("industry_category"):
+        profile["industry_category"] = profile["industry_category"].strip()
+
     return profile
 
 
-_TALENT_BUCKETS = {
-    "IT Resources",
-    "Accounting and Finance Resources",
-    "HR Resources",
-    "Business Development/Sales Resources"
-}
-_TALENT_CATEGORIES = {
-    "Accounting", "Finance", "Data Analysis", "Forensics",
-    "Developer", "Network Engineer", "Database Analyst", "Cloud Expert", "Project Manager",
-    "HR",
-    "Business Development", "Sales"
+_SERVICE_CATEGORIES = {
+    "IT",
+    "Accounting",
+    "FSP Headhunting",
+    "Cybersecurity",
 }
 _CANDIDATE_STATUSES = {
     "Potential Candidate",
     "Active Candidate",
     "Placed Candidate",
     "Stale Candidate",
-    "Do Not Contact"
+    "Do Not Contact",
 }
 
 
@@ -250,15 +407,16 @@ def _validate_profile(profile):
         "name",
         "contact",
         "summary",
-        "talent_bucket",
-        "talent_category",
+        "service_category",
+        "industry_category",
+        "job_title",
         "skillsets",
         "years_of_experience",
         "clearance_level",
         "certifications",
         "companies",
         "location",
-        "bill_rate",
+        "requested_salary",
     }
     # Allow is_resume field from llm_extract (used by Step Function choice)
     allowed = required | {"is_resume"}
@@ -266,15 +424,14 @@ def _validate_profile(profile):
 
     _validate_string(profile["name"], "name", min_len=1)
     _validate_string(profile["summary"], "summary", min_len=1)
-    
-    bucket = profile["talent_bucket"]
-    if bucket is not None and bucket not in _TALENT_BUCKETS:
-        raise ValueError(f"talent_bucket invalid: {bucket}")
-    
-    category = profile["talent_category"]
-    if category is not None and category not in _TALENT_CATEGORIES:
-        raise ValueError(f"talent_category invalid: {category}")
-    
+
+    svc = profile["service_category"]
+    if svc is not None and svc not in _SERVICE_CATEGORIES:
+        raise ValueError(f"service_category invalid: {svc}")
+
+    _validate_string(profile["industry_category"], "industry_category")
+    _validate_string(profile["job_title"], "job_title")
+
     _validate_contact(profile["contact"])
 
     years = profile["years_of_experience"]
@@ -297,10 +454,10 @@ def _validate_profile(profile):
         _validate_company(company, i)
 
     _validate_location(profile["location"])
-    
-    bill_rate = profile["bill_rate"]
-    if bill_rate is not None and not _is_number(bill_rate):
-        raise ValueError("bill_rate must be a number or null")
+
+    salary = profile["requested_salary"]
+    if salary is not None and not _is_number(salary):
+        raise ValueError("requested_salary must be a number or null")
 
 
 def _to_decimal(value):
@@ -316,42 +473,64 @@ def _to_decimal(value):
 
 
 def _populate_lookup_tables(profile):
-    """Populate lookup tables with skills, certifications, and cities for dropdown menus."""
+    """Populate lookup tables with skills, certifications, cities, and job titles for dropdown menus."""
     now = datetime.now(timezone.utc).isoformat()
-    
-    # Populate skills lookup (using already-normalized profile data)
-    if SKILLS_LOOKUP_TABLE and profile["skillsets"]:
+
+    # Populate skills lookup
+    if SKILLS_LOOKUP_TABLE and profile.get("skillsets"):
         skills_table = dynamodb.Table(SKILLS_LOOKUP_TABLE)
         for skill in profile["skillsets"]:
             skill_name = skill.get("name", "").strip()
             if skill_name:
-                skills_table.put_item(Item={
-                    "skill": skill_name,
-                    "updated_at": now
-                })
-    
+                skills_table.put_item(Item={"skill": skill_name, "updated_at": now})
+
     # Populate certifications lookup
-    if CERTIFICATIONS_LOOKUP_TABLE and profile["certifications"]:
+    if CERTIFICATIONS_LOOKUP_TABLE and profile.get("certifications"):
         certs_table = dynamodb.Table(CERTIFICATIONS_LOOKUP_TABLE)
         for cert in profile["certifications"]:
             cert_name = cert.strip() if cert else ""
             if cert_name:
-                certs_table.put_item(Item={
-                    "certification": cert_name,
-                    "updated_at": now
-                })
-    
-    # Populate cities lookup (using already-normalized profile data)
-    if CITIES_LOOKUP_TABLE and profile["location"]:
+                certs_table.put_item(Item={"certification": cert_name, "updated_at": now})
+
+    # Populate cities lookup
+    if CITIES_LOOKUP_TABLE and profile.get("location"):
         city = profile["location"].get("city", "")
         state = profile["location"].get("state", "")
         if city and state:
             cities_table = dynamodb.Table(CITIES_LOOKUP_TABLE)
-            cities_table.put_item(Item={
-                "city": city,
-                "state": state,
-                "updated_at": now
-            })
+            cities_table.put_item(Item={"city": city, "state": state, "updated_at": now})
+
+    # Populate job titles lookup
+    if JOB_TITLES_LOOKUP_TABLE and profile.get("job_title"):
+        job_title = profile["job_title"].strip()
+        if job_title:
+            titles_table = dynamodb.Table(JOB_TITLES_LOOKUP_TABLE)
+            titles_table.put_item(Item={"job_title": job_title, "updated_at": now})
+
+    # Populate industry categories lookup
+    if INDUSTRY_CATEGORIES_LOOKUP_TABLE and profile.get("industry_category"):
+        industry = profile["industry_category"].strip()
+        if industry:
+            industries_table = dynamodb.Table(INDUSTRY_CATEGORIES_LOOKUP_TABLE)
+            industries_table.put_item(Item={"industry_category": industry, "updated_at": now})
+
+
+def _check_duplicate(name_lower, email, current_pk):
+    """Check if a candidate with the same name+email already exists. Returns existing pk or None."""
+    if not name_lower or not email:
+        return None
+    try:
+        response = table.scan(
+            FilterExpression="name_lower = :name AND contact.email = :email AND pk <> :self",
+            ExpressionAttributeValues={":name": name_lower, ":email": email, ":self": current_pk},
+            ProjectionExpression="pk",
+            Limit=1,
+        )
+        items = response.get("Items", [])
+        return items[0]["pk"] if items else None
+    except Exception:
+        # Don't fail the pipeline over duplicate detection
+        return None
 
 
 def handler(event, context):
@@ -360,7 +539,7 @@ def handler(event, context):
         raise ValueError("Missing extracted profile in event")
 
     _validate_profile(profile)
-    
+
     # Normalize profile data for consistency
     profile = _normalize_profile(profile)
 
@@ -373,17 +552,47 @@ def handler(event, context):
     now = datetime.now(timezone.utc).isoformat()
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
-    # Denormalized fields for GSI queries and filtering
-    # GSI keys cannot be NULL, so use placeholder values
+    # Get resume text from the normalize step (for full-text search)
+    resume_text = ""
+    if event.get("normalized") and event["normalized"].get("text"):
+        resume_text = event["normalized"]["text"]
+
+    # Denormalized fields for filtering
     name_lower = profile["name"].lower() if profile["name"] else "unknown"
-    location_state = profile["location"]["state"] if profile["location"] and profile["location"].get("state") else "Unknown"
+    location_state = (
+        profile["location"]["state"] if profile["location"] and profile["location"].get("state") else "Unknown"
+    )
     skill_names = ",".join(s["name"] for s in profile["skillsets"]) if profile["skillsets"] else ""
     cert_names = ",".join(profile["certifications"]) if profile["certifications"] else ""
-    
-    # GSI key fields - use "None" placeholder for null values
+
+    # Use "Unknown" for null classification fields (GSI keys can't be NULL)
     clearance_level = profile["clearance_level"] if profile["clearance_level"] else "None"
-    talent_bucket = profile["talent_bucket"] if profile["talent_bucket"] else "Unclassified"
-    talent_category = profile["talent_category"] if profile["talent_category"] else "Unclassified"
+    service_category = profile["service_category"] if profile["service_category"] else "Unknown"
+    industry_category = profile["industry_category"] if profile["industry_category"] else "Unknown"
+    job_title = profile["job_title"] if profile["job_title"] else "Unknown"
+
+    # Check for duplicate candidates (same name + email)
+    email = profile["contact"].get("email") if profile.get("contact") else None
+    existing_pk = _check_duplicate(name_lower, email, pk)
+
+    # Preserve recruiter-curated fields if the record already exists
+    existing_status = "Potential Candidate"
+    existing_notes = ""
+    existing_tags = []
+    existing_date_received = today
+    try:
+        existing = table.get_item(
+            Key={"pk": pk},
+            ProjectionExpression="#s, notes, tags, date_received",
+            ExpressionAttributeNames={"#s": "status"},
+        ).get("Item")
+        if existing:
+            existing_status = existing.get("status", "Potential Candidate")
+            existing_notes = existing.get("notes", "")
+            existing_tags = existing.get("tags", [])
+            existing_date_received = existing.get("date_received", today)
+    except Exception:
+        pass  # If lookup fails, use defaults
 
     item = {
         "pk": pk,
@@ -393,8 +602,9 @@ def handler(event, context):
         "name_lower": name_lower,
         "contact": profile["contact"],
         "summary": profile["summary"],
-        "talent_bucket": talent_bucket,
-        "talent_category": talent_category,
+        "service_category": service_category,
+        "industry_category": industry_category,
+        "job_title": job_title,
         "skillsets": profile["skillsets"],
         "skill_names": skill_names,
         "years_of_experience": profile["years_of_experience"],
@@ -404,11 +614,18 @@ def handler(event, context):
         "companies": profile["companies"],
         "location": profile["location"],
         "location_state": location_state,
-        "bill_rate": profile["bill_rate"],
-        "status": "Potential Candidate",
-        "date_received": today,
+        "requested_salary": profile["requested_salary"],
+        "resume_text": resume_text,
+        "notes": existing_notes,
+        "tags": existing_tags,
+        "status": existing_status,
+        "date_received": existing_date_received,
         "updated_at": now,
     }
+
+    # If duplicate found, flag it but still create the new record
+    if existing_pk:
+        item["possible_duplicate_of"] = existing_pk
 
     table.put_item(Item=_to_decimal(item))
 
@@ -420,4 +637,5 @@ def handler(event, context):
         "step": "persist",
         "pk": pk,
         "updated_at": now,
+        "possible_duplicate_of": existing_pk,
     }

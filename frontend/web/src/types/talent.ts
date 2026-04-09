@@ -12,8 +12,9 @@ export interface TalentProfile {
     github: string | null;
   };
   summary: string | null;
-  talent_bucket: TalentBucket;
-  talent_category: TalentCategory;
+  service_category: string;
+  industry_category: string;
+  job_title: string;
   skillsets: { name: string; evidence: string[] }[];
   skill_names: string; // comma-separated for search
   years_of_experience: number | null;
@@ -26,7 +27,11 @@ export interface TalentProfile {
     state: string | null;
   };
   location_state: string;
-  bill_rate: number | null;
+  requested_salary: number | null;
+  notes: string;
+  tags: string[];
+  resume_text: string;
+  possible_duplicate_of?: string;
   status: CandidateStatus;
   date_received: string; // ISO date string
   updated_at: string;
@@ -34,6 +39,7 @@ export interface TalentProfile {
   _highlight?: {
     name?: string[];
     summary?: string[];
+    resume_text?: string[];
   };
 }
 
@@ -44,27 +50,12 @@ export type CandidateStatus =
   | "Stale Candidate"
   | "Do Not Contact";
 
-export type TalentBucket =
-  | "IT Resources"
-  | "Accounting and Finance Resources"
-  | "HR Resources"
-  | "Business Development/Sales Resources"
-  | "Unclassified";
-
-export type TalentCategory =
+export type ServiceCategory =
+  | "IT"
   | "Accounting"
-  | "Finance"
-  | "Data Analysis"
-  | "Forensics"
-  | "Developer"
-  | "Network Engineer"
-  | "Database Analyst"
-  | "Cloud Expert"
-  | "Project Manager"
-  | "HR"
-  | "Business Development"
-  | "Sales"
-  | "Unclassified";
+  | "FSP Headhunting"
+  | "Cybersecurity"
+  | "Unknown";
 
 export type ClearanceLevel =
   | "Secret"
@@ -83,31 +74,12 @@ export const CANDIDATE_STATUSES: { value: CandidateStatus; label: string }[] = [
   { value: "Stale Candidate", label: "Stale Candidate" },
 ];
 
-export const TALENT_BUCKETS: { value: TalentBucket; label: string }[] = [
-  { value: "Accounting and Finance Resources", label: "Accounting & Finance" },
-  {
-    value: "Business Development/Sales Resources",
-    label: "Business Dev/Sales",
-  },
-  { value: "HR Resources", label: "HR Resources" },
-  { value: "IT Resources", label: "IT Resources" },
-  { value: "Unclassified", label: "Unclassified" },
-];
-
-export const TALENT_CATEGORIES: { value: TalentCategory; label: string }[] = [
+export const SERVICE_CATEGORIES: { value: ServiceCategory; label: string }[] = [
+  { value: "IT", label: "IT" },
   { value: "Accounting", label: "Accounting" },
-  { value: "Business Development", label: "Business Development" },
-  { value: "Cloud Expert", label: "Cloud Expert" },
-  { value: "Data Analysis", label: "Data Analysis" },
-  { value: "Database Analyst", label: "Database Analyst" },
-  { value: "Developer", label: "Developer" },
-  { value: "Finance", label: "Finance" },
-  { value: "Forensics", label: "Forensics" },
-  { value: "HR", label: "HR" },
-  { value: "Network Engineer", label: "Network Engineer" },
-  { value: "Project Manager", label: "Project Manager" },
-  { value: "Sales", label: "Sales" },
-  { value: "Unclassified", label: "Unclassified" },
+  { value: "FSP Headhunting", label: "FSP Headhunting" },
+  { value: "Cybersecurity", label: "Cybersecurity" },
+  { value: "Unknown", label: "Unknown" },
 ];
 
 export const CLEARANCE_LEVELS: { value: string; label: string }[] = [

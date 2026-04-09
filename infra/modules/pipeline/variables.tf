@@ -81,8 +81,28 @@ variable "cities_lookup_table_arn" {
   description = "DynamoDB table ARN for cities lookup"
 }
 
+variable "job_titles_lookup_table_name" {
+  type        = string
+  description = "DynamoDB table name for job titles lookup"
+}
+
+variable "job_titles_lookup_table_arn" {
+  type        = string
+  description = "DynamoDB table ARN for job titles lookup"
+}
+
+variable "industry_categories_lookup_table_name" {
+  type        = string
+  description = "DynamoDB table name for industry categories lookup"
+}
+
+variable "industry_categories_lookup_table_arn" {
+  type        = string
+  description = "DynamoDB table ARN for industry categories lookup"
+}
+
 variable "bedrock_model_id" {
   type        = string
   description = "Bedrock model ID used by the llm_extract Lambda for resume parsing"
-  default     = "anthropic.claude-3-5-sonnet-20240620-v1:0"
+  default     = "us.anthropic.claude-sonnet-4-20250514-v1:0"
 }

@@ -21,22 +21,27 @@ A modern resume ingestion and talent management platform for AIMORY. The system 
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌──────────────┐     ┌──────────────┐     ┌──────────────────────────────┐ │
-│  │   Frontend   │────▶│  API Gateway │────▶│        DynamoDB Tables       │ │
-│  │  React SPA   │     │  + Cognito   │     │  (talent_profiles, lookups)  │ │
+│  │   Frontend   │────▶│  API Gateway │────▶│       OpenSearch Domain      │ │
+│  │  React SPA   │     │  + Cognito   │     │  (full-text search + filter) │ │
 │  └──────────────┘     └──────────────┘     └──────────────────────────────┘ │
 │         │                                              ▲                    │
-│         │                                              │                    │
-│         ▼                                              │                    │
+│         │                                              │  DynamoDB Streams  │
+│         ▼                                              │  (real-time sync)  │
 │  ┌──────────────┐     ┌──────────────────────────────────────────────────┐ │
-│  │  CloudFront  │     │              Resume Processing Pipeline           │ │
-│  │   + S3 Site  │     │  S3 Upload → Starter → Step Functions → Persist  │ │
-│  └──────────────┘     │      (Textract + Bedrock LLM Enrichment)         │ │
+│  │  CloudFront  │     │        DynamoDB (talent_profiles, lookups)        │ │
+│  │   + S3 Site  │     │                       ▲                          │ │
+│  └──────────────┘     │                       │                          │ │
+│                       │       Resume Processing Pipeline                 │ │
+│                       │  S3 Upload → Starter → Step Functions → Persist  │ │
+│                       │      (Textract + Bedrock LLM Enrichment)         │ │
 │                       └──────────────────────────────────────────────────┘ │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Resume Flow:** Upload PDF to S3 `raw/` → triggers Starter Lambda → Step Functions orchestration → Textract OCR → LLM extraction (Claude via Bedrock) → normalized profile persisted to DynamoDB
+**Resume Flow:** Upload PDF to S3 `raw/` → triggers Starter Lambda → Step Functions orchestration → Textract OCR → LLM extraction (Claude via Bedrock) → normalized profile persisted to DynamoDB → DynamoDB Streams syncs to OpenSearch in real time
+
+**Search Flow:** `GET /talents` queries OpenSearch with prefix matching on name, fuzzy matching (edit distance 1) on summary, and exact-term filters on skills, certifications, clearance, location, etc. Results include highlight fragments.
 
 **User Flow:** Sign in via Microsoft Entra ID (federated through Cognito) → browse/search/filter talent → view details → download original resumes
 
@@ -105,6 +110,7 @@ terraform apply
 | **API** | API Gateway (HTTP API) + Lambda |
 | **Processing** | Step Functions, Lambda (Python 3.12), Textract, Bedrock (Claude) |
 | **Storage** | S3 (resumes), DynamoDB (profiles + lookups), SSM Parameter Store |
+| **Search** | OpenSearch 2.11 (real-time sync via DynamoDB Streams) |
 | **Infrastructure** | Terraform, CloudFront, IAM |
 
 ## Contributing

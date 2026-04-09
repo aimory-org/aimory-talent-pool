@@ -43,12 +43,16 @@ module "pipeline" {
   talent_profiles_table_name = module.storage.talent_profiles_table_name
   talent_profiles_table_arn  = module.storage.talent_profiles_table_arn
 
-  skills_lookup_table_name         = module.storage.skills_lookup_table_name
-  skills_lookup_table_arn          = module.storage.skills_lookup_table_arn
-  certifications_lookup_table_name = module.storage.certifications_lookup_table_name
-  certifications_lookup_table_arn  = module.storage.certifications_lookup_table_arn
-  cities_lookup_table_name         = module.storage.cities_lookup_table_name
-  cities_lookup_table_arn          = module.storage.cities_lookup_table_arn
+  skills_lookup_table_name              = module.storage.skills_lookup_table_name
+  skills_lookup_table_arn               = module.storage.skills_lookup_table_arn
+  certifications_lookup_table_name      = module.storage.certifications_lookup_table_name
+  certifications_lookup_table_arn       = module.storage.certifications_lookup_table_arn
+  cities_lookup_table_name              = module.storage.cities_lookup_table_name
+  cities_lookup_table_arn               = module.storage.cities_lookup_table_arn
+  job_titles_lookup_table_name          = module.storage.job_titles_lookup_table_name
+  job_titles_lookup_table_arn           = module.storage.job_titles_lookup_table_arn
+  industry_categories_lookup_table_name = module.storage.industry_categories_lookup_table_name
+  industry_categories_lookup_table_arn  = module.storage.industry_categories_lookup_table_arn
 
   bedrock_model_id = var.bedrock_model_id
 }
@@ -72,12 +76,19 @@ module "api" {
   opensearch_domain_arn = module.storage.opensearch_domain_arn
   opensearch_layer_arn  = module.storage.opensearch_layer_arn
 
-  skills_lookup_table_name         = module.storage.skills_lookup_table_name
-  skills_lookup_table_arn          = module.storage.skills_lookup_table_arn
-  certifications_lookup_table_name = module.storage.certifications_lookup_table_name
-  certifications_lookup_table_arn  = module.storage.certifications_lookup_table_arn
-  cities_lookup_table_name         = module.storage.cities_lookup_table_name
-  cities_lookup_table_arn          = module.storage.cities_lookup_table_arn
+  skills_lookup_table_name              = module.storage.skills_lookup_table_name
+  skills_lookup_table_arn               = module.storage.skills_lookup_table_arn
+  certifications_lookup_table_name      = module.storage.certifications_lookup_table_name
+  certifications_lookup_table_arn       = module.storage.certifications_lookup_table_arn
+  cities_lookup_table_name              = module.storage.cities_lookup_table_name
+  cities_lookup_table_arn               = module.storage.cities_lookup_table_arn
+  job_titles_lookup_table_name          = module.storage.job_titles_lookup_table_name
+  job_titles_lookup_table_arn           = module.storage.job_titles_lookup_table_arn
+  industry_categories_lookup_table_name = module.storage.industry_categories_lookup_table_name
+  industry_categories_lookup_table_arn  = module.storage.industry_categories_lookup_table_arn
+
+  tags_lookup_table_name = module.storage.tags_lookup_table_name
+  tags_lookup_table_arn  = module.storage.tags_lookup_table_arn
 
   resume_bucket_name = module.storage.resume_bucket_name
   resume_bucket_arn  = module.storage.resume_bucket_arn
@@ -100,5 +111,16 @@ module "jobs" {
 
   talent_profiles_table_name = module.storage.talent_profiles_table_name
   talent_profiles_table_arn  = module.storage.talent_profiles_table_arn
+
+  skills_lookup_table_name              = module.storage.skills_lookup_table_name
+  skills_lookup_table_arn               = module.storage.skills_lookup_table_arn
+  certifications_lookup_table_name      = module.storage.certifications_lookup_table_name
+  certifications_lookup_table_arn       = module.storage.certifications_lookup_table_arn
+  job_titles_lookup_table_name          = module.storage.job_titles_lookup_table_name
+  job_titles_lookup_table_arn           = module.storage.job_titles_lookup_table_arn
+  industry_categories_lookup_table_name = module.storage.industry_categories_lookup_table_name
+  industry_categories_lookup_table_arn  = module.storage.industry_categories_lookup_table_arn
+
+  bedrock_model_id = var.bedrock_model_id
 }
 

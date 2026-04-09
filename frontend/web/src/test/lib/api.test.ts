@@ -137,13 +137,13 @@ describe("API Client", () => {
 
       await updateTalent("bucket1#resume1.pdf", {
         status: "Active Candidate",
-        bill_rate: 200,
+        requested_salary: 200000,
         summary: "Updated summary",
       });
 
       expect(capturedBody).toEqual({
         status: "Active Candidate",
-        bill_rate: 200,
+        requested_salary: 200000,
         summary: "Updated summary",
       });
     });

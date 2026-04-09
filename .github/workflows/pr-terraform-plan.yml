@@ -22,7 +22,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write   # needed to push auto-fix commits back to the PR branch
   pull-requests: write
 
 concurrency:
@@ -50,6 +50,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -78,6 +81,16 @@ jobs:
           done
 
       # ── Terraform checks ──────────────────────────────────────────────────
+      - name: Auto-fix Terraform formatting
+        run: |
+          terraform fmt -recursive infra
+          if ! git diff --quiet; then
+            git config user.name  "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git commit -am "style: terraform fmt [skip ci]"
+            git push
+          fi
+
       - name: Terraform Format Check
         id: fmt
         run: terraform fmt -check -recursive -diff

@@ -1,7 +1,7 @@
 import json
 import os
-import time
 import re
+
 import boto3
 from botocore.config import Config
 
@@ -11,16 +11,19 @@ BUCKET = os.environ["RESUME_BUCKET"]
 API_KEY = os.environ["PRESIGN_API_KEY"]
 PREFIX = os.environ.get("RESUME_PREFIX", "raw/onedrive")
 
+
 def _sanitize_filename(name: str) -> str:
     name = (name or "resume.pdf").strip()
     name = re.sub(r"[^\w.\- ()]", "_", name)
     name = name.replace("..", ".")
     return name
 
+
 def _sanitize_meta(v: str, max_len=200) -> str:
     v = (v or "").strip()
     v = re.sub(r"[\r\n\t]", " ", v)
     return v[:max_len]
+
 
 def handler(event, context):
     headers = {k.lower(): v for k, v in (event.get("headers") or {}).items()}
@@ -50,9 +53,9 @@ def handler(event, context):
             "Bucket": BUCKET,
             "Key": key,
             "ContentType": content_type,
-            "Metadata": meta,  
+            "Metadata": meta,
         },
-        ExpiresIn=300,          
+        ExpiresIn=300,
     )
 
     return {

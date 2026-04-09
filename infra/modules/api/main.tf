@@ -118,7 +118,9 @@ resource "aws_iam_role_policy" "api_dynamodb_read" {
           var.skills_lookup_table_arn,
           var.certifications_lookup_table_arn,
           var.cities_lookup_table_arn,
-          "${var.cities_lookup_table_arn}/index/*"
+          var.job_titles_lookup_table_arn,
+          var.industry_categories_lookup_table_arn,
+          var.tags_lookup_table_arn
         ]
       }
     ]
@@ -140,6 +142,22 @@ resource "aws_iam_role_policy" "api_dynamodb_write" {
         "dynamodb:DeleteItem"
       ]
       Resource = var.talent_profiles_table_arn
+      },
+      {
+        Sid    = "WriteLookupTables"
+        Effect = "Allow"
+        Action = [
+          "dynamodb:PutItem",
+          "dynamodb:DeleteItem"
+        ]
+        Resource = [
+          var.skills_lookup_table_arn,
+          var.certifications_lookup_table_arn,
+          var.cities_lookup_table_arn,
+          var.job_titles_lookup_table_arn,
+          var.industry_categories_lookup_table_arn,
+          var.tags_lookup_table_arn
+        ]
     }]
   })
 }

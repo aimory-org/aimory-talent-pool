@@ -19,8 +19,9 @@ export const mockTalents: TalentProfile[] = [
     },
     summary:
       "Experienced software engineer with 10 years in full-stack development",
-    talent_bucket: "IT Resources",
-    talent_category: "Developer",
+    service_category: "IT",
+    industry_category: "Technology",
+    job_title: "Senior Software Engineer",
     skillsets: [
       { name: "TypeScript", evidence: ["5 years experience"] },
       { name: "React", evidence: ["Lead frontend developer"] },
@@ -35,7 +36,10 @@ export const mockTalents: TalentProfile[] = [
     ],
     location: { city: "New York", state: "NY" },
     location_state: "NY",
-    bill_rate: 150,
+    requested_salary: 150000,
+    notes: "",
+    tags: ["senior", "full-stack"],
+    resume_text: "",
     status: "Active Candidate",
     date_received: "2024-01-15T00:00:00Z",
     updated_at: "2024-06-01T12:00:00Z",
@@ -53,8 +57,9 @@ export const mockTalents: TalentProfile[] = [
       github: null,
     },
     summary: "Project manager with government contracting experience",
-    talent_bucket: "Business Development/Sales Resources",
-    talent_category: "Project Manager",
+    service_category: "FSP Headhunting",
+    industry_category: "Government",
+    job_title: "Project Manager",
     skillsets: [{ name: "Agile", evidence: ["Scrum Master certified"] }],
     skill_names: "Agile",
     years_of_experience: 8,
@@ -64,7 +69,10 @@ export const mockTalents: TalentProfile[] = [
     companies: [{ name: "Gov Solutions", evidence: ["PM 2018-2024"] }],
     location: { city: "Washington", state: "DC" },
     location_state: "DC",
-    bill_rate: 175,
+    requested_salary: 175000,
+    notes: "",
+    tags: [],
+    resume_text: "",
     status: "Potential Candidate",
     date_received: "2024-02-20T00:00:00Z",
     updated_at: "2024-05-15T10:30:00Z",
@@ -82,8 +90,9 @@ export const mockTalents: TalentProfile[] = [
       github: null,
     },
     summary: "Accountant with CPA certification",
-    talent_bucket: "Accounting and Finance Resources",
-    talent_category: "Accounting",
+    service_category: "Accounting",
+    industry_category: "Financial Services",
+    job_title: "Senior Accountant",
     skillsets: [{ name: "QuickBooks", evidence: ["10+ years"] }],
     skill_names: "QuickBooks",
     years_of_experience: 15,
@@ -93,7 +102,10 @@ export const mockTalents: TalentProfile[] = [
     companies: [{ name: "Finance Inc", evidence: ["Senior Accountant"] }],
     location: { city: "Chicago", state: "IL" },
     location_state: "IL",
-    bill_rate: 100,
+    requested_salary: 100000,
+    notes: "",
+    tags: [],
+    resume_text: "",
     status: "Placed Candidate",
     date_received: "2023-11-01T00:00:00Z",
     updated_at: "2024-03-10T08:00:00Z",
@@ -103,11 +115,24 @@ export const mockTalents: TalentProfile[] = [
 export const mockLookups = {
   skills: ["TypeScript", "React", "Python", "Java", "Agile", "QuickBooks"],
   certifications: ["AWS Solutions Architect", "PMP", "CSM", "CPA", "CISSP"],
+  job_titles: [
+    "Senior Software Engineer",
+    "Project Manager",
+    "Senior Accountant",
+  ],
   cities: [
     { city: "New York", state: "NY" },
     { city: "Washington", state: "DC" },
     { city: "Chicago", state: "IL" },
     { city: "Los Angeles", state: "CA" },
+  ],
+  industry_categories: [
+    "HR",
+    "Accounting",
+    "Finance",
+    "IT Engineering",
+    "Manufacturing",
+    "Federal Government",
   ],
 };
 
@@ -124,9 +149,9 @@ export const handlers = [
       filtered = filtered.filter((t) => t.status === status);
     }
 
-    const talentBucket = url.searchParams.get("talent_bucket");
-    if (talentBucket) {
-      filtered = filtered.filter((t) => t.talent_bucket === talentBucket);
+    const serviceCategory = url.searchParams.get("service_category");
+    if (serviceCategory) {
+      filtered = filtered.filter((t) => t.service_category === serviceCategory);
     }
 
     const locationState = url.searchParams.get("location_state");
@@ -218,6 +243,10 @@ export const handlers = [
       if (fields.includes("skills")) response.skills = mockLookups.skills;
       if (fields.includes("certifications"))
         response.certifications = mockLookups.certifications;
+      if (fields.includes("job_titles"))
+        response.job_titles = mockLookups.job_titles;
+      if (fields.includes("industry_categories"))
+        response.industry_categories = mockLookups.industry_categories;
       if (fields.includes("cities")) response.cities = mockLookups.cities;
       return HttpResponse.json(response);
     }

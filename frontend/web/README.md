@@ -143,8 +143,9 @@ Hot module replacement (HMR) is enabled — changes appear instantly without pag
 The main feature component displaying a searchable, filterable table of talent profiles.
 
 **Features:**
-- Full-text search across names, skills, certifications
-- Filter by status, talent bucket, category, clearance level, location
+- Full-text search powered by OpenSearch (prefix matching on name, fuzzy matching on summary with edit distance 1)
+- Search result highlighting — matched terms shown with yellow `<mark>` tags
+- Filter by status, talent bucket, category, clearance level, location, skills, certifications
 - Sortable columns
 - Click row to open detail panel
 - Update candidate status inline
@@ -195,7 +196,7 @@ All requests go through `src/lib/api.ts` which:
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/talents` | List/search profiles |
+| GET | `/talents` | List/search profiles (OpenSearch-backed; supports prefix search, fuzzy matching, and multi-dimension filters with highlight fragments) |
 | GET | `/talents/{pk}` | Get single profile |
 | PATCH | `/talents/{pk}` | Update profile fields |
 | DELETE | `/talents/{pk}` | Remove profile |
