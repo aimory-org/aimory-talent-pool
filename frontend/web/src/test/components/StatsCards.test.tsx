@@ -80,9 +80,15 @@ describe("StatsCards", () => {
   it("has correct color coding for each card type", () => {
     const { container } = render(<StatsCards stats={defaultStats} />);
 
-    // Check for presence of color classes
-    expect(container.querySelector(".bg-emerald-500\\/10")).toBeInTheDocument(); // Potential
-    expect(container.querySelector(".bg-blue-500\\/10")).toBeInTheDocument(); // Active
-    expect(container.querySelector(".bg-green-500\\/10")).toBeInTheDocument(); // Placed
+    // Check for presence of color classes using attribute contains selector
+    expect(
+      container.querySelector("[class*='from-emerald-500']"),
+    ).toBeInTheDocument(); // Potential
+    expect(
+      container.querySelector("[class*='from-indigo-500']"),
+    ).toBeInTheDocument(); // Active
+    expect(
+      container.querySelector("[class*='from-violet-500']"),
+    ).toBeInTheDocument(); // Placed
   });
 });
