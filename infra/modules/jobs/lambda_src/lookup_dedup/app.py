@@ -23,6 +23,7 @@ SKILLS_TABLE = os.environ.get("SKILLS_LOOKUP_TABLE", "")
 CERTS_TABLE = os.environ.get("CERTIFICATIONS_LOOKUP_TABLE", "")
 JOB_TITLES_TABLE = os.environ.get("JOB_TITLES_LOOKUP_TABLE", "")
 INDUSTRY_CAT_TABLE = os.environ.get("INDUSTRY_CATEGORIES_LOOKUP_TABLE", "")
+CITIES_TABLE = os.environ.get("CITIES_LOOKUP_TABLE", "")
 BEDROCK_MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-20250514-v1:0")
 
 dynamodb = boto3.resource("dynamodb")
@@ -143,6 +144,30 @@ If nothing to rename or remove, use empty values: {{"rename": {{}}, "remove": []
 Current certifications list ({count} items):
 {items_json}"""
 
+CITIES_DEDUP_PROMPT = """You are a data quality assistant for a talent/recruiting platform.
+Given this list of city/state pairs extracted from resumes, identify groups of duplicates
+or near-duplicates that refer to the SAME city.
+
+For each group, pick ONE canonical spelling.
+
+Return ONLY a JSON object with a "rename" key where:
+- Keys are the duplicate "city, state" strings that should be RENAMED
+- Values are the canonical "city, state" string each should be renamed to
+
+If no duplicates exist, return: {{"rename": {{}}}}
+
+Rules:
+- Fix misspellings: "Washingon, DC" → "Washington, DC"
+- Normalize case: "arlington, VA" → "Arlington, VA"
+- Merge equivalent names: "DC, DC" → "Washington, DC"
+- State codes must stay as-is (two-letter abbreviations)
+- DO NOT merge genuinely different cities (e.g., "Arlington, VA" and "Arlington, TX" are DIFFERENT)
+- The canonical name itself must NOT appear as a key
+- Format: "City, ST" (city name followed by comma, space, two-letter state code)
+
+Current cities list ({count} items):
+{items_json}"""
+
 JOB_TITLES_DEDUP_PROMPT = """You are a data quality assistant for a talent/recruiting platform.
 Given this list of job titles extracted from resumes, identify groups of duplicates or near-duplicates.
 
@@ -186,6 +211,32 @@ def _scan_lookup_table(table_name, key_attr):
     return sorted(set(items))
 
 
+def _scan_cities_table(table_name):
+    """Scan the cities lookup table and return 'city, state' strings."""
+    table = dynamodb.Table(table_name)
+    items = []
+    kwargs = {}
+    while True:
+        response = table.scan(**kwargs)
+        for item in response.get("Items", []):
+            city = (item.get("city") or "").strip()
+            state = (item.get("state") or "").strip()
+            if city and state:
+                items.append(f"{city}, {state}")
+        if "LastEvaluatedKey" not in response:
+            break
+        kwargs["ExclusiveStartKey"] = response["LastEvaluatedKey"]
+    return sorted(set(items))
+
+
+def _parse_city_state(city_state_str):
+    """Parse 'City, ST' into (city, state) tuple."""
+    parts = city_state_str.rsplit(", ", 1)
+    if len(parts) == 2:
+        return parts[0].strip(), parts[1].strip()
+    return city_state_str.strip(), ""
+
+
 def _extract_json(text):
     """Extract JSON object from Claude's response, handling markdown code blocks."""
     text = text.strip()
@@ -227,6 +278,11 @@ def _get_rename_map(item_type, items):
         )
     elif item_type == "job_titles":
         prompt = JOB_TITLES_DEDUP_PROMPT.format(
+            count=len(items),
+            items_json=json.dumps(items, indent=2),
+        )
+    elif item_type == "cities":
+        prompt = CITIES_DEDUP_PROMPT.format(
             count=len(items),
             items_json=json.dumps(items, indent=2),
         )
@@ -375,6 +431,14 @@ def _update_profiles(all_renames, all_removals, dry_run):
     certs_removals = all_removals.get("certifications", [])
     titles_map = all_renames.get("job_titles", {})
     industry_map = all_renames.get("industry_categories", {})
+    cities_map = all_renames.get("cities", {})
+    # Pre-parse cities rename map into (old_city, old_state) -> (new_city, new_state)
+    cities_parsed = {}
+    for old_cs, new_cs in cities_map.items():
+        old_city, old_state = _parse_city_state(old_cs)
+        new_city, new_state = _parse_city_state(new_cs)
+        if old_city and old_state and new_city and new_state:
+            cities_parsed[(old_city, old_state)] = (new_city, new_state)
 
     table = dynamodb.Table(PROFILES_TABLE)
     updated = 0
@@ -411,6 +475,15 @@ def _update_profiles(all_renames, all_removals, dry_run):
             # Industry category
             if industry_map and item.get("industry_category") in industry_map:
                 updates["industry_category"] = industry_map[item["industry_category"]]
+
+            # City (inside location map)
+            if cities_parsed and isinstance(item.get("location"), dict):
+                loc = item["location"]
+                loc_city = (loc.get("city") or "").strip()
+                loc_state = (loc.get("state") or "").strip()
+                if (loc_city, loc_state) in cities_parsed:
+                    new_city, new_state = cities_parsed[(loc_city, loc_state)]
+                    updates["location"] = {**loc, "city": new_city, "state": new_state}
 
             if updates:
                 updated += 1
@@ -507,6 +580,23 @@ def handler(event, context):
         if not rename_map and not removals:
             print("  No duplicates or useless entries found")
 
+    # Cities dedup (composite key table — handled separately)
+    if CITIES_TABLE:
+        print(f"\nScanning cities ({CITIES_TABLE})...")
+        city_items = _scan_cities_table(CITIES_TABLE)
+        print(f"  Found {len(city_items)} unique city/state pairs")
+        if len(city_items) > 1:
+            city_renames, _ = _get_rename_map("cities", city_items)
+            if city_renames:
+                print(f"  Found {len(city_renames)} city duplicates to rename:")
+                for old, canonical in sorted(city_renames.items()):
+                    print(f"    {old!r} -> {canonical!r}")
+                all_renames["cities"] = city_renames
+            else:
+                print("  No city duplicates found")
+        else:
+            print("  Nothing to dedup")
+
     if not all_renames and not all_removals:
         print("\nNo duplicates or useless entries found across any lookup tables. Done.")
         return {
@@ -533,6 +623,34 @@ def handler(event, context):
         created, deleted = _cleanup_lookup_table(table_name, key_attr, all_renames[type_name], dry_run)
         if not dry_run:
             print(f"  Created {created} canonical entries, deleted {deleted} old entries")
+
+    # Step 3b: Clean up cities lookup table (composite key)
+    if "cities" in all_renames and CITIES_TABLE:
+        print(f"Cleaning cities renames ({CITIES_TABLE})...")
+        cities_tbl = dynamodb.Table(CITIES_TABLE)
+        now = datetime.now(timezone.utc).isoformat()
+        c_created = 0
+        c_deleted = 0
+        canonical_set = set(all_renames["cities"].values())
+        for canonical_cs in canonical_set:
+            new_city, new_state = _parse_city_state(canonical_cs)
+            if new_city and new_state:
+                if dry_run:
+                    print(f"  [dry-run] Would ensure city entry: {canonical_cs}")
+                else:
+                    cities_tbl.put_item(Item={"city": new_city, "state": new_state, "updated_at": now})
+                    c_created += 1
+        for old_cs in all_renames["cities"]:
+            if old_cs not in canonical_set:
+                old_city, old_state = _parse_city_state(old_cs)
+                if old_city and old_state:
+                    if dry_run:
+                        print(f"  [dry-run] Would delete city entry: {old_cs}")
+                    else:
+                        cities_tbl.delete_item(Key={"city": old_city, "state": old_state})
+                        c_deleted += 1
+        if not dry_run:
+            print(f"  Created {c_created} canonical entries, deleted {c_deleted} old entries")
 
     # Step 4: Delete useless entries from lookup tables
     for type_name, table_name, key_attr in LOOKUP_CONFIGS:
