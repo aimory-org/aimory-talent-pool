@@ -1,77 +1,71 @@
 # AIMORY Talent Pool
 
+An internal resume ingestion and talent management platform. Resumes uploaded to OneDrive are automatically processed through an AI pipeline — extracting structured candidate data — and made searchable through a React dashboard.
+
 **Contributors:** Ben and Kyle
 
-A modern resume ingestion and talent management platform for AIMORY. The system automatically processes uploaded resumes through AWS Textract and LLM enrichment, storing structured candidate profiles for search and management via a React-based dashboard.
+## Repository Structure
 
-## What This Repository Contains
+| Directory | Description |
+|-----------|-------------|
+| [frontend/web/](frontend/web/) | React + TypeScript SPA (dashboard, search, candidate management) |
+| [infra/](infra/) | Terraform infrastructure-as-code (all AWS resources) |
+| [scripts/](scripts/) | Operational scripts (backfill, reprocess, dedup) |
 
-| Directory | Description | Documentation |
-|-----------|-------------|---------------|
-| [frontend/](frontend/) | React + TypeScript web application for talent management | [Frontend README](frontend/web/README.md) |
-| [infra/](infra/) | Terraform infrastructure-as-code for AWS deployment | [Infrastructure README](infra/README.md) |
-| [.devcontainer/](.devcontainer/) | VS Code dev container for consistent development environments | [Dev Container README](.devcontainer/README.md) |
-| [.github/](.github/) | GitHub Actions workflows for CI/CD | — |
-
-## Architecture Overview
+## How It Works
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                              AIMORY Talent Pool                              │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  ┌──────────────┐     ┌──────────────┐     ┌──────────────────────────────┐ │
-│  │   Frontend   │────▶│  API Gateway │────▶│       OpenSearch Domain      │ │
-│  │  React SPA   │     │  + Cognito   │     │  (full-text search + filter) │ │
-│  └──────────────┘     └──────────────┘     └──────────────────────────────┘ │
-│         │                                              ▲                    │
-│         │                                              │  DynamoDB Streams  │
-│         ▼                                              │  (real-time sync)  │
-│  ┌──────────────┐     ┌──────────────────────────────────────────────────┐ │
-│  │  CloudFront  │     │        DynamoDB (talent_profiles, lookups)        │ │
-│  │   + S3 Site  │     │                       ▲                          │ │
-│  └──────────────┘     │                       │                          │ │
-│                       │       Resume Processing Pipeline                 │ │
-│                       │  S3 Upload → Starter → Step Functions → Persist  │ │
-│                       │      (Textract + Bedrock LLM Enrichment)         │ │
-│                       └──────────────────────────────────────────────────┘ │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
+OneDrive Folder
+      │  Power Automate
+      ▼
+  S3 Bucket (raw PDF)
+      │  S3 Event
+      ▼
+  starter Lambda
+      │
+      ▼
+  Step Functions Pipeline
+  ┌───────────────────────────────────────────┐
+  │  detect_type → extract_text (OCR branch)  │
+  │            ↓                              │
+  │  enrich (Bedrock / Claude 3)              │
+  │            ↓                              │
+  │  normalize → persist → DynamoDB           │
+  └───────────────────────────────────────────┘
+      │  DynamoDB Streams
+      ▼
+  OpenSearch (talent-profiles index)
+      │
+      ▼
+  API Gateway (JWT-authenticated REST API)
+      │
+      ▼
+  React SPA (CloudFront + S3)
 ```
 
-**Resume Flow:** Upload PDF to S3 `raw/` → triggers Starter Lambda → Step Functions orchestration → Textract OCR → LLM extraction (Claude via Bedrock) → normalized profile persisted to DynamoDB → DynamoDB Streams syncs to OpenSearch in real time
+**Search:** `GET /talents` queries OpenSearch with prefix matching on name, fuzzy matching on summary/resume text, and exact-term filters on skills, certifications, clearance, and location. Results include highlighted excerpt fragments.
 
-**Search Flow:** `GET /talents` queries OpenSearch with prefix matching on name, fuzzy matching (edit distance 1) on summary, and exact-term filters on skills, certifications, clearance, location, etc. Results include highlight fragments.
-
-**User Flow:** Sign in via Microsoft Entra ID (federated through Cognito) → browse/search/filter talent → view details → download original resumes
+**Auth:** Microsoft Entra ID federated through AWS Cognito. JWT tokens validated by API Gateway on every request.
 
 ## Quick Start
 
-### Option 1: Dev Container (Recommended)
+### Dev Container (Recommended)
 
 1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) and [VS Code](https://code.visualstudio.com/)
 2. Install the [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
-3. Clone this repo and open in VS Code
-4. Press `F1` → **Dev Containers: Reopen in Container**
-5. Wait for setup to complete — all dependencies install automatically
+3. Clone this repo, open in VS Code, and press `F1` → **Dev Containers: Reopen in Container**
 
-See [.devcontainer/README.md](.devcontainer/README.md) for details.
+All dependencies install automatically.
 
-### Option 2: Manual Setup
+### Manual Setup
 
-**Prerequisites:**
-- Node.js 22+
-- Python 3.12+
-- Terraform 1.9+
-- AWS CLI v2 with configured credentials
-- Docker (for building Lambda layers)
+**Prerequisites:** Node.js 22+, Python 3.12+, Terraform 1.9+, AWS CLI v2, Docker
 
-**Install dependencies:**
 ```bash
 # Frontend
 cd frontend/web && npm install
 
-# Python (for Lambda development/testing)
+# Python (Lambda dev/testing)
 pip install -r requirements-dev.txt
 ```
 
@@ -80,45 +74,50 @@ pip install -r requirements-dev.txt
 ```bash
 # Start the frontend dev server
 cd frontend/web
-npm run dev                    # http://localhost:5173
+npm run dev          # http://localhost:5173
 
-# Run Python tests
-pytest
+# Run tests
+pytest               # Python unit tests
+npm test             # Frontend tests (from frontend/web/)
 
 # Deploy infrastructure changes
 cd infra/envs/dev
-terraform init                 # first time only
 terraform plan
 terraform apply
+
+# Deploy frontend
+cd frontend/web
+npm run build
+aws s3 sync dist/ s3://<frontend-bucket> --delete
+aws cloudfront create-invalidation --distribution-id <id> --paths "/*"
 ```
-
-## Documentation Index
-
-| Topic | Location |
-|-------|----------|
-| Development environment setup | [.devcontainer/README.md](.devcontainer/README.md) |
-| Frontend architecture & components | [frontend/web/README.md](frontend/web/README.md) |
-| Infrastructure modules & deployment | [infra/README.md](infra/README.md) |
-| Environment variables | Each README contains relevant env vars |
 
 ## Tech Stack
 
 | Layer | Technologies |
 |-------|-------------|
-| **Frontend** | React 19, TypeScript, Vite, Tailwind CSS, Radix UI, AWS Amplify |
-| **Authentication** | AWS Cognito + Microsoft Entra ID (Azure AD) federation |
-| **API** | API Gateway (HTTP API) + Lambda |
-| **Processing** | Step Functions, Lambda (Python 3.12), Textract, Bedrock (Claude) |
-| **Storage** | S3 (resumes), DynamoDB (profiles + lookups), SSM Parameter Store |
-| **Search** | OpenSearch 2.11 (real-time sync via DynamoDB Streams) |
-| **Infrastructure** | Terraform, CloudFront, IAM |
+| **Frontend** | React 19, TypeScript, Vite, Tailwind CSS v4, AWS Amplify v6 |
+| **Auth** | AWS Cognito + Microsoft Entra ID federation |
+| **API** | API Gateway (HTTP API) + Lambda (Python 3.12) |
+| **Pipeline** | Step Functions, Textract (OCR), Bedrock / Claude 3 |
+| **Storage** | S3, DynamoDB (profiles + 7 lookup tables), SSM |
+| **Search** | OpenSearch 2.11 (synced via DynamoDB Streams) |
+| **Infra** | Terraform, CloudFront, IAM |
+
+## Documentation
+
+| Topic | Location |
+|-------|----------|
+| Frontend setup & components | [frontend/web/README.md](frontend/web/README.md) |
+| Infrastructure & deployment | [infra/README.md](infra/README.md) |
+| Operational scripts | [scripts/README.md](scripts/README.md) |
 
 ## Contributing
 
-1. Create a feature branch from `main`
+1. Branch from `main` (`git checkout -b feature/your-feature`)
 2. Make changes and test locally
-3. Run `terraform plan` to preview infrastructure changes
-4. Submit a pull request
+3. Run `terraform plan` before any infrastructure changes
+4. Open a pull request
 
 ## License
 
