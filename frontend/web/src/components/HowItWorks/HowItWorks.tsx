@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { ArrowLeft, BookOpen, Server } from "lucide-react";
+import { BookOpen, Server } from "lucide-react";
 import { UserGuide } from "@/components/UserGuide";
 import { TechReference } from "@/components/TechReference";
 
@@ -33,44 +32,41 @@ export function HowItWorks() {
     <div className="bg-background min-h-screen">
       <div className="max-w-4xl mx-auto px-6 py-12">
         {/* Page Header */}
-        <div className="mb-10">
-          <Link
-            to="/"
-            className="inline-flex items-center gap-1.5 text-sm text-foreground/40 hover:text-foreground/70 transition-colors mb-6"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            Back to Dashboard
-          </Link>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-xs font-medium mb-4">
-            Help Center
-          </div>
-          <h1 className="text-4xl font-bold text-foreground mb-3">
-            Help Center
+        <div className="mb-10 animate-fade-in">
+          <p className="text-xs font-semibold uppercase tracking-widest text-indigo-500 dark:text-indigo-400 mb-3">
+            Documentation
+          </p>
+          <h1 className="text-4xl font-bold tracking-tight mb-3">
+            <span className="shimmer-text">Help Center</span>
           </h1>
-          <p className="text-lg text-foreground/50">
+          <p className="text-base text-foreground/50">
             Select a guide based on your role.
           </p>
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex gap-3 mb-10">
+        <div className="flex gap-3 mb-10 animate-fade-in stagger-1">
           {TABS.map((tab) => {
             const isActive = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 flex flex-col items-start gap-1 px-5 py-4 rounded-xl border text-left transition-all duration-200 ${
+                className={`relative flex-1 flex flex-col items-start gap-1 px-5 py-4 rounded-2xl border text-left transition-all duration-300 overflow-hidden ${
                   isActive
-                    ? "bg-indigo-500/10 border-indigo-500/40 shadow-lg shadow-indigo-500/10"
-                    : "bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 hover:bg-black/10 dark:hover:bg-white/10 hover:border-black/20 dark:hover:border-white/20"
+                    ? "bg-gradient-to-br from-indigo-500/10 to-violet-500/5 border-indigo-500/30 shadow-lg shadow-indigo-500/10"
+                    : "bg-white/50 dark:bg-white/5 border-black/[0.07] dark:border-white/[0.07] hover:bg-indigo-500/5 hover:border-indigo-500/20"
                 }`}
               >
+                {/* Active top bar */}
+                {isActive && (
+                  <span className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-indigo-500 to-violet-500 rounded-t-2xl" />
+                )}
                 <div
-                  className={`flex items-center gap-2 font-semibold text-sm ${
+                  className={`flex items-center gap-2 font-semibold text-sm transition-colors ${
                     isActive
                       ? "text-indigo-600 dark:text-indigo-400"
-                      : "text-foreground/70"
+                      : "text-foreground/60"
                   }`}
                 >
                   {tab.icon}
@@ -84,12 +80,14 @@ export function HowItWorks() {
           })}
         </div>
 
-        {/* Tab Content */}
-        {activeTab === "user-guide" ? <UserGuide /> : <TechReference />}
+        {/* Tab Content — key forces remount for re-animation */}
+        <div key={activeTab} className="animate-fade-in">
+          {activeTab === "user-guide" ? <UserGuide /> : <TechReference />}
+        </div>
 
         {/* Footer */}
-        <div className="mt-16 pt-8 border-t border-black/10 dark:border-white/10 text-center">
-          <p className="text-foreground/40 text-sm">
+        <div className="mt-16 pt-8 border-t border-black/[0.07] dark:border-white/[0.07] text-center">
+          <p className="text-foreground/30 text-sm">
             Questions or feedback? Reach out to the development team.
           </p>
         </div>

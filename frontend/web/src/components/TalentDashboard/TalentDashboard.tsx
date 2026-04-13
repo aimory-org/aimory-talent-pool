@@ -221,24 +221,22 @@ export function TalentDashboard() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="border-b border-black/10 dark:border-white/15 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl sticky top-14 z-40">
-        {/* Animated gradient accent bar */}
-        <div className="h-1 bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500 animate-gradient-x" />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+      <div className="border-b border-black/[0.06] dark:border-white/[0.06] bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl sticky top-16 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             {/* Title Section */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 animate-fade-in">
               <div className="relative">
-                <div className="absolute inset-0 bg-linear-to-br from-indigo-500 to-purple-600 rounded-xl blur-lg opacity-50" />
-                <div className="relative p-2 bg-linear-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg">
+                <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 blur-md opacity-40" />
+                <div className="relative p-2.5 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-xl shadow-lg shadow-indigo-500/30">
                   <Users className="h-5 w-5 text-white" />
                 </div>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-foreground tracking-tight">
-                  Talent Pool
+                <h1 className="text-xl font-bold tracking-tight">
+                  <span className="shimmer-text">Talent Pool</span>
                 </h1>
-                <p className="text-sm text-foreground/50">
+                <p className="text-xs text-foreground/40 mt-0.5">
                   Discover and manage your candidate pipeline
                 </p>
               </div>

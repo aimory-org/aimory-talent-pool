@@ -159,7 +159,7 @@ function LoginPage() {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-150 h-150 bg-linear-to-br from-indigo-500/10 via-transparent to-purple-500/10 rounded-full blur-3xl" />
       </div>
 
-      <div className="absolute top-0 inset-x-0 h-1 bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500 animate-gradient-x" />
+      <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 animate-gradient-x" />
 
       <div className="w-full max-w-md relative z-10">
         {/* Brand */}
@@ -182,8 +182,8 @@ function LoginPage() {
               </svg>
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-foreground mb-2 tracking-tight">
-            Talent Pool
+          <h1 className="text-3xl font-bold mb-2 tracking-tight">
+            <span className="shimmer-text">Talent Pool</span>
           </h1>
           <p className="text-foreground/40 text-sm font-medium">
             Aimory Consulting
@@ -192,7 +192,7 @@ function LoginPage() {
 
         {/* Card */}
         <div className="relative group">
-          <div className="absolute -inset-0.5 bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl opacity-30 blur group-hover:opacity-50 transition-opacity duration-500" />
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 rounded-2xl opacity-20 blur group-hover:opacity-40 transition-opacity duration-500" />
           <div className="relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl border border-black/10 dark:border-white/10 p-8 shadow-2xl">
             <div className="text-center mb-8">
               <h2 className="text-xl font-semibold text-foreground mb-2">

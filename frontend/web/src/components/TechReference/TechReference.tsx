@@ -37,14 +37,24 @@ function Section({
         <div className="p-2.5 bg-violet-500/15 rounded-xl text-violet-600 dark:text-violet-400 ring-1 ring-violet-500/20">
           {icon}
         </div>
-        <h2 className="text-xl font-bold text-foreground tracking-tight">{title}</h2>
+        <h2 className="text-xl font-bold text-foreground tracking-tight">
+          {title}
+        </h2>
       </div>
-      <div className="text-foreground/70 space-y-4 leading-relaxed">{children}</div>
+      <div className="text-foreground/70 space-y-4 leading-relaxed">
+        {children}
+      </div>
     </section>
   );
 }
 
-function SubSection({ title, children }: { title: string; children: React.ReactNode }) {
+function SubSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="mt-6">
       <h3 className="text-sm font-bold text-foreground/80 uppercase tracking-widest mb-3">
@@ -80,16 +90,28 @@ function Mono({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Pill({ children, color = "slate" }: { children: React.ReactNode; color?: string }) {
+function Pill({
+  children,
+  color = "slate",
+}: {
+  children: React.ReactNode;
+  color?: string;
+}) {
   const colors: Record<string, string> = {
-    slate: "bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20",
-    violet: "bg-violet-500/10 text-violet-700 dark:text-violet-300 border-violet-500/20",
+    slate:
+      "bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20",
+    violet:
+      "bg-violet-500/10 text-violet-700 dark:text-violet-300 border-violet-500/20",
     blue: "bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20",
-    emerald: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20",
-    amber: "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20",
+    emerald:
+      "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20",
+    amber:
+      "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20",
   };
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border ${colors[color]}`}>
+    <span
+      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border ${colors[color]}`}
+    >
       {children}
     </span>
   );
@@ -113,11 +135,15 @@ function ArchNode({
   wide?: boolean;
 }) {
   const colors: Record<typeof color, string> = {
-    violet: "bg-violet-500/10 border-violet-500/25 text-violet-700 dark:text-violet-300",
+    violet:
+      "bg-violet-500/10 border-violet-500/25 text-violet-700 dark:text-violet-300",
     blue: "bg-blue-500/10 border-blue-500/25 text-blue-700 dark:text-blue-300",
-    emerald: "bg-emerald-500/10 border-emerald-500/25 text-emerald-700 dark:text-emerald-300",
-    amber: "bg-amber-500/10 border-amber-500/25 text-amber-700 dark:text-amber-300",
-    slate: "bg-slate-500/10 border-slate-500/25 text-slate-700 dark:text-slate-300",
+    emerald:
+      "bg-emerald-500/10 border-emerald-500/25 text-emerald-700 dark:text-emerald-300",
+    amber:
+      "bg-amber-500/10 border-amber-500/25 text-amber-700 dark:text-amber-300",
+    slate:
+      "bg-slate-500/10 border-slate-500/25 text-slate-700 dark:text-slate-300",
     red: "bg-red-500/10 border-red-500/25 text-red-700 dark:text-red-300",
   };
   return (
@@ -126,15 +152,29 @@ function ArchNode({
     >
       {icon && <div className="mb-0.5 opacity-80">{icon}</div>}
       <span className="text-xs font-semibold leading-tight">{label}</span>
-      {sub && <span className="text-[10px] opacity-60 leading-tight">{sub}</span>}
+      {sub && (
+        <span className="text-[10px] opacity-60 leading-tight">{sub}</span>
+      )}
     </div>
   );
 }
 
-function FlowArrow({ label, vertical }: { label?: string; vertical?: boolean }) {
+function FlowArrow({
+  label,
+  vertical,
+}: {
+  label?: string;
+  vertical?: boolean;
+}) {
   return (
-    <div className={`flex items-center justify-center ${vertical ? "flex-col" : ""} gap-1 shrink-0`}>
-      {label && <span className="text-[10px] text-foreground/40 font-medium">{label}</span>}
+    <div
+      className={`flex items-center justify-center ${vertical ? "flex-col" : ""} gap-1 shrink-0`}
+    >
+      {label && (
+        <span className="text-[10px] text-foreground/40 font-medium">
+          {label}
+        </span>
+      )}
       {vertical ? (
         <ArrowDown className="w-4 h-4 text-foreground/25" />
       ) : (
@@ -150,74 +190,149 @@ function ArchitectureDiagram() {
       {/* Header */}
       <div className="px-5 py-3 border-b border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 flex items-center gap-2">
         <div className="w-2 h-2 rounded-full bg-violet-500" />
-        <span className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">System Architecture</span>
+        <span className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
+          System Architecture
+        </span>
       </div>
 
       <div className="p-6 space-y-6 overflow-x-auto">
         {/* Ingestion row */}
         <div>
-          <p className="text-[10px] font-bold text-foreground/35 uppercase tracking-widest mb-3">Ingestion</p>
+          <p className="text-[10px] font-bold text-foreground/35 uppercase tracking-widest mb-3">
+            Ingestion
+          </p>
           <div className="flex items-center gap-2 flex-wrap">
-            <ArchNode label="OneDrive" sub="Resume folder" icon={<FileText className="w-4 h-4" />} color="slate" />
+            <ArchNode
+              label="OneDrive"
+              sub="Resume folder"
+              icon={<FileText className="w-4 h-4" />}
+              color="slate"
+            />
             <FlowArrow label="Power Automate" />
-            <ArchNode label="S3 Bucket" sub="raw/ prefix" icon={<Cloud className="w-4 h-4" />} color="blue" />
+            <ArchNode
+              label="S3 Bucket"
+              sub="raw/ prefix"
+              icon={<Cloud className="w-4 h-4" />}
+              color="blue"
+            />
             <FlowArrow label="S3 Event" />
-            <ArchNode label="starter" sub="Lambda" icon={<Zap className="w-4 h-4" />} color="violet" />
+            <ArchNode
+              label="starter"
+              sub="Lambda"
+              icon={<Zap className="w-4 h-4" />}
+              color="violet"
+            />
             <FlowArrow label="StartExecution" />
-            <ArchNode label="Step Functions" sub="Express Workflow" icon={<RefreshCw className="w-4 h-4" />} color="violet" wide />
+            <ArchNode
+              label="Step Functions"
+              sub="Express Workflow"
+              icon={<RefreshCw className="w-4 h-4" />}
+              color="violet"
+              wide
+            />
           </div>
         </div>
 
         {/* Pipeline row */}
         <div>
-          <p className="text-[10px] font-bold text-foreground/35 uppercase tracking-widest mb-3">Pipeline States</p>
+          <p className="text-[10px] font-bold text-foreground/35 uppercase tracking-widest mb-3">
+            Pipeline States
+          </p>
           <div className="flex items-center gap-1.5 flex-wrap">
             {[
               { label: "detect_type", sub: "pdfminer" },
               null,
               { label: "extract_text", sub: "Textract (OCR)" },
               null,
-              { label: "enrich", sub: "Bedrock / Claude" },
+              { label: "analyze", sub: "Bedrock / Claude" },
               null,
               { label: "normalize" },
               null,
               { label: "persist", sub: "DynamoDB" },
             ].map((item, i) =>
               item === null ? (
-                <ArrowRight key={i} className="w-3 h-3 text-foreground/25 shrink-0" />
+                <ArrowRight
+                  key={i}
+                  className="w-3 h-3 text-foreground/25 shrink-0"
+                />
               ) : (
-                <ArchNode key={item.label} label={item.label} sub={item.sub} color="violet" />
+                <ArchNode
+                  key={item.label}
+                  label={item.label}
+                  sub={item.sub}
+                  color="violet"
+                />
               ),
             )}
           </div>
           <p className="text-[10px] text-foreground/40 mt-2 ml-1">
-            detect_type routes to extract_text only when native PDF text extraction fails (scanned images)
+            detect_type routes to extract_text only when native PDF text
+            extraction fails (scanned images)
           </p>
         </div>
 
         {/* Storage + Search row */}
         <div>
-          <p className="text-[10px] font-bold text-foreground/35 uppercase tracking-widest mb-3">Storage & Search</p>
+          <p className="text-[10px] font-bold text-foreground/35 uppercase tracking-widest mb-3">
+            Storage & Search
+          </p>
           <div className="flex items-center gap-2 flex-wrap">
-            <ArchNode label="DynamoDB" sub="talent_profiles" icon={<Database className="w-4 h-4" />} color="emerald" />
+            <ArchNode
+              label="DynamoDB"
+              sub="talent_profiles"
+              icon={<Database className="w-4 h-4" />}
+              color="emerald"
+            />
             <FlowArrow label="DynamoDB Streams" />
-            <ArchNode label="opensearch_sync" sub="Lambda" icon={<RefreshCw className="w-4 h-4" />} color="violet" />
+            <ArchNode
+              label="opensearch_sync"
+              sub="Lambda"
+              icon={<RefreshCw className="w-4 h-4" />}
+              color="violet"
+            />
             <FlowArrow label="Bulk index" />
-            <ArchNode label="OpenSearch" sub="talent-profiles" icon={<Search className="w-4 h-4" />} color="blue" />
+            <ArchNode
+              label="OpenSearch"
+              sub="talent-profiles"
+              icon={<Search className="w-4 h-4" />}
+              color="blue"
+            />
           </div>
         </div>
 
         {/* API + Frontend row */}
         <div>
-          <p className="text-[10px] font-bold text-foreground/35 uppercase tracking-widest mb-3">API & Frontend</p>
+          <p className="text-[10px] font-bold text-foreground/35 uppercase tracking-widest mb-3">
+            API & Frontend
+          </p>
           <div className="flex items-center gap-2 flex-wrap">
-            <ArchNode label="React SPA" sub="CloudFront + S3" icon={<Cloud className="w-4 h-4" />} color="slate" />
+            <ArchNode
+              label="React SPA"
+              sub="CloudFront + S3"
+              icon={<Cloud className="w-4 h-4" />}
+              color="slate"
+            />
             <FlowArrow label="Bearer JWT" />
-            <ArchNode label="API Gateway" sub="HTTP API" icon={<Network className="w-4 h-4" />} color="amber" />
+            <ArchNode
+              label="API Gateway"
+              sub="HTTP API"
+              icon={<Network className="w-4 h-4" />}
+              color="amber"
+            />
             <FlowArrow label="JWT Authorizer" />
-            <ArchNode label="Lambda APIs" sub="CRUD + Search" icon={<Zap className="w-4 h-4" />} color="violet" />
+            <ArchNode
+              label="Lambda APIs"
+              sub="CRUD + Search"
+              icon={<Zap className="w-4 h-4" />}
+              color="violet"
+            />
             <FlowArrow />
-            <ArchNode label="OpenSearch" sub="/ DynamoDB" icon={<Database className="w-4 h-4" />} color="emerald" />
+            <ArchNode
+              label="OpenSearch"
+              sub="/ DynamoDB"
+              icon={<Database className="w-4 h-4" />}
+              color="emerald"
+            />
           </div>
         </div>
       </div>
@@ -241,7 +356,7 @@ const PIPELINE_STEPS = [
     step: "detect_type",
     trigger: "Step Functions",
     action:
-      "Uses pdfminer to attempt native text extraction. If text is too short or empty, routes to the OCR branch. Otherwise skips directly to enrich.",
+      "Uses pdfminer to attempt native text extraction. If text is too short or empty, routes to the OCR branch. Otherwise skips directly to analyze.",
     color: "blue" as const,
   },
   {
@@ -252,7 +367,7 @@ const PIPELINE_STEPS = [
     color: "amber" as const,
   },
   {
-    step: "enrich",
+    step: "analyze",
     trigger: "Step Functions",
     action:
       "Calls Amazon Bedrock (Claude 3). Structured extraction prompt returns JSON: name, contact, skills, clearance, companies, certifications, location, years_of_experience, summary.",
@@ -275,10 +390,13 @@ const PIPELINE_STEPS = [
 ];
 
 const stepColors: Record<string, string> = {
-  violet: "border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300",
+  violet:
+    "border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300",
   blue: "border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-300",
-  amber: "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300",
-  emerald: "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+  amber:
+    "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+  emerald:
+    "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
 };
 
 function PipelineDiagram() {
@@ -286,7 +404,9 @@ function PipelineDiagram() {
     <div className="mt-6 rounded-2xl border border-black/10 dark:border-white/10 bg-white/50 dark:bg-slate-800/50 overflow-hidden">
       <div className="px-5 py-3 border-b border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 flex items-center gap-2">
         <div className="w-2 h-2 rounded-full bg-violet-500" />
-        <span className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">Step Functions Express Workflow</span>
+        <span className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
+          Step Functions Express Workflow
+        </span>
       </div>
       <div className="p-5 space-y-0">
         {PIPELINE_STEPS.map((s, i) => (
@@ -294,7 +414,9 @@ function PipelineDiagram() {
             <div className="flex gap-4 items-start">
               {/* Step number + connector */}
               <div className="flex flex-col items-center shrink-0">
-                <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold ${stepColors[s.color]}`}>
+                <div
+                  className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold ${stepColors[s.color]}`}
+                >
                   {i + 1}
                 </div>
                 {i < PIPELINE_STEPS.length - 1 && (
@@ -304,7 +426,9 @@ function PipelineDiagram() {
               {/* Content */}
               <div className="pb-6 flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                  <code className={`text-sm font-mono font-bold px-2.5 py-0.5 rounded-lg border ${stepColors[s.color]}`}>
+                  <code
+                    className={`text-sm font-mono font-bold px-2.5 py-0.5 rounded-lg border ${stepColors[s.color]}`}
+                  >
                     {s.step}
                   </code>
                   <Pill color="slate">
@@ -312,7 +436,9 @@ function PipelineDiagram() {
                     {s.trigger}
                   </Pill>
                 </div>
-                <p className="text-sm text-foreground/60 leading-relaxed">{s.action}</p>
+                <p className="text-sm text-foreground/60 leading-relaxed">
+                  {s.action}
+                </p>
               </div>
             </div>
           </div>
@@ -362,27 +488,41 @@ function AuthFlowDiagram() {
 
   const actorColors: Record<string, string> = {
     User: "bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/25",
-    Cognito: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/25",
-    Microsoft: "bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/25",
-    Amplify: "bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-500/25",
-    "API Call": "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/25",
-    Lambda: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/25",
+    Cognito:
+      "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/25",
+    Microsoft:
+      "bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/25",
+    Amplify:
+      "bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-500/25",
+    "API Call":
+      "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/25",
+    Lambda:
+      "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/25",
   };
 
   return (
     <div className="mt-6 rounded-2xl border border-black/10 dark:border-white/10 bg-white/50 dark:bg-slate-800/50 overflow-hidden">
       <div className="px-5 py-3 border-b border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 flex items-center gap-2">
         <div className="w-2 h-2 rounded-full bg-blue-500" />
-        <span className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">OAuth 2.0 PKCE Flow</span>
+        <span className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
+          OAuth 2.0 PKCE Flow
+        </span>
       </div>
       <div className="divide-y divide-black/5 dark:divide-white/5">
         {steps.map((s, i) => (
-          <div key={i} className="flex items-start gap-4 px-5 py-4 hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-            <span className={`shrink-0 text-[11px] font-bold px-2.5 py-1 rounded-lg border whitespace-nowrap ${actorColors[s.actor]}`}>
+          <div
+            key={i}
+            className="flex items-start gap-4 px-5 py-4 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+          >
+            <span
+              className={`shrink-0 text-[11px] font-bold px-2.5 py-1 rounded-lg border whitespace-nowrap ${actorColors[s.actor]}`}
+            >
               {s.actor}
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-foreground/80 mb-0.5">{s.action}</p>
+              <p className="text-sm font-medium text-foreground/80 mb-0.5">
+                {s.action}
+              </p>
               <p className="text-xs text-foreground/45">{s.result}</p>
             </div>
           </div>
@@ -436,11 +576,15 @@ const MODULES = [
 ];
 
 const moduleColors: Record<string, string> = {
-  violet: "bg-violet-500/10 border-violet-500/25 text-violet-700 dark:text-violet-300",
+  violet:
+    "bg-violet-500/10 border-violet-500/25 text-violet-700 dark:text-violet-300",
   blue: "bg-blue-500/10 border-blue-500/25 text-blue-700 dark:text-blue-300",
-  emerald: "bg-emerald-500/10 border-emerald-500/25 text-emerald-700 dark:text-emerald-300",
-  amber: "bg-amber-500/10 border-amber-500/25 text-amber-700 dark:text-amber-300",
-  slate: "bg-slate-500/10 border-slate-500/25 text-slate-700 dark:text-slate-300",
+  emerald:
+    "bg-emerald-500/10 border-emerald-500/25 text-emerald-700 dark:text-emerald-300",
+  amber:
+    "bg-amber-500/10 border-amber-500/25 text-amber-700 dark:text-amber-300",
+  slate:
+    "bg-slate-500/10 border-slate-500/25 text-slate-700 dark:text-slate-300",
   red: "bg-red-500/10 border-red-500/25 text-red-700 dark:text-red-300",
 };
 
@@ -453,43 +597,50 @@ const API_ENDPOINTS = [
     method: "GET",
     path: "/talents",
     desc: "List / search profiles via OpenSearch. Accepts: status, service_category, industry_category, job_title, clearance_level, location_state, city, skills (CSV), certifications (CSV), tags (CSV), search (full-text), minYears, maxYears.",
-    methodColor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/25",
+    methodColor:
+      "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/25",
   },
   {
     method: "GET",
     path: "/talents/{pk}",
     desc: "Fetch a single profile by primary key (URL-encoded). Returns the full DynamoDB item.",
-    methodColor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/25",
+    methodColor:
+      "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/25",
   },
   {
     method: "PATCH",
     path: "/talents?pk={pk}",
     desc: "Partial update of any profile fields. Body is a subset of the profile schema. Returns the updated profile from DynamoDB.",
-    methodColor: "bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/25",
+    methodColor:
+      "bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/25",
   },
   {
     method: "DELETE",
     path: "/talents?pk={pk}",
     desc: "Permanently delete a profile from DynamoDB and OpenSearch.",
-    methodColor: "bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/25",
+    methodColor:
+      "bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/25",
   },
   {
     method: "GET",
     path: "/lookups",
     desc: "Fetch dropdown option sets. Optional: ?include=skills,certifications,job_titles,cities,tags. Returns all sets by default.",
-    methodColor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/25",
+    methodColor:
+      "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/25",
   },
   {
     method: "GET",
     path: "/resume-url?key={s3_key}",
     desc: "Generate a short-lived presigned S3 URL for viewing the original resume PDF. Default expiry: 15 minutes.",
-    methodColor: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/25",
+    methodColor:
+      "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/25",
   },
   {
     method: "DELETE",
     path: "/tags?tag={tag}",
     desc: "Permanently delete a tag from the lookup table and remove it from all matching profiles in DynamoDB and OpenSearch.",
-    methodColor: "bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/25",
+    methodColor:
+      "bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/25",
   },
 ];
 
@@ -498,12 +649,48 @@ const API_ENDPOINTS = [
 // ---------------------------------------------------------------------------
 
 const SECURITY_ITEMS = [
-  { icon: <Lock className="w-4 h-4" />, label: "Transport", value: "TLS 1.2+ everywhere", detail: "CloudFront, API Gateway, and OpenSearch all enforce HTTPS. HTTP is redirected." },
-  { icon: <Shield className="w-4 h-4" />, label: "Encryption at rest", value: "AES-256", detail: "S3 SSE-S3, DynamoDB default encryption, OpenSearch domain encryption enabled." },
-  { icon: <Key className="w-4 h-4" />, label: "IAM", value: "Least-privilege roles", detail: "Each Lambda has a dedicated IAM role with only the permissions it needs. No wildcard resources." },
-  { icon: <Lock className="w-4 h-4" />, label: "Secrets", value: "SSM Parameter Store", detail: "No secrets in environment variables or code. All sensitive config in SSM Parameter Store." },
-  { icon: <Network className="w-4 h-4" />, label: "Network", value: "VPC (OpenSearch)", detail: "OpenSearch is VPC-internal. Lambda functions connect via VPC ENIs. No public OpenSearch endpoint." },
-  { icon: <FileText className="w-4 h-4" />, label: "Audit", value: "CloudTrail + access logs", detail: "All AWS API calls logged to CloudTrail. API Gateway access logs capture every request." },
+  {
+    icon: <Lock className="w-4 h-4" />,
+    label: "Transport",
+    value: "TLS 1.2+ everywhere",
+    detail:
+      "CloudFront, API Gateway, and OpenSearch all enforce HTTPS. HTTP is redirected.",
+  },
+  {
+    icon: <Shield className="w-4 h-4" />,
+    label: "Encryption at rest",
+    value: "AES-256",
+    detail:
+      "S3 SSE-S3, DynamoDB default encryption, OpenSearch domain encryption enabled.",
+  },
+  {
+    icon: <Key className="w-4 h-4" />,
+    label: "IAM",
+    value: "Least-privilege roles",
+    detail:
+      "Each Lambda has a dedicated IAM role with only the permissions it needs. No wildcard resources.",
+  },
+  {
+    icon: <Lock className="w-4 h-4" />,
+    label: "Secrets",
+    value: "SSM Parameter Store",
+    detail:
+      "No secrets in environment variables or code. All sensitive config in SSM Parameter Store.",
+  },
+  {
+    icon: <Network className="w-4 h-4" />,
+    label: "Network",
+    value: "VPC (OpenSearch)",
+    detail:
+      "OpenSearch is VPC-internal. Lambda functions connect via VPC ENIs. No public OpenSearch endpoint.",
+  },
+  {
+    icon: <FileText className="w-4 h-4" />,
+    label: "Audit",
+    value: "CloudTrail + access logs",
+    detail:
+      "All AWS API calls logged to CloudTrail. API Gateway access logs capture every request.",
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -514,24 +701,28 @@ export function TechReference() {
   return (
     <div>
       {/* Architecture Overview */}
-      <Section title="Architecture Overview" icon={<Cloud className="w-6 h-6" />}>
+      <Section
+        title="Architecture Overview"
+        icon={<Cloud className="w-6 h-6" />}
+      >
         <p>
-          Fully serverless on AWS, managed with Terraform. The frontend is a Vite-bundled
-          React SPA served via CloudFront + S3. All infrastructure lives in{" "}
-          <Mono>infra/</Mono>.
+          Fully serverless on AWS, managed with Terraform. The frontend is a
+          Vite-bundled React SPA served via CloudFront + S3. All infrastructure
+          lives in <Mono>infra/</Mono>.
         </p>
         <ArchitectureDiagram />
         <p className="text-sm text-foreground/45 mt-3">
-          Every component is stateless and scales automatically. Resumes are processed
-          independently — a failure in one execution does not affect others.
+          Every component is stateless and scales automatically. Resumes are
+          processed independently — a failure in one execution does not affect
+          others.
         </p>
       </Section>
 
       {/* Infrastructure Modules */}
       <Section title="Terraform Modules" icon={<Server className="w-6 h-6" />}>
         <p>
-          Modules live under <Mono>infra/modules/</Mono>. The environment entry point{" "}
-          <Mono>infra/envs/dev/modules.tf</Mono> wires them together.
+          Modules live under <Mono>infra/modules/</Mono>. The environment entry
+          point <Mono>infra/envs/dev/modules.tf</Mono> wires them together.
         </p>
         <div className="grid sm:grid-cols-2 gap-3 mt-5">
           {MODULES.map((m) => (
@@ -540,12 +731,18 @@ export function TechReference() {
               className="rounded-xl border border-black/10 dark:border-white/10 bg-white/60 dark:bg-slate-800/60 p-4 hover:shadow-md transition-shadow"
             >
               <div className="flex items-center gap-2.5 mb-2">
-                <span className={`p-1.5 rounded-lg border ${moduleColors[m.color]}`}>
+                <span
+                  className={`p-1.5 rounded-lg border ${moduleColors[m.color]}`}
+                >
                   {m.icon}
                 </span>
-                <code className="text-sm font-bold font-mono text-foreground">{m.name}</code>
+                <code className="text-sm font-bold font-mono text-foreground">
+                  {m.name}
+                </code>
               </div>
-              <p className="text-xs leading-relaxed text-foreground/60">{m.desc}</p>
+              <p className="text-xs leading-relaxed text-foreground/60">
+                {m.desc}
+              </p>
             </div>
           ))}
         </div>
@@ -561,19 +758,24 @@ aimory-talent-pool-dev-frontend-{acct-id}   # S3`}</CodeBlock>
       </Section>
 
       {/* Pipeline */}
-      <Section title="Resume Processing Pipeline" icon={<Cpu className="w-6 h-6" />}>
+      <Section
+        title="Resume Processing Pipeline"
+        icon={<Cpu className="w-6 h-6" />}
+      >
         <p>
           Step Functions Express Workflow. Each state invokes a Lambda from{" "}
-          <Mono>infra/modules/pipeline/lambda_src/</Mono>. The workflow handles both
-          native-text PDFs and scanned image PDFs via a conditional OCR branch.
+          <Mono>infra/modules/pipeline/lambda_src/</Mono>. The workflow handles
+          both native-text PDFs and scanned image PDFs via a conditional OCR
+          branch.
         </p>
         <PipelineDiagram />
         <SubSection title="Error Handling">
           <p className="text-sm">
-            Each state has Step Functions <Mono>Catch</Mono> blocks with exponential
-            backoff retries. Failed executions are visible in the AWS Step Functions
-            console. Idempotency at the persist layer uses DynamoDB conditional writes
-            on the <Mono>pk</Mono> key to prevent duplicate profiles.
+            Each state has Step Functions <Mono>Catch</Mono> blocks with
+            exponential backoff retries. Failed executions are visible in the
+            AWS Step Functions console. Idempotency at the persist layer uses
+            DynamoDB conditional writes on the <Mono>pk</Mono> key to prevent
+            duplicate profiles.
           </p>
         </SubSection>
       </Section>
@@ -582,8 +784,9 @@ aimory-talent-pool-dev-frontend-{acct-id}   # S3`}</CodeBlock>
       <Section title="Data Model" icon={<Database className="w-6 h-6" />}>
         <SubSection title="DynamoDB — talent_profiles">
           <p className="text-sm mb-3">
-            Primary table. Partition key: <Mono>pk</Mono> = <Mono>{"{bucket}#{s3_key}"}</Mono>.
-            No sort key. Streams enabled (NEW_AND_OLD_IMAGES) for OpenSearch sync.
+            Primary table. Partition key: <Mono>pk</Mono> ={" "}
+            <Mono>{"{bucket}#{s3_key}"}</Mono>. No sort key. Streams enabled
+            (NEW_AND_OLD_IMAGES) for OpenSearch sync.
           </p>
           <CodeBlock>{`{
   pk:                   string    // "{bucket}#{s3_key}"
@@ -616,8 +819,9 @@ aimory-talent-pool-dev-frontend-{acct-id}   # S3`}</CodeBlock>
 
         <SubSection title="Lookup Tables">
           <p className="text-sm mb-3">
-            Seven separate DynamoDB tables, each a simple set of values used to populate
-            filter dropdowns. All are upserted atomically at persist time.
+            Seven separate DynamoDB tables, each a simple set of values used to
+            populate filter dropdowns. All are upserted atomically at persist
+            time.
           </p>
           <div className="grid sm:grid-cols-2 gap-2">
             {[
@@ -645,23 +849,29 @@ aimory-talent-pool-dev-frontend-{acct-id}   # S3`}</CodeBlock>
           <p className="text-sm">
             Documents replicated from DynamoDB via Streams Lambda. Used for all{" "}
             <Mono>GET /talents</Mono> queries. <Mono>skill_names</Mono> and{" "}
-            <Mono>cert_names</Mono> are stored as arrays for term-level filtering.
-            Engine: OpenSearch 2.11, single-node <Mono>t3.small.search</Mono>, 10 GB gp3.
+            <Mono>cert_names</Mono> are stored as arrays for term-level
+            filtering. Engine: OpenSearch 2.11, single-node{" "}
+            <Mono>t3.small.search</Mono>, 10 GB gp3.
           </p>
         </SubSection>
       </Section>
 
       {/* Search */}
-      <Section title="Search Implementation" icon={<Search className="w-6 h-6" />}>
+      <Section
+        title="Search Implementation"
+        icon={<Search className="w-6 h-6" />}
+      >
         <p>
-          All <Mono>GET /talents</Mono> requests query OpenSearch via a dynamically
-          built compound query. Filtering is entirely server-side.
+          All <Mono>GET /talents</Mono> requests query OpenSearch via a
+          dynamically built compound query. Filtering is entirely server-side.
         </p>
 
         <div className="mt-5 rounded-2xl border border-black/10 dark:border-white/10 bg-white/50 dark:bg-slate-800/50 overflow-hidden">
           <div className="px-5 py-3 border-b border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-blue-500" />
-            <span className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">Query Strategy</span>
+            <span className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
+              Query Strategy
+            </span>
           </div>
           <div className="divide-y divide-black/5 dark:divide-white/5">
             {[
@@ -669,40 +879,56 @@ aimory-talent-pool-dev-frontend-{acct-id}   # S3`}</CodeBlock>
                 type: "prefix",
                 field: "name_lower",
                 use: "Name search",
-                detail: "Instant prefix matching as users type. Zero latency feel.",
+                detail:
+                  "Instant prefix matching as users type. Zero latency feel.",
               },
               {
                 type: "match / fuzziness:1",
                 field: "resume_text, summary",
                 use: "Full-text keyword search",
-                detail: "Fuzzy matching with edit distance 1. Returns highlight fragments with <mark> tags.",
+                detail:
+                  "Fuzzy matching with edit distance 1. Returns highlight fragments with <mark> tags.",
               },
               {
                 type: "term",
                 field: "status, clearance, location, category",
                 use: "Dropdown filters",
-                detail: "Exact-match filtering on enumerated fields. Combinable.",
+                detail:
+                  "Exact-match filtering on enumerated fields. Combinable.",
               },
               {
                 type: "terms_set",
                 field: "skill_names, cert_names",
                 use: "Multi-skill / multi-cert filters",
-                detail: "minimum_should_match_script ensures ALL selected values must be present.",
+                detail:
+                  "minimum_should_match_script ensures ALL selected values must be present.",
               },
               {
                 type: "range",
                 field: "years_of_experience",
                 use: "Experience range filter",
-                detail: "gte / lte bounds. Either or both can be set independently.",
+                detail:
+                  "gte / lte bounds. Either or both can be set independently.",
               },
             ].map((row) => (
-              <div key={row.type} className="grid grid-cols-[1fr_1fr_2fr] gap-4 px-5 py-3.5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-xs">
+              <div
+                key={row.type}
+                className="grid grid-cols-[1fr_1fr_2fr] gap-4 px-5 py-3.5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-xs"
+              >
                 <div>
-                  <code className="font-mono font-semibold text-violet-600 dark:text-violet-400">{row.type}</code>
-                  <div className="text-[10px] text-foreground/40 mt-0.5 font-mono">{row.field}</div>
+                  <code className="font-mono font-semibold text-violet-600 dark:text-violet-400">
+                    {row.type}
+                  </code>
+                  <div className="text-[10px] text-foreground/40 mt-0.5 font-mono">
+                    {row.field}
+                  </div>
                 </div>
-                <div className="font-medium text-foreground/70 self-center">{row.use}</div>
-                <div className="text-foreground/50 self-center leading-relaxed">{row.detail}</div>
+                <div className="font-medium text-foreground/70 self-center">
+                  {row.use}
+                </div>
+                <div className="text-foreground/50 self-center leading-relaxed">
+                  {row.detail}
+                </div>
               </div>
             ))}
           </div>
@@ -710,18 +936,22 @@ aimory-talent-pool-dev-frontend-{acct-id}   # S3`}</CodeBlock>
       </Section>
 
       {/* Auth */}
-      <Section title="Authentication & Authorization" icon={<Key className="w-6 h-6" />}>
+      <Section
+        title="Authentication & Authorization"
+        icon={<Key className="w-6 h-6" />}
+      >
         <p>
-          Cognito with Microsoft Entra ID (Azure AD) federation. The frontend uses AWS
-          Amplify v6 for token management and the PKCE OAuth flow.
+          Cognito with Microsoft Entra ID (Azure AD) federation. The frontend
+          uses AWS Amplify v6 for token management and the PKCE OAuth flow.
         </p>
         <AuthFlowDiagram />
         <SubSection title="Email Domain Restriction">
           <p className="text-sm">
-            <Mono>VITE_ALLOWED_EMAIL_SUFFIXES</Mono> (e.g. <Mono>@aimory.com</Mono>)
-            enforces a domain check at the UI layer after sign-in. This is supplemental —
-            the API independently validates the JWT on every request via API Gateway's
-            JWT Authorizer regardless of client-side checks.
+            <Mono>VITE_ALLOWED_EMAIL_SUFFIXES</Mono> (e.g.{" "}
+            <Mono>@aimory.com</Mono>) enforces a domain check at the UI layer
+            after sign-in. This is supplemental — the API independently
+            validates the JWT on every request via API Gateway's JWT Authorizer
+            regardless of client-side checks.
           </p>
         </SubSection>
       </Section>
@@ -730,24 +960,36 @@ aimory-talent-pool-dev-frontend-{acct-id}   # S3`}</CodeBlock>
       <Section title="API Reference" icon={<Network className="w-6 h-6" />}>
         <p>
           All endpoints require{" "}
-          <Mono>Authorization: Bearer {"<cognito_id_token>"}</Mono>. Base URL from{" "}
-          <Mono>VITE_API_ENDPOINT</Mono> (Terraform output: <Mono>api_endpoint</Mono>).
+          <Mono>Authorization: Bearer {"<cognito_id_token>"}</Mono>. Base URL
+          from <Mono>VITE_API_ENDPOINT</Mono> (Terraform output:{" "}
+          <Mono>api_endpoint</Mono>).
         </p>
 
         <div className="mt-5 rounded-2xl border border-black/10 dark:border-white/10 bg-white/50 dark:bg-slate-800/50 overflow-hidden">
           <div className="px-5 py-3 border-b border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-amber-500" />
-            <span className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">Endpoints</span>
+            <span className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
+              Endpoints
+            </span>
           </div>
           <div className="divide-y divide-black/5 dark:divide-white/5">
             {API_ENDPOINTS.map((e) => (
-              <div key={e.method + e.path} className="flex gap-4 px-5 py-4 hover:bg-black/5 dark:hover:bg-white/5 transition-colors items-start">
-                <span className={`shrink-0 px-2.5 py-0.5 rounded-md border text-[11px] font-mono font-bold ${e.methodColor}`}>
+              <div
+                key={e.method + e.path}
+                className="flex gap-4 px-5 py-4 hover:bg-black/5 dark:hover:bg-white/5 transition-colors items-start"
+              >
+                <span
+                  className={`shrink-0 px-2.5 py-0.5 rounded-md border text-[11px] font-mono font-bold ${e.methodColor}`}
+                >
                   {e.method}
                 </span>
                 <div className="min-w-0">
-                  <code className="text-sm font-mono text-foreground/80 block mb-1">{e.path}</code>
-                  <p className="text-xs text-foreground/50 leading-relaxed">{e.desc}</p>
+                  <code className="text-sm font-mono text-foreground/80 block mb-1">
+                    {e.path}
+                  </code>
+                  <p className="text-xs text-foreground/50 leading-relaxed">
+                    {e.desc}
+                  </p>
                 </div>
               </div>
             ))}
@@ -756,7 +998,10 @@ aimory-talent-pool-dev-frontend-{acct-id}   # S3`}</CodeBlock>
       </Section>
 
       {/* Deployment */}
-      <Section title="Deployment & Operations" icon={<GitBranch className="w-6 h-6" />}>
+      <Section
+        title="Deployment & Operations"
+        icon={<GitBranch className="w-6 h-6" />}
+      >
         <SubSection title="Infrastructure">
           <CodeBlock>{`# First-time state backend (one-time only)
 cd infra/bootstrap-state
@@ -790,12 +1035,14 @@ aws cloudfront create-invalidation \\
                 <span className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-400">
                   <RefreshCw className="w-3.5 h-3.5" />
                 </span>
-                <code className="text-xs font-mono font-bold text-foreground">stale_checker</code>
+                <code className="text-xs font-mono font-bold text-foreground">
+                  stale_checker
+                </code>
               </div>
               <p className="text-xs text-foreground/55 leading-relaxed">
                 Runs on an EventBridge schedule. Scans profiles where{" "}
-                <Mono>updated_at</Mono> exceeds the configured threshold and sets their
-                status to "Stale Candidate".
+                <Mono>updated_at</Mono> exceeds the configured threshold and
+                sets their status to "Stale Candidate".
               </p>
             </div>
             <div className="rounded-xl border border-black/10 dark:border-white/10 bg-white/60 dark:bg-slate-800/60 p-4">
@@ -803,11 +1050,13 @@ aws cloudfront create-invalidation \\
                 <span className="p-1.5 rounded-lg bg-violet-500/10 border border-violet-500/25 text-violet-600 dark:text-violet-400">
                   <Zap className="w-3.5 h-3.5" />
                 </span>
-                <code className="text-xs font-mono font-bold text-foreground">lookup-dedup</code>
+                <code className="text-xs font-mono font-bold text-foreground">
+                  lookup-dedup
+                </code>
               </div>
               <p className="text-xs text-foreground/55 leading-relaxed">
-                Uses Bedrock/Claude to canonicalize near-duplicate skill and cert names
-                (e.g. "JavaScript" → "Javascript"). Run manually via{" "}
+                Uses Bedrock/Claude to canonicalize near-duplicate skill and
+                cert names (e.g. "JavaScript" → "Javascript"). Run manually via{" "}
                 <Mono>run_dedup.py --dry-run</Mono> to preview first.
               </p>
             </div>
@@ -816,32 +1065,40 @@ aws cloudfront create-invalidation \\
       </Section>
 
       {/* Scripts */}
-      <Section title="Operational Scripts" icon={<Terminal className="w-6 h-6" />}>
+      <Section
+        title="Operational Scripts"
+        icon={<Terminal className="w-6 h-6" />}
+      >
         <p>
-          Located in <Mono>scripts/</Mono>. Require AWS credentials with DynamoDB,
-          Lambda, S3, and Step Functions permissions.
+          Located in <Mono>scripts/</Mono>. Require AWS credentials with
+          DynamoDB, Lambda, S3, and Step Functions permissions.
         </p>
 
         <div className="mt-5 rounded-2xl border border-black/10 dark:border-white/10 bg-white/50 dark:bg-slate-800/50 overflow-hidden">
           <div className="px-5 py-3 border-b border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-slate-500" />
-            <span className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">scripts/</span>
+            <span className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
+              scripts/
+            </span>
           </div>
           {[
             {
               script: "backfill_lookups.py",
               desc: "Scans talent_profiles and repopulates all 7 lookup tables. Idempotent.",
-              usage: "python scripts/backfill_lookups.py --env dev --region us-east-1",
+              usage:
+                "python scripts/backfill_lookups.py --env dev --region us-east-1",
             },
             {
               script: "backfill_opensearch.py",
               desc: "Bulk-indexes all DynamoDB profiles into OpenSearch. Use after index recreation or sync drift.",
-              usage: "python scripts/backfill_opensearch.py --table aimory-talent-pool-dev-talent-profiles --endpoint <endpoint>",
+              usage:
+                "python scripts/backfill_opensearch.py --table aimory-talent-pool-dev-talent-profiles --endpoint <endpoint>",
             },
             {
               script: "reprocess_resumes.py",
               desc: "Re-triggers all resumes through Step Functions. Use --batch-size to avoid rate limits.",
-              usage: "python scripts/reprocess_resumes.py --bucket <bucket> --sfn-arn <arn> --batch-size 5",
+              usage:
+                "python scripts/reprocess_resumes.py --bucket <bucket> --sfn-arn <arn> --batch-size 5",
             },
             {
               script: "run_dedup.py",
@@ -853,7 +1110,9 @@ aws cloudfront create-invalidation \\
               key={script}
               className={`px-5 py-4 ${i < arr.length - 1 ? "border-b border-black/5 dark:border-white/5" : ""}`}
             >
-              <code className="text-sm font-mono font-bold text-violet-600 dark:text-violet-400">{script}</code>
+              <code className="text-sm font-mono font-bold text-violet-600 dark:text-violet-400">
+                {script}
+              </code>
               <p className="text-xs text-foreground/55 mt-1 mb-3">{desc}</p>
               <div className="bg-[#0d1117] rounded-lg px-4 py-2.5 font-mono text-xs text-slate-400 border border-white/5">
                 <pre className="whitespace-pre-wrap">{usage}</pre>
@@ -876,11 +1135,17 @@ aws cloudfront create-invalidation \\
                   {item.icon}
                 </span>
                 <div>
-                  <div className="text-[10px] font-bold text-foreground/40 uppercase tracking-wider">{item.label}</div>
-                  <div className="text-sm font-semibold text-foreground leading-tight">{item.value}</div>
+                  <div className="text-[10px] font-bold text-foreground/40 uppercase tracking-wider">
+                    {item.label}
+                  </div>
+                  <div className="text-sm font-semibold text-foreground leading-tight">
+                    {item.value}
+                  </div>
                 </div>
               </div>
-              <p className="text-xs text-foreground/55 leading-relaxed">{item.detail}</p>
+              <p className="text-xs text-foreground/55 leading-relaxed">
+                {item.detail}
+              </p>
             </div>
           ))}
         </div>

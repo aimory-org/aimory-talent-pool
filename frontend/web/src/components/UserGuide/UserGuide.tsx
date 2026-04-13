@@ -140,6 +140,20 @@ function FAQ({
 export function UserGuide() {
   return (
     <div>
+      <Section title="The Big Picture" icon={<Zap className="w-6 h-6" />}>
+        <p>
+          The Talent Pool automatically reads resumes, extracts important
+          information (skills, experience, contact details), and makes
+          candidates easy to search and manage.
+        </p>
+        <p>
+          Think of it like a smart filing cabinet that not only stores resumes
+          but actually <strong>reads and understands them</strong> — so you can
+          quickly find the right candidates without reading through hundreds of
+          documents manually.
+        </p>
+      </Section>
+
       <Section title="Finding Candidates" icon={<Search className="w-6 h-6" />}>
         <p>
           The dashboard lets you search and filter candidates in several ways:
@@ -228,20 +242,6 @@ export function UserGuide() {
           marks candidates as "Stale" if their profile hasn't been updated in a
           while, helping you focus on fresh, active candidates.
         </Callout>
-      </Section>
-
-      <Section title="The Big Picture" icon={<Zap className="w-6 h-6" />}>
-        <p>
-          The Talent Pool automatically reads resumes, extracts important
-          information (skills, experience, contact details), and makes
-          candidates easy to search and manage.
-        </p>
-        <p>
-          Think of it like a smart filing cabinet that not only stores resumes
-          but actually <strong>reads and understands them</strong> — so you can
-          quickly find the right candidates without reading through hundreds of
-          documents manually.
-        </p>
       </Section>
 
       <Section
