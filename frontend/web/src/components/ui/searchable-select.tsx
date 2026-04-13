@@ -32,7 +32,18 @@ function SearchableSelect({
   const selectedLabel = options.find((o) => o.value === value)?.label ?? "";
 
   const filtered = query
-    ? options.filter((o) => o.label.toLowerCase().includes(query.toLowerCase()))
+    ? options.filter((o) => {
+        const label = o.label.toLowerCase();
+        const q = query.toLowerCase();
+        // Exact match or prefix of the full label
+        if (label === q || label.startsWith(q)) return true;
+        // Word-prefix matching — only when query is 2+ chars to avoid
+        // single-letter matches on short tokens like state codes ("DC", "VA")
+        if (q.length >= 2) {
+          return label.split(/[\s,/()-]+/).some((word) => word.startsWith(q));
+        }
+        return false;
+      })
     : options;
 
   React.useEffect(() => {
@@ -103,7 +114,7 @@ function SearchableSelect({
           <span
             className={cn(
               "flex-1 truncate text-sm",
-              !value && "text-foreground/40",
+              value ? "text-foreground" : "text-foreground/40",
             )}
           >
             {value ? selectedLabel : placeholder}
@@ -130,14 +141,14 @@ function SearchableSelect({
       </div>
 
       {open && (
-        <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-48 overflow-auto rounded-lg border border-black/10 bg-white shadow-lg dark:border-white/10 dark:bg-slate-800">
+        <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-48 overflow-auto rounded-lg border border-black/10 dark:border-white/10 bg-white dark:bg-slate-800 shadow-lg">
           {filtered.length > 0 ? (
             filtered.map((option) => (
               <div
                 key={option.value}
                 onClick={() => handleSelect(option.value)}
                 className={cn(
-                  "cursor-pointer px-3 py-2 text-sm text-foreground/90 transition-colors",
+                  "cursor-pointer px-3 py-2 text-sm text-foreground transition-colors",
                   "hover:bg-indigo-500/10 hover:text-indigo-700 dark:hover:text-indigo-300",
                   option.value === value &&
                     "bg-indigo-500/10 font-medium text-indigo-700 dark:text-indigo-300",

@@ -120,6 +120,8 @@ module "jobs" {
   job_titles_lookup_table_arn           = module.storage.job_titles_lookup_table_arn
   industry_categories_lookup_table_name = module.storage.industry_categories_lookup_table_name
   industry_categories_lookup_table_arn  = module.storage.industry_categories_lookup_table_arn
+  cities_lookup_table_name              = module.storage.cities_lookup_table_name
+  cities_lookup_table_arn               = module.storage.cities_lookup_table_arn
 
   bedrock_model_id = var.bedrock_model_id
 }

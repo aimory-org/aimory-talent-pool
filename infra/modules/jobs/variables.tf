@@ -59,6 +59,16 @@ variable "industry_categories_lookup_table_arn" {
   description = "DynamoDB table ARN for industry categories lookup"
 }
 
+variable "cities_lookup_table_name" {
+  type        = string
+  description = "DynamoDB table name for cities lookup"
+}
+
+variable "cities_lookup_table_arn" {
+  type        = string
+  description = "DynamoDB table ARN for cities lookup"
+}
+
 variable "bedrock_model_id" {
   type        = string
   description = "Bedrock model ID for AI deduplication"
