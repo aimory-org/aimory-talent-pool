@@ -3,7 +3,7 @@
  */
 import { useState } from "react";
 import { Filter, X, Trash2, Settings } from "lucide-react";
-import { Select } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Label } from "@/components/ui/label";
 import {
   CANDIDATE_STATUSES,
@@ -111,31 +111,27 @@ export function FiltersPanel({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           <div className="space-y-2">
             <Label className="text-foreground/70">Status</Label>
-            <Select
+            <SearchableSelect
               value={filters.status}
-              onChange={(e) => onFilterChange("status", e.target.value)}
+              onValueChange={(v) => onFilterChange("status", v)}
               options={CANDIDATE_STATUSES}
               placeholder="All statuses"
             />
           </div>
           <div className="space-y-2">
             <Label className="text-foreground/70">Service Category</Label>
-            <Select
+            <SearchableSelect
               value={filters.service_category}
-              onChange={(e) =>
-                onFilterChange("service_category", e.target.value)
-              }
+              onValueChange={(v) => onFilterChange("service_category", v)}
               options={SERVICE_CATEGORIES}
               placeholder="All categories"
             />
           </div>
           <div className="space-y-2">
             <Label className="text-foreground/70">Industry</Label>
-            <Select
+            <SearchableSelect
               value={filters.industry_category}
-              onChange={(e) =>
-                onFilterChange("industry_category", e.target.value)
-              }
+              onValueChange={(v) => onFilterChange("industry_category", v)}
               options={lookupIndustryCategories.map((ic) => ({
                 value: ic,
                 label: ic,
@@ -145,38 +141,36 @@ export function FiltersPanel({
           </div>
           <div className="space-y-2">
             <Label className="text-foreground/70">Job Title</Label>
-            <Select
+            <SearchableSelect
               value={filters.job_title}
-              onChange={(e) => onFilterChange("job_title", e.target.value)}
+              onValueChange={(v) => onFilterChange("job_title", v)}
               options={lookupJobTitles.map((t) => ({ value: t, label: t }))}
               placeholder="All titles"
             />
           </div>
           <div className="space-y-2">
             <Label className="text-foreground/70">Clearance</Label>
-            <Select
+            <SearchableSelect
               value={filters.clearance_level}
-              onChange={(e) =>
-                onFilterChange("clearance_level", e.target.value)
-              }
+              onValueChange={(v) => onFilterChange("clearance_level", v)}
               options={CLEARANCE_LEVELS}
               placeholder="Any clearance"
             />
           </div>
           <div className="space-y-2">
             <Label className="text-foreground/70">State</Label>
-            <Select
+            <SearchableSelect
               value={filters.location_state}
-              onChange={(e) => onFilterChange("location_state", e.target.value)}
+              onValueChange={(v) => onFilterChange("location_state", v)}
               options={US_STATES}
               placeholder="Any state"
             />
           </div>
           <div className="space-y-2">
             <Label className="text-foreground/70">City</Label>
-            <Select
+            <SearchableSelect
               value={filters.city}
-              onChange={(e) => onFilterChange("city", e.target.value)}
+              onValueChange={(v) => onFilterChange("city", v)}
               options={(filters.location_state
                 ? lookupCities.filter((c) => c.state === filters.location_state)
                 : lookupCities
@@ -198,10 +192,9 @@ export function FiltersPanel({
                 </span>
               )}
             </Label>
-            <Select
+            <SearchableSelect
               value=""
-              onChange={(e) => {
-                const skill = e.target.value;
+              onValueChange={(skill) => {
                 if (skill && !filters.skills.includes(skill)) {
                   onSkillsChange([...filters.skills, skill]);
                 }
@@ -243,10 +236,9 @@ export function FiltersPanel({
                 </span>
               )}
             </Label>
-            <Select
+            <SearchableSelect
               value=""
-              onChange={(e) => {
-                const cert = e.target.value;
+              onValueChange={(cert) => {
                 if (cert && !filters.certifications.includes(cert)) {
                   onCertificationsChange([...filters.certifications, cert]);
                 }
@@ -354,10 +346,9 @@ export function FiltersPanel({
               </div>
             ) : (
               <>
-                <Select
+                <SearchableSelect
                   value=""
-                  onChange={(e) => {
-                    const tag = e.target.value;
+                  onValueChange={(tag) => {
                     if (tag && !filters.tags.includes(tag)) {
                       onTagsChange?.([...filters.tags, tag]);
                     }

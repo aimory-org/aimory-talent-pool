@@ -203,7 +203,7 @@ class TestPersistNormalization:
         table = boto3.resource("dynamodb", region_name="us-east-1").Table("talent-profiles")
         item = table.get_item(Key={"pk": result["pk"]})["Item"]
         names = [s["name"] for s in item["skillsets"]]
-        assert "AWS" in names
+        assert "Amazon Web Services" in names
         assert "CI/CD" in names
         assert "Python" in names
 
@@ -291,7 +291,7 @@ class TestPersistDynamoDB:
         table = boto3.resource("dynamodb", region_name="us-east-1").Table("talent-profiles")
         item = table.get_item(Key={"pk": result["pk"]})["Item"]
         assert "Python" in item["skill_names"]
-        assert "AWS" in item["skill_names"]
+        assert "Amazon Web Services" in item["skill_names"]
 
     def test_denormalized_cert_names(self, all_tables, sample_profile):
         app = _reload_app()
@@ -336,7 +336,7 @@ class TestPersistLookupTables:
         items = table.scan()["Items"]
         skill_names = {i["skill"] for i in items}
         assert "Python" in skill_names
-        assert "AWS" in skill_names
+        assert "Amazon Web Services" in skill_names
 
     def test_populates_certifications_lookup(self, all_tables, sample_profile):
         app = _reload_app()

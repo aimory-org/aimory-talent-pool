@@ -179,9 +179,15 @@ _SKILL_CANONICAL_MAP = {
     "problem solving skills": "Problem Solving",
     "problem-solving": "Problem Solving",
     "problem-solving skills": "Problem Solving",
-    # AWS variations
-    "amazon web services": "AWS",
-    "amazon web services (aws)": "AWS",
+    # AWS variations — canonical is full name per full-name standard
+    "aws": "Amazon Web Services",
+    "amazon web services (aws)": "Amazon Web Services",
+    # GCP variations
+    "gcp": "Google Cloud Platform",
+    "google cloud": "Google Cloud Platform",
+    # Azure variations
+    "azure": "Microsoft Azure",
+    "ms azure": "Microsoft Azure",
     # JavaScript variations
     "js": "JavaScript",
     "javascript (js)": "JavaScript",
