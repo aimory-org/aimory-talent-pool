@@ -1,161 +1,35 @@
-import { useEffect, useState, useCallback } from "react";
-import {
-  signInWithRedirect,
-  signOut,
-  fetchAuthSession,
-} from "aws-amplify/auth";
-import { Hub } from "aws-amplify/utils";
+import { signInWithRedirect, fetchAuthSession } from "aws-amplify/auth";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import "./App.css";
 import { allowedEmailSuffixes, microsoftProvider } from "@/lib/auth";
+import { useAuth, signOutUser, type UserInfo } from "@/hooks/useAuth";
 import { TalentDashboard } from "./components/TalentDashboard";
 import { HowItWorks } from "./components/HowItWorks";
 import { NavBar } from "./components/ui/navbar";
 
-interface UserInfo {
-  username: string;
-  email: string;
-  name?: string;
-}
+// ---------------------------------------------------------------------------
+// Layout shells
+// ---------------------------------------------------------------------------
 
-const SignOutButton = () => {
-  const handleClick = async () => {
-    try {
-      await signOut();
-    } catch (error) {
-      console.error("Sign-out failed", error);
-    }
-  };
+const AuthenticatedRoutes = ({ user }: { user: UserInfo }) => (
+  <div className="min-h-screen bg-background">
+    <NavBar user={user} onSignOut={signOutUser} />
+    <Routes>
+      <Route path="/help" element={<HowItWorks />} />
+      <Route path="*" element={<TalentDashboard />} />
+    </Routes>
+  </div>
+);
 
-  return (
-    <button
-      className="px-4 py-2 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground/60 hover:bg-black/10 dark:hover:bg-white/10 hover:text-foreground hover:border-black/20 dark:hover:border-white/20 transition-all duration-200 text-sm font-medium"
-      onClick={handleClick}
-    >
-      Sign out
-    </button>
-  );
-};
-
-const useAuth = () => {
-  const [user, setUser] = useState<UserInfo | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const checkUser = useCallback(async () => {
-    try {
-      // Fetch session and parse user info from ID token
-      const session = await fetchAuthSession();
-      const idToken = session.tokens?.idToken;
-
-      if (!idToken) {
-        setUser(null);
-        setIsLoading(false);
-        return;
-      }
-
-      // Parse claims from the ID token payload
-      const payload = idToken.payload;
-      setUser({
-        username: (payload.sub as string) || "unknown",
-        email:
-          (payload.email as string) || (payload.sub as string) || "unknown",
-        name: payload.name as string | undefined,
-      });
-
-      // Clear the OAuth code from URL after successful auth
-      if (window.location.search.includes("code=")) {
-        window.history.replaceState({}, "", window.location.pathname);
-      }
-    } catch (err) {
-      console.debug("No authenticated user:", err);
-      setUser(null);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    // Listen for auth events
-    const unsubscribe = Hub.listen(
-      "auth",
-      ({ payload }: { payload: { event: string } }) => {
-        console.debug("Auth event:", payload.event);
-        switch (payload.event) {
-          case "signedIn":
-          case "signInWithRedirect":
-          case "tokenRefresh":
-            checkUser();
-            break;
-          case "signedOut":
-            setUser(null);
-            setIsLoading(false);
-            break;
-          case "signInWithRedirect_failure":
-            console.error("OAuth redirect failed");
-            setIsLoading(false);
-            break;
-        }
-      },
-    );
-
-    // Initial auth check
-    checkUser();
-
-    return unsubscribe;
-  }, [checkUser]);
-
-  return { user, isLoading };
-};
-
-const handleSignOut = async () => {
-  try {
-    await signOut();
-  } catch (error) {
-    console.error("Sign-out failed", error);
-  }
-};
-
-// Authenticated routes wrapper with persistent NavBar
-const AuthenticatedRoutes = ({ user }: { user: UserInfo }) => {
-  return (
-    <div className="min-h-screen bg-background">
-      <NavBar user={user} onSignOut={handleSignOut} />
-      <Routes>
-        <Route path="/how-it-works" element={<HowItWorks />} />
-        <Route path="*" element={<TalentDashboard />} />
-      </Routes>
-    </div>
-  );
-};
+// ---------------------------------------------------------------------------
+// App logic
+// ---------------------------------------------------------------------------
 
 function AppContent() {
   const { user, isLoading } = useAuth();
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-slate-100 dark:bg-slate-900">
-        {/* Background effects */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/3 -left-20 w-72 h-72 bg-indigo-500/20 rounded-full blur-3xl" />
-          <div className="absolute bottom-1/3 -right-20 w-96 h-96 bg-purple-500/15 rounded-full blur-3xl" />
-        </div>
+  if (isLoading) return <LoadingScreen />;
 
-        <div className="relative bg-white dark:bg-slate-800 backdrop-blur-xl rounded-2xl border border-gray-200 dark:border-slate-700 p-10 text-center max-w-sm shadow-2xl">
-          <div className="relative mx-auto mb-6 w-16 h-16">
-            <div className="absolute inset-0 rounded-full border-2 border-indigo-500/30" />
-            <div className="absolute inset-0 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin" />
-            <div className="absolute inset-3 rounded-full bg-linear-to-br from-indigo-500/20 to-purple-500/20" />
-          </div>
-          <p className="text-gray-700 dark:text-gray-300 font-medium mb-1">
-            Checking your session
-          </p>
-          <p className="text-foreground/40 text-sm">Please wait a moment...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Signed in - check access and show routes
   if (user) {
     const accountAllowed =
       allowedEmailSuffixes.length === 0 ||
@@ -163,22 +37,53 @@ function AppContent() {
         user.email.toLowerCase().endsWith(suffix),
       );
 
-    if (!accountAllowed) {
-      return <AccessDeniedPanel user={user} />;
-    }
-
+    if (!accountAllowed) return <AccessDeniedPanel user={user} />;
     return <AuthenticatedRoutes user={user} />;
   }
 
-  // Not signed in - show landing
   return <LoginPage />;
 }
 
-// Access denied panel (extracted for clarity)
-const AccessDeniedPanel = ({ user }: { user: UserInfo }) => {
+function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
+    </BrowserRouter>
+  );
+}
+
+export default App;
+
+// ---------------------------------------------------------------------------
+// Full-screen states
+// ---------------------------------------------------------------------------
+
+function LoadingScreen() {
+  return (
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-slate-100 dark:bg-slate-900">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/3 -left-20 w-72 h-72 bg-indigo-500/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/3 -right-20 w-96 h-96 bg-purple-500/15 rounded-full blur-3xl" />
+      </div>
+
+      <div className="relative bg-white dark:bg-slate-800 backdrop-blur-xl rounded-2xl border border-gray-200 dark:border-slate-700 p-10 text-center max-w-sm shadow-2xl">
+        <div className="relative mx-auto mb-6 w-16 h-16">
+          <div className="absolute inset-0 rounded-full border-2 border-indigo-500/30" />
+          <div className="absolute inset-0 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin" />
+          <div className="absolute inset-3 rounded-full bg-linear-to-br from-indigo-500/20 to-purple-500/20" />
+        </div>
+        <p className="text-gray-700 dark:text-gray-300 font-medium mb-1">
+          Checking your session
+        </p>
+        <p className="text-foreground/40 text-sm">Please wait a moment...</p>
+      </div>
+    </div>
+  );
+}
+
+function AccessDeniedPanel({ user }: { user: UserInfo }) {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background effects */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/3 -left-20 w-72 h-72 bg-red-500/10 rounded-full blur-3xl" />
         <div className="absolute bottom-1/3 -right-20 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl" />
@@ -219,14 +124,19 @@ const AccessDeniedPanel = ({ user }: { user: UserInfo }) => {
             Only accounts ending with{" "}
             <span className="text-foreground font-medium">
               {allowedEmailSuffixes
-                .map((suffix: string) => suffix.replace(/^@?/, "@"))
+                .map((s: string) => s.replace(/^@?/, "@"))
                 .join(" or ")}
             </span>{" "}
             have access to this environment.
           </p>
 
           <div className="flex flex-col gap-3">
-            <SignOutButton />
+            <button
+              onClick={signOutUser}
+              className="px-4 py-2 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground/60 hover:bg-black/10 dark:hover:bg-white/10 hover:text-foreground transition-all duration-200 text-sm font-medium"
+            >
+              Sign out
+            </button>
             <p className="text-center text-foreground/30 text-xs">
               Sign out and try again with your company account
             </p>
@@ -235,13 +145,11 @@ const AccessDeniedPanel = ({ user }: { user: UserInfo }) => {
       </div>
     </div>
   );
-};
+}
 
-// Login page (extracted for clarity)
-const LoginPage = () => {
+function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 -left-20 w-72 h-72 bg-indigo-500/20 rounded-full blur-3xl animate-pulse-glow" />
         <div
@@ -251,14 +159,12 @@ const LoginPage = () => {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-150 h-150 bg-linear-to-br from-indigo-500/10 via-transparent to-purple-500/10 rounded-full blur-3xl" />
       </div>
 
-      {/* Gradient line at top */}
       <div className="absolute top-0 inset-x-0 h-1 bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500 animate-gradient-x" />
 
       <div className="w-full max-w-md relative z-10">
-        {/* Logo/Brand */}
+        {/* Brand */}
         <div className="text-center mb-10">
           <div className="relative inline-block mb-6">
-            {/* Glow effect */}
             <div className="absolute inset-0 bg-linear-to-br from-indigo-500 to-purple-600 rounded-2xl blur-xl opacity-50 animate-pulse-glow" />
             <div className="relative inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-linear-to-br from-indigo-500 to-purple-600 shadow-2xl shadow-indigo-500/30">
               <svg
@@ -284,11 +190,9 @@ const LoginPage = () => {
           </p>
         </div>
 
-        {/* Login Card */}
+        {/* Card */}
         <div className="relative group">
-          {/* Gradient border effect */}
           <div className="absolute -inset-0.5 bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl opacity-30 blur group-hover:opacity-50 transition-opacity duration-500" />
-
           <div className="relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl border border-black/10 dark:border-white/10 p-8 shadow-2xl">
             <div className="text-center mb-8">
               <h2 className="text-xl font-semibold text-foreground mb-2">
@@ -309,7 +213,7 @@ const LoginPage = () => {
                     return;
                   }
                 } catch {
-                  // No session - proceed to sign in
+                  // No active session — proceed to sign in
                 }
                 await signInWithRedirect({ provider: microsoftProvider });
               }}
@@ -336,7 +240,6 @@ const LoginPage = () => {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="text-center mt-10 space-y-2">
           <p className="text-foreground/20 text-xs">
             Internal use only • Use your company Microsoft account
@@ -346,14 +249,4 @@ const LoginPage = () => {
       </div>
     </div>
   );
-};
-
-function App() {
-  return (
-    <BrowserRouter>
-      <AppContent />
-    </BrowserRouter>
-  );
 }
-
-export default App;

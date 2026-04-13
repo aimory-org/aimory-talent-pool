@@ -1,7 +1,7 @@
 /**
  * React hook for fetching lookup data (skills, certifications, cities).
  */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { getLookups, type LookupsResponse } from "@/lib/api";
 
 export interface UseLookupsResult {
@@ -32,7 +32,7 @@ export function useLookups(): UseLookupsResult {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const fetchLookups = async () => {
+  const fetchLookups = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
@@ -62,11 +62,11 @@ export function useLookups(): UseLookupsResult {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchLookups();
-  }, []);
+  }, [fetchLookups]);
 
   return {
     ...data,

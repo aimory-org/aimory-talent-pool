@@ -15,7 +15,7 @@ interface NavBarProps {
 
 const navItems = [
   { path: "/", label: "Talent Pool", icon: Users },
-  { path: "/how-it-works", label: "How It Works", icon: HelpCircle },
+  { path: "/help", label: "Help Center", icon: HelpCircle },
 ];
 
 export function NavBar({ user, onSignOut }: NavBarProps) {
@@ -72,9 +72,9 @@ export function NavBar({ user, onSignOut }: NavBarProps) {
               title={`Switch to ${resolvedTheme === "dark" ? "light" : "dark"} mode`}
             >
               {resolvedTheme === "dark" ? (
-                <Moon className="w-4 h-4" />
-              ) : (
                 <Sun className="w-4 h-4" />
+              ) : (
+                <Moon className="w-4 h-4" />
               )}
             </button>
 
