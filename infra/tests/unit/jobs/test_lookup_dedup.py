@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from _lambda_loader import load as _load_lambda
+from boto3.dynamodb.conditions import Key
 
 
 def _reload_app():
@@ -248,6 +249,15 @@ class TestHandler:
         assert result["message"] == "No duplicates or useless entries found"
         assert result["profiles_updated"] == 0
 
+        run_items = all_lookup_tables["audit_log"].query(
+            KeyConditionExpression=Key("pk").eq("SYSTEM#LOOKUP_DEDUP_RUN")
+        )["Items"]
+        assert len(run_items) == 1
+        assert run_items[0]["action"] == "UPDATE"
+        assert run_items[0]["user_email"] == "dedup@system"
+        assert "no duplicates or removals" in run_items[0]["details"].lower()
+        assert run_items[0]["snapshot"]["trigger"] == "manual"
+
     @patch("app.bedrock")
     def test_job_title_rename(self, mock_bedrock, all_lookup_tables):
         # Add a second job title to trigger dedup
@@ -434,3 +444,43 @@ class TestHandler:
         # Lookup table should have CCNA Preparation deleted
         resp = all_lookup_tables["certifications_lookup"].get_item(Key={"certification": "CCNA Preparation"})
         assert "Item" not in resp
+
+    @patch("app.bedrock")
+    def test_profile_updates_write_audit_entry(self, mock_bedrock, all_lookup_tables):
+        mock_bedrock.converse.return_value = _make_bedrock_response({"Agile Methodologies": "Agile"})
+        profiles_table = all_lookup_tables["talent_profiles"]
+        self._add_profile(profiles_table, "b#1", ["Agile Methodologies", "Python"])
+
+        app = _reload_app()
+        app.bedrock = mock_bedrock
+        result = app.handler({}, None)
+
+        assert result["profiles_updated"] == 1
+
+        items = all_lookup_tables["audit_log"].query(KeyConditionExpression=Key("pk").eq("b#1"))["Items"]
+        assert len(items) == 1
+        assert items[0]["action"] == "UPDATE"
+        assert items[0]["user_email"] == "dedup@system"
+        assert items[0]["changes"]["skillsets"]["old"][0]["name"] == "Agile Methodologies"
+        assert items[0]["changes"]["skillsets"]["new"][0]["name"] == "Agile"
+
+        run_items = all_lookup_tables["audit_log"].query(
+            KeyConditionExpression=Key("pk").eq("SYSTEM#LOOKUP_DEDUP_RUN")
+        )["Items"]
+        assert len(run_items) == 1
+        assert "profiles updated" in run_items[0]["details"].lower()
+        assert run_items[0]["snapshot"]["trigger"] == "manual"
+
+    @patch("app.bedrock")
+    def test_scheduled_event_writes_scheduled_trigger(self, mock_bedrock, all_lookup_tables):
+        mock_bedrock.converse.return_value = _make_bedrock_response({"rename": {}, "remove": []})
+
+        app = _reload_app()
+        app.bedrock = mock_bedrock
+        app.handler({"source": "aws.events", "detail-type": "Scheduled Event"}, None)
+
+        run_items = all_lookup_tables["audit_log"].query(
+            KeyConditionExpression=Key("pk").eq("SYSTEM#LOOKUP_DEDUP_RUN")
+        )["Items"]
+        assert len(run_items) == 1
+        assert run_items[0]["snapshot"]["trigger"] == "scheduled"

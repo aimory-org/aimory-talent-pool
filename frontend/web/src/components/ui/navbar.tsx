@@ -1,5 +1,12 @@
 import { Link, useLocation } from "react-router-dom";
-import { Users, HelpCircle, LogOut, Moon, Sun } from "lucide-react";
+import {
+  Users,
+  HelpCircle,
+  LogOut,
+  Moon,
+  Sun,
+  ClipboardList,
+} from "lucide-react";
 import { useTheme } from "@/lib/theme";
 
 interface UserInfo {
@@ -15,6 +22,7 @@ interface NavBarProps {
 
 const navItems = [
   { path: "/", label: "Talent Pool", icon: Users },
+  { path: "/audit", label: "Activity", icon: ClipboardList },
   { path: "/help", label: "Help Center", icon: HelpCircle },
 ];
 

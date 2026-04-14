@@ -15,6 +15,7 @@
 #   TF_VAR_ENTRA_CLIENT_ID     – Microsoft Entra ID application client ID
 #   TF_VAR_ENTRA_CLIENT_SECRET – Microsoft Entra ID client secret
 #   TF_VAR_ENTRA_TENANT_ID     – Microsoft Entra ID tenant ID
+#   DEPLOYMENTS_PAT            – GitHub token used by /deployments API (stored in SSM)
 #
 # Required GitHub Variables (repository or environment "dev"):
 #   TF_VAR_COGNITO_CALLBACK_URLS – JSON list, e.g. '["http://localhost:5173","https://xxxxx.cloudfront.net"]'
@@ -43,6 +44,7 @@ env:
   TF_DIR: infra/envs/dev
   AWS_REGION: us-east-1
   TF_IN_AUTOMATION: true
+  GITHUB_PAT_PARAM: /aimory/github-pat
 
 jobs:
   # ═══════════════════════════════════════════════════════════════════════════
@@ -81,6 +83,22 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
+
+      - name: Validate deployments token secret
+        run: |
+          if [ -z "${{ secrets.DEPLOYMENTS_PAT }}" ]; then
+            echo "::error::Missing required GitHub secret: DEPLOYMENTS_PAT"
+            exit 1
+          fi
+
+      - name: Sync deployments token to SSM
+        run: |
+          aws ssm put-parameter \
+            --name "${{ env.GITHUB_PAT_PARAM }}" \
+            --type SecureString \
+            --value "${{ secrets.DEPLOYMENTS_PAT }}" \
+            --overwrite \
+            --description "GitHub token for deployment history API"
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3

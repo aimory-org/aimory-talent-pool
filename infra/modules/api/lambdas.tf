@@ -45,6 +45,26 @@ locals {
         RESUME_BUCKET = var.resume_bucket_name
       }
     }
+    get_audit_history = {
+      route   = "GET /audit-history"
+      timeout = 10
+      memory  = 256
+      layers  = []
+      env = {
+        AUDIT_LOG_TABLE = var.audit_log_table_name
+      }
+    }
+    get_deployments = {
+      route   = "GET /deployments"
+      timeout = 15
+      memory  = 256
+      layers  = []
+      env = {
+        GITHUB_PAT_PARAM     = var.github_pat_param
+        GITHUB_REPO          = var.github_repo
+        GITHUB_WORKFLOW_FILE = var.github_workflow_file
+      }
+    }
     update_talent = {
       route   = "PATCH /talents"
       timeout = 10
@@ -52,6 +72,7 @@ locals {
       layers  = []
       env = {
         TALENT_PROFILES_TABLE            = var.talent_profiles_table_name
+        AUDIT_LOG_TABLE                  = var.audit_log_table_name
         SKILLS_LOOKUP_TABLE              = var.skills_lookup_table_name
         CERTIFICATIONS_LOOKUP_TABLE      = var.certifications_lookup_table_name
         CITIES_LOOKUP_TABLE              = var.cities_lookup_table_name
@@ -67,6 +88,7 @@ locals {
       layers  = []
       env = {
         TALENT_PROFILES_TABLE = var.talent_profiles_table_name
+        AUDIT_LOG_TABLE       = var.audit_log_table_name
         RESUME_BUCKET         = var.resume_bucket_name
       }
     }
@@ -76,6 +98,7 @@ locals {
       memory  = 256
       layers  = []
       env = {
+        AUDIT_LOG_TABLE       = var.audit_log_table_name
         TAGS_LOOKUP_TABLE     = var.tags_lookup_table_name
         TALENT_PROFILES_TABLE = var.talent_profiles_table_name
       }

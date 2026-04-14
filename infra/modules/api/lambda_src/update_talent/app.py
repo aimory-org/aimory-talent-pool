@@ -14,6 +14,7 @@ import boto3
 
 dynamodb = boto3.resource("dynamodb")
 table = dynamodb.Table(os.environ["TALENT_PROFILES_TABLE"])
+AUDIT_LOG_TABLE = os.environ.get("AUDIT_LOG_TABLE", "")
 
 # Lookup tables for populating filter dropdowns when recruiters add new values
 SKILLS_LOOKUP_TABLE = os.environ.get("SKILLS_LOOKUP_TABLE", "")
@@ -237,6 +238,61 @@ def _decimal_converter(obj):
     raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
 
 
+def _iso_now():
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def _extract_actor(event):
+    claims = (((event or {}).get("requestContext") or {}).get("authorizer") or {}).get("jwt", {}).get("claims", {})
+    email = claims.get("email") or claims.get("preferred_username") or claims.get("cognito:username")
+    name = claims.get("name")
+
+    if not name:
+        given = claims.get("given_name")
+        family = claims.get("family_name")
+        if given and family:
+            name = f"{given} {family}"
+        elif given:
+            name = given
+
+    return email or "unknown@user", name
+
+
+def _write_audit_entry(
+    pk,
+    action,
+    timestamp,
+    user_email,
+    user_name=None,
+    changes=None,
+    snapshot=None,
+    candidate_name=None,
+):
+    if not AUDIT_LOG_TABLE:
+        return
+
+    item = {
+        "pk": pk,
+        "sk": f"{timestamp}#{action}",
+        "action": action,
+        "timestamp": timestamp,
+        "user_email": user_email,
+    }
+    if user_name:
+        item["user_name"] = user_name
+    if candidate_name:
+        item["candidate_name"] = candidate_name
+    if changes:
+        item["changes"] = changes
+    if snapshot is not None:
+        item["snapshot"] = snapshot
+
+    try:
+        dynamodb.Table(AUDIT_LOG_TABLE).put_item(Item=item)
+    except Exception as exc:
+        print(f"Warning: failed to write audit entry for {pk}: {exc}")
+
+
 def _populate_lookups(body):
     """Populate lookup tables with any new values from the update."""
     now = datetime.now(timezone.utc).isoformat()
@@ -299,6 +355,14 @@ def handler(event, context):
             }
 
         body = json.loads(event.get("body", "{}"))
+
+        original_item = table.get_item(Key={"pk": pk}).get("Item")
+        if not original_item:
+            return {
+                "statusCode": 404,
+                "headers": {"Content-Type": "application/json"},
+                "body": json.dumps({"error": "Talent profile not found"}),
+            }
 
         update_parts = []
         expression_names = {}
@@ -476,7 +540,7 @@ def handler(event, context):
             }
 
         # Add updated_at timestamp
-        now = datetime.now(timezone.utc).isoformat()
+        now = _iso_now()
         update_parts.append("updated_at = :updated_at")
         expression_values[":updated_at"] = now
 
@@ -498,6 +562,26 @@ def handler(event, context):
 
         # Populate lookup tables so new values appear in filter dropdowns
         _populate_lookups(body)
+
+        changes = {}
+        for field in body:
+            old_value = original_item.get(field)
+            new_value = updated_item.get(field)
+            if old_value != new_value:
+                changes[field] = {"old": old_value, "new": new_value}
+
+        if changes:
+            actor_email, actor_name = _extract_actor(event)
+            action = "STATUS_CHANGE" if set(changes.keys()) == {"status"} else "UPDATE"
+            _write_audit_entry(
+                pk=pk,
+                action=action,
+                timestamp=now,
+                user_email=actor_email,
+                user_name=actor_name,
+                changes=changes,
+                candidate_name=updated_item.get("name") or original_item.get("name"),
+            )
 
         return {
             "statusCode": 200,

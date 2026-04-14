@@ -11,6 +11,9 @@ import {
   deleteTalent,
   getResumeUrl,
   getLookups,
+  getAuditHistory,
+  listAuditHistory,
+  getDeployments,
 } from "@/lib/api";
 
 // Mock the aws-amplify auth module
@@ -313,6 +316,95 @@ describe("API Client", () => {
       );
 
       await expect(listTalents()).rejects.toThrow();
+    });
+  });
+
+  describe("getAuditHistory", () => {
+    it("fetches audit entries for a given pk", async () => {
+      const result = await getAuditHistory("bucket1#resume1.pdf");
+      expect(result.items).toHaveLength(2);
+      expect(result.items[0].action).toBe("STATUS_CHANGE");
+      expect(result.items[1].action).toBe("CREATE");
+    });
+
+    it("encodes the pk in the query string", async () => {
+      let capturedUrl = "";
+      server.use(
+        http.get(`${API_BASE}/audit-history`, ({ request }) => {
+          capturedUrl = request.url;
+          return HttpResponse.json({ items: [] });
+        }),
+      );
+      await getAuditHistory("bucket1#resume1.pdf");
+      expect(capturedUrl).toContain("pk=bucket1%23resume1.pdf");
+    });
+
+    it("throws on non-ok response", async () => {
+      server.use(
+        http.get(`${API_BASE}/audit-history`, () => {
+          return HttpResponse.json({ error: "Not found" }, { status: 404 });
+        }),
+      );
+      await expect(getAuditHistory("missing")).rejects.toThrow("Not found");
+    });
+  });
+
+  describe("listAuditHistory", () => {
+    it("fetches recent audit entries across all profiles", async () => {
+      const result = await listAuditHistory();
+
+      expect(result.items).toHaveLength(4);
+      expect(result.items[0].action).toBe("STATUS_CHANGE");
+      expect(result.items[1].action).toBe("DELETE");
+    });
+
+    it("includes global scope and limit in the query string", async () => {
+      let capturedUrl = "";
+
+      server.use(
+        http.get(`${API_BASE}/audit-history`, ({ request }) => {
+          capturedUrl = request.url;
+          return HttpResponse.json({ items: [] });
+        }),
+      );
+
+      await listAuditHistory(50);
+
+      expect(capturedUrl).toContain("scope=global");
+      expect(capturedUrl).toContain("limit=50");
+    });
+  });
+
+  describe("getDeployments", () => {
+    it("returns deployments list", async () => {
+      const result = await getDeployments();
+      expect(result.deployments).toHaveLength(2);
+      expect(result.deployments[0].conclusion).toBe("success");
+      expect(result.deployments[1].conclusion).toBe("failure");
+    });
+
+    it("returns deployment fields correctly shaped", async () => {
+      const result = await getDeployments();
+      const d = result.deployments[0];
+      expect(d).toHaveProperty("id");
+      expect(d).toHaveProperty("branch");
+      expect(d).toHaveProperty("commit_sha");
+      expect(d).toHaveProperty("commit_message");
+      expect(d).toHaveProperty("triggered_by");
+      expect(d).toHaveProperty("duration_seconds");
+      expect(d).toHaveProperty("url");
+    });
+
+    it("throws on API error", async () => {
+      server.use(
+        http.get(`${API_BASE}/deployments`, () => {
+          return HttpResponse.json(
+            { error: "GitHub API rate limited" },
+            { status: 503 },
+          );
+        }),
+      );
+      await expect(getDeployments()).rejects.toThrow("GitHub API rate limited");
     });
   });
 });

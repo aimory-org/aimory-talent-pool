@@ -104,6 +104,17 @@ describe("ProfileDetailPanel", () => {
       expect(screen.getByText("AWS Solutions Architect")).toBeInTheDocument();
       expect(screen.getByText("PMP")).toBeInTheDocument();
     });
+
+    it("switches to the history tab and renders audit history", async () => {
+      renderPanel();
+
+      await userEvent.click(screen.getByRole("button", { name: "History" }));
+
+      await waitFor(() => {
+        expect(screen.getByText("Status changed")).toBeInTheDocument();
+        expect(screen.getByText("Pipeline")).toBeInTheDocument();
+      });
+    });
   });
 
   describe("Edit mode toggle", () => {
