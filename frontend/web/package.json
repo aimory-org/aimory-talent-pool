@@ -52,6 +52,9 @@
   "overrides": {
     "@xstate/react": {
       "react": "$react"
+    },
+    "test-exclude": {
+      "glob": "^13.0.6"
     }
   }
 }
