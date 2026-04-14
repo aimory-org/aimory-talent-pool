@@ -179,14 +179,32 @@ export function UserGuide() {
               etc.
             </li>
             <li>
+              <strong>Industry</strong> — Filter by industry category from the
+              imported resume data.
+            </li>
+            <li>
+              <strong>Job Title</strong> — Match candidates by role title.
+            </li>
+            <li>
               <strong>Clearance</strong> — Secret, TS, TS/SCI, and higher
             </li>
             <li>
               <strong>Location</strong> — Filter by state and city
             </li>
             <li>
-              <strong>Skills &amp; Certifications</strong> — Add multiple to
-              require all of them
+              <strong>Skills</strong> — Add multiple skills to require all
+              selected skills.
+            </li>
+            <li>
+              <strong>Certifications</strong> — Add multiple certifications to
+              require all selected certifications.
+            </li>
+            <li>
+              <strong>Tags</strong> — Filter by recruiter-managed tags.
+            </li>
+            <li>
+              <strong>Years of Experience</strong> — Set a min and/or max range
+              for total experience.
             </li>
           </ul>
         </SubSection>

@@ -86,7 +86,7 @@ export function StatsCards({ stats }: StatsCardsProps) {
                   {card.label}
                 </span>
                 <div
-                  className={`p-1.5 rounded-lg bg-white/50 dark:bg-black/20 ${card.iconColor}`}
+                  className={`p-1.5 rounded-lg bg-white/50 dark:bg-black/20 shrink-0 ml-3 ${card.iconColor}`}
                 >
                   <Icon className="h-3.5 w-3.5" />
                 </div>

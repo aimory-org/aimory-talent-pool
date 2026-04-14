@@ -5,6 +5,7 @@ from decimal import Decimal
 import boto3
 
 TABLE_NAME = os.environ["TALENT_PROFILES_TABLE"]
+AUDIT_LOG_TABLE = os.environ.get("AUDIT_LOG_TABLE", "")
 SKILLS_LOOKUP_TABLE = os.environ.get("SKILLS_LOOKUP_TABLE", "")
 CERTIFICATIONS_LOOKUP_TABLE = os.environ.get("CERTIFICATIONS_LOOKUP_TABLE", "")
 CITIES_LOOKUP_TABLE = os.environ.get("CITIES_LOOKUP_TABLE", "")
@@ -521,6 +522,27 @@ def _populate_lookup_tables(profile):
             industries_table.put_item(Item={"industry_category": industry, "updated_at": now})
 
 
+def _write_audit_entry(pk, action, timestamp, candidate_name=None):
+    if not AUDIT_LOG_TABLE:
+        return
+
+    item = {
+        "pk": pk,
+        "sk": f"{timestamp}#{action}",
+        "action": action,
+        "timestamp": timestamp,
+        "user_email": "pipeline@system",
+        "user_name": "Pipeline",
+    }
+    if candidate_name:
+        item["candidate_name"] = candidate_name
+
+    try:
+        dynamodb.Table(AUDIT_LOG_TABLE).put_item(Item=item)
+    except Exception as exc:
+        print(f"Warning: failed to write pipeline audit entry for {pk}: {exc}")
+
+
 def _check_duplicate(name_lower, email, current_pk):
     """Check if a candidate with the same name+email already exists. Returns existing pk or None."""
     if not name_lower or not email:
@@ -582,6 +604,7 @@ def handler(event, context):
     existing_pk = _check_duplicate(name_lower, email, pk)
 
     # Preserve recruiter-curated fields if the record already exists
+    existing = None
     existing_status = "Potential Candidate"
     existing_notes = ""
     existing_tags = []
@@ -637,6 +660,8 @@ def handler(event, context):
 
     # Populate lookup tables for dropdown menus
     _populate_lookup_tables(profile)
+
+    _write_audit_entry(pk, "UPDATE" if existing else "CREATE", now, item.get("name"))
 
     return {
         "status": "ok",

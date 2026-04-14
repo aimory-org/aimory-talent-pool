@@ -51,6 +51,16 @@ variable "talent_profiles_table_arn" {
   description = "DynamoDB table ARN for talent profiles"
 }
 
+variable "audit_log_table_name" {
+  type        = string
+  description = "DynamoDB table name for audit history"
+}
+
+variable "audit_log_table_arn" {
+  type        = string
+  description = "DynamoDB table ARN for audit history"
+}
+
 variable "skills_lookup_table_name" {
   type        = string
   description = "DynamoDB table name for skills lookup"

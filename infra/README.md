@@ -197,6 +197,16 @@ Your IAM user/role needs permissions to manage:
 - Textract
 - Bedrock (Claude model access)
 
+## Deployments API Token (Reproducible Secret Setup)
+
+The System Events deployments feed reads a GitHub token from SSM Parameter Store.
+
+- SSM parameter name: `/aimory/github-pat`
+- Lambda consumer: `aimory-talent-pool-dev-api-get-deployments`
+- CI source of truth: GitHub secret `DEPLOYMENTS_PAT`
+
+On every deploy, the GitHub Actions workflow syncs `DEPLOYMENTS_PAT` into SSM (`SecureString`) before Terraform apply. This keeps the secret out of git and out of Terraform state while remaining reproducible.
+
 ## Initial Setup (First Time Only)
 
 ### 1. Bootstrap Terraform State Backend

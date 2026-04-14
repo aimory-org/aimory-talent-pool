@@ -106,3 +106,21 @@ variable "entra_tenant_id" {
     error_message = "entra_tenant_id must be a valid UUID."
   }
 }
+
+variable "github_pat_param" {
+  description = "SSM parameter containing the GitHub token for deployment history"
+  type        = string
+  default     = "/aimory/github-pat"
+}
+
+variable "github_repo" {
+  description = "GitHub repository used for deployment history"
+  type        = string
+  default     = "bencas21/aimory-talent-pool"
+}
+
+variable "github_workflow_file" {
+  description = "GitHub Actions workflow filename used for deployments"
+  type        = string
+  default     = "terraform-deploy.yml"
+}

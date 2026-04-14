@@ -3,6 +3,7 @@
 import json
 
 import boto3
+from boto3.dynamodb.conditions import Key
 from _lambda_loader import load as _load_lambda
 
 
@@ -61,3 +62,32 @@ class TestDeleteTalentHandler:
         app = _reload_app()
         resp = app.handler({"queryStringParameters": {"pk": "b#k"}}, None)
         assert resp["statusCode"] == 200
+
+    def test_writes_delete_audit_entry_with_snapshot(self, all_tables):
+        all_tables["talent_profiles"].put_item(Item={"pk": "b#k", "name": "Jane", "status": "Active Candidate"})
+        app = _reload_app()
+
+        resp = app.handler(
+            {
+                "queryStringParameters": {"pk": "b#k"},
+                "requestContext": {
+                    "authorizer": {
+                        "jwt": {
+                            "claims": {
+                                "email": "recruiter@aimory.com",
+                                "name": "Sarah Chen",
+                            }
+                        }
+                    }
+                },
+            },
+            None,
+        )
+
+        assert resp["statusCode"] == 200
+
+        items = all_tables["audit_log"].query(KeyConditionExpression=Key("pk").eq("b#k"))["Items"]
+        assert len(items) == 1
+        assert items[0]["action"] == "DELETE"
+        assert items[0]["user_email"] == "recruiter@aimory.com"
+        assert items[0]["snapshot"]["name"] == "Jane"

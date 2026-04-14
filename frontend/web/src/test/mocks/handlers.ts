@@ -1,5 +1,6 @@
 import { http, HttpResponse } from "msw";
 import type { TalentProfile } from "@/types/talent";
+import type { AuditEntry, Deployment } from "@/lib/api";
 
 const API_BASE = "https://api.test.com";
 
@@ -136,6 +137,83 @@ export const mockLookups = {
   ],
 };
 
+export const mockAuditEntries: AuditEntry[] = [
+  {
+    pk: "bucket1#resume1.pdf",
+    sk: "2026-04-14T12:00:00Z#STATUS_CHANGE",
+    action: "STATUS_CHANGE",
+    timestamp: "2026-04-14T12:00:00Z",
+    user_email: "recruiter@aimory.com",
+    user_name: "Sarah Chen",
+    candidate_name: "John Doe",
+    changes: {
+      status: { old: "Potential Candidate", new: "Active Candidate" },
+    },
+  },
+  {
+    pk: "bucket2#resume2.pdf",
+    sk: "2026-04-14T11:10:00Z#DELETE",
+    action: "DELETE",
+    timestamp: "2026-04-14T11:10:00Z",
+    user_email: "j.okafor@aimory.com",
+    user_name: "James Okafor",
+    candidate_name: "Jane Smith",
+    snapshot: {
+      name: "Jane Smith",
+    },
+  },
+  {
+    pk: "bucket2#resume2.pdf",
+    sk: "2026-04-14T08:45:00Z#UPDATE",
+    action: "UPDATE",
+    timestamp: "2026-04-14T08:45:00Z",
+    user_email: "dedup@system",
+    user_name: "Dedup",
+    candidate_name: "Jane Smith",
+    changes: {
+      job_title: { old: "Project Manger", new: "Project Manager" },
+    },
+  },
+  {
+    pk: "bucket1#resume1.pdf",
+    sk: "2026-04-13T09:00:00Z#CREATE",
+    action: "CREATE",
+    timestamp: "2026-04-13T09:00:00Z",
+    user_email: "pipeline@system",
+    user_name: "Pipeline",
+    candidate_name: "John Doe",
+  },
+];
+
+export const mockDeployments: Deployment[] = [
+  {
+    id: 1001,
+    status: "completed",
+    conclusion: "success",
+    branch: "main",
+    commit_sha: "abc1234",
+    commit_message: "Add audit log page",
+    triggered_by: "bencas21",
+    started_at: "2026-04-14T12:00:00Z",
+    completed_at: "2026-04-14T12:05:47Z",
+    duration_seconds: 347,
+    url: "https://github.com/bencas21/aimory-talent-pool/actions/runs/1001",
+  },
+  {
+    id: 1000,
+    status: "completed",
+    conclusion: "failure",
+    branch: "main",
+    commit_sha: "def5678",
+    commit_message: "Update auth config",
+    triggered_by: "bencas21",
+    started_at: "2026-04-13T10:00:00Z",
+    completed_at: "2026-04-13T10:02:04Z",
+    duration_seconds: 124,
+    url: "https://github.com/bencas21/aimory-talent-pool/actions/runs/1000",
+  },
+];
+
 // Default handlers
 export const handlers = [
   // List talents
@@ -267,5 +345,38 @@ export const handlers = [
       url: `https://s3.amazonaws.com/test-bucket/${key}?signature=abc123`,
       expiresIn: 3600,
     });
+  }),
+
+  // Audit history
+  http.get(`${API_BASE}/audit-history`, ({ request }) => {
+    const url = new URL(request.url);
+    const pk = url.searchParams.get("pk");
+    const scope = url.searchParams.get("scope");
+    const limit = Number(
+      url.searchParams.get("limit") ?? mockAuditEntries.length,
+    );
+
+    const sorted = [...mockAuditEntries].sort(
+      (left, right) =>
+        new Date(right.timestamp).getTime() -
+        new Date(left.timestamp).getTime(),
+    );
+
+    if (scope === "global") {
+      return HttpResponse.json({ items: sorted.slice(0, limit) });
+    }
+
+    if (!pk) {
+      return HttpResponse.json({ error: "pk required" }, { status: 400 });
+    }
+
+    return HttpResponse.json({
+      items: sorted.filter((item) => item.pk === pk),
+    });
+  }),
+
+  // Deployments
+  http.get(`${API_BASE}/deployments`, () => {
+    return HttpResponse.json({ deployments: mockDeployments });
   }),
 ];

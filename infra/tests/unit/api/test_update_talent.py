@@ -3,6 +3,7 @@
 import json
 from decimal import Decimal
 
+from boto3.dynamodb.conditions import Key
 from _lambda_loader import load as _load_lambda
 
 
@@ -182,3 +183,66 @@ class TestUpdateTalentLookupPopulation:
         assert resp["statusCode"] == 200
         item = all_tables["industry_categories_lookup"].get_item(Key={"industry_category": "Aerospace"})
         assert "Item" in item
+
+
+class TestUpdateTalentAuditLogging:
+    def test_status_change_writes_status_change_audit_entry(self, all_tables):
+        all_tables["talent_profiles"].put_item(Item={"pk": "b#k", "status": "Potential Candidate"})
+        app = _reload_app()
+
+        resp = app.handler(
+            {
+                "queryStringParameters": {"pk": "b#k"},
+                "body": json.dumps({"status": "Active Candidate"}),
+                "requestContext": {
+                    "authorizer": {
+                        "jwt": {
+                            "claims": {
+                                "email": "recruiter@aimory.com",
+                                "name": "Sarah Chen",
+                            }
+                        }
+                    }
+                },
+            },
+            None,
+        )
+
+        assert resp["statusCode"] == 200
+
+        items = all_tables["audit_log"].query(KeyConditionExpression=Key("pk").eq("b#k"))["Items"]
+        assert len(items) == 1
+        assert items[0]["action"] == "STATUS_CHANGE"
+        assert items[0]["user_email"] == "recruiter@aimory.com"
+        assert items[0]["changes"]["status"]["old"] == "Potential Candidate"
+        assert items[0]["changes"]["status"]["new"] == "Active Candidate"
+
+    def test_non_status_update_writes_update_audit_entry(self, all_tables):
+        all_tables["talent_profiles"].put_item(Item={"pk": "b#k", "job_title": "Developer"})
+        app = _reload_app()
+
+        resp = app.handler(
+            {
+                "queryStringParameters": {"pk": "b#k"},
+                "body": json.dumps({"job_title": "Senior Developer"}),
+                "requestContext": {
+                    "authorizer": {
+                        "jwt": {
+                            "claims": {
+                                "email": "recruiter@aimory.com",
+                                "name": "Sarah Chen",
+                            }
+                        }
+                    }
+                },
+            },
+            None,
+        )
+
+        assert resp["statusCode"] == 200
+
+        items = all_tables["audit_log"].query(KeyConditionExpression=Key("pk").eq("b#k"))["Items"]
+        assert len(items) == 1
+        assert items[0]["action"] == "UPDATE"
+        assert items[0]["changes"]["job_title"]["old"] == "Developer"
+        assert items[0]["changes"]["job_title"]["new"] == "Senior Developer"

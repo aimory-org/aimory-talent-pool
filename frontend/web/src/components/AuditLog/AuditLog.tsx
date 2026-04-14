@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { BookOpen, Server } from "lucide-react";
-import { UserGuide } from "@/components/UserGuide";
-import { TechReference } from "@/components/TechReference";
+import { Users, Server } from "lucide-react";
+import { RecruiterActivity } from "./RecruiterActivity";
+import { SystemActivity } from "./SystemActivity";
 
-type Tab = "user-guide" | "tech-reference";
+type Tab = "recruiter" | "system";
 
 const TABS: {
   id: Tab;
@@ -12,21 +12,21 @@ const TABS: {
   description: string;
 }[] = [
   {
-    id: "user-guide",
-    label: "User Guide",
-    icon: <BookOpen className="w-4 h-4" />,
-    description: "For recruiters & day-to-day users",
+    id: "recruiter",
+    label: "Recruiter Activity",
+    icon: <Users className="w-4 h-4" />,
+    description: "Edits, status changes, deletes & tags",
   },
   {
-    id: "tech-reference",
-    label: "Technical Reference",
+    id: "system",
+    label: "System Events",
     icon: <Server className="w-4 h-4" />,
-    description: "For developers & architects",
+    description: "Deploys, pipeline runs, dedup & reprocessing",
   },
 ];
 
-export function HowItWorks() {
-  const [activeTab, setActiveTab] = useState<Tab>("user-guide");
+export function AuditLog() {
+  const [activeTab, setActiveTab] = useState<Tab>("recruiter");
 
   return (
     <div className="bg-background min-h-screen">
@@ -34,13 +34,13 @@ export function HowItWorks() {
         {/* Page Header */}
         <div className="mb-10 animate-fade-in">
           <p className="text-xs font-semibold uppercase tracking-widest text-indigo-500 dark:text-indigo-400 mb-3">
-            Documentation
+            Audit & Activity
           </p>
           <h1 className="text-4xl font-bold tracking-tight mb-3">
-            <span className="shimmer-text">Help Center</span>
+            <span className="shimmer-text">Activity Log</span>
           </h1>
           <p className="text-base text-foreground/50">
-            Select a guide based on your role.
+            Track recruiter actions and system events across the platform.
           </p>
         </div>
 
@@ -58,7 +58,6 @@ export function HowItWorks() {
                     : "bg-white/50 dark:bg-white/5 border-black/[0.07] dark:border-white/[0.07] hover:bg-indigo-500/5 hover:border-indigo-500/20"
                 }`}
               >
-                {/* Active top bar */}
                 {isActive && (
                   <span className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-indigo-500 to-violet-500 rounded-t-2xl" />
                 )}
@@ -80,15 +79,20 @@ export function HowItWorks() {
           })}
         </div>
 
-        {/* Tab Content — key forces remount for re-animation */}
+        {/* Tab Content */}
         <div key={activeTab} className="animate-fade-in">
-          {activeTab === "user-guide" ? <UserGuide /> : <TechReference />}
+          {activeTab === "recruiter" ? (
+            <RecruiterActivity />
+          ) : (
+            <SystemActivity />
+          )}
         </div>
 
-        {/* Footer */}
+        {/* Footer note */}
         <div className="mt-16 pt-8 border-t border-black/[0.07] dark:border-white/[0.07] text-center">
           <p className="text-foreground/30 text-sm">
-            Questions or feedback? Reach out to the development team.
+            Recruiter and system activity are loaded from the audit log and
+            deployment APIs.
           </p>
         </div>
       </div>

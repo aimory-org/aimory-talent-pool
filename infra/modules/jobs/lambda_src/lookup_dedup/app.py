@@ -19,6 +19,7 @@ from datetime import datetime, timezone
 import boto3
 
 PROFILES_TABLE = os.environ["TALENT_PROFILES_TABLE"]
+AUDIT_LOG_TABLE = os.environ.get("AUDIT_LOG_TABLE", "")
 SKILLS_TABLE = os.environ.get("SKILLS_LOOKUP_TABLE", "")
 CERTS_TABLE = os.environ.get("CERTIFICATIONS_LOOKUP_TABLE", "")
 JOB_TITLES_TABLE = os.environ.get("JOB_TITLES_LOOKUP_TABLE", "")
@@ -28,6 +29,7 @@ BEDROCK_MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonne
 
 dynamodb = boto3.resource("dynamodb")
 bedrock = boto3.client("bedrock-runtime")
+DEDUP_RUN_PK = "SYSTEM#LOOKUP_DEDUP_RUN"
 
 # Lookup table configuration: (type_name, table_env, key_attr)
 LOOKUP_CONFIGS = [
@@ -235,6 +237,77 @@ def _parse_city_state(city_state_str):
     if len(parts) == 2:
         return parts[0].strip(), parts[1].strip()
     return city_state_str.strip(), ""
+
+
+def _write_audit_entry(pk, timestamp, changes, candidate_name=None):
+    if not AUDIT_LOG_TABLE or not changes:
+        return
+
+    item = {
+        "pk": pk,
+        "sk": f"{timestamp}#UPDATE",
+        "action": "UPDATE",
+        "timestamp": timestamp,
+        "user_email": "dedup@system",
+        "user_name": "Dedup",
+        "changes": changes,
+    }
+    if candidate_name:
+        item["candidate_name"] = candidate_name
+
+    try:
+        dynamodb.Table(AUDIT_LOG_TABLE).put_item(Item=item)
+    except Exception as exc:
+        print(f"Warning: failed to write dedup audit entry for {pk}: {exc}")
+
+
+def _write_run_audit_entry(
+    timestamp,
+    details,
+    profiles_updated,
+    renames,
+    removals,
+    dry_run,
+    trigger,
+):
+    if not AUDIT_LOG_TABLE or dry_run:
+        return
+
+    item = {
+        "pk": DEDUP_RUN_PK,
+        "sk": f"{timestamp}#UPDATE",
+        "action": "UPDATE",
+        "timestamp": timestamp,
+        "user_email": "dedup@system",
+        "user_name": "Dedup",
+        "details": details,
+        "snapshot": {
+            "profiles_updated": profiles_updated,
+            "renames": renames,
+            "removals": removals,
+            "dry_run": dry_run,
+            "trigger": trigger,
+        },
+    }
+
+    try:
+        dynamodb.Table(AUDIT_LOG_TABLE).put_item(Item=item)
+    except Exception as exc:
+        print(f"Warning: failed to write dedup run audit entry: {exc}")
+
+
+def _detect_run_trigger(event):
+    explicit = str((event or {}).get("trigger", "")).strip().lower()
+    if explicit in {"manual", "scheduled"}:
+        return explicit
+
+    source = str((event or {}).get("source", "")).strip().lower()
+    detail_type = str((event or {}).get("detail-type", "")).strip().lower()
+
+    if source == "aws.events" or "scheduled" in detail_type:
+        return "scheduled"
+
+    return "manual"
 
 
 def _extract_json(text):
@@ -453,6 +526,7 @@ def _update_profiles(all_renames, all_removals, dry_run):
         for item in items:
             pk = item["pk"]
             updates = {}
+            changes = {}
 
             # Skills (rename + remove)
             if (skills_map or skills_removals) and item.get("skillsets"):
@@ -460,6 +534,7 @@ def _update_profiles(all_renames, all_removals, dry_run):
                 if changed:
                     updates["skillsets"] = new_skillsets
                     updates["skill_names"] = ",".join(s["name"] for s in new_skillsets)
+                    changes["skillsets"] = {"old": item.get("skillsets"), "new": new_skillsets}
 
             # Certifications (rename + remove)
             if (certs_map or certs_removals) and item.get("certifications"):
@@ -467,14 +542,20 @@ def _update_profiles(all_renames, all_removals, dry_run):
                 if changed:
                     updates["certifications"] = new_certs
                     updates["cert_names"] = ",".join(new_certs)
+                    changes["certifications"] = {"old": item.get("certifications"), "new": new_certs}
 
             # Job title
             if titles_map and item.get("job_title") in titles_map:
                 updates["job_title"] = titles_map[item["job_title"]]
+                changes["job_title"] = {"old": item.get("job_title"), "new": updates["job_title"]}
 
             # Industry category
             if industry_map and item.get("industry_category") in industry_map:
                 updates["industry_category"] = industry_map[item["industry_category"]]
+                changes["industry_category"] = {
+                    "old": item.get("industry_category"),
+                    "new": updates["industry_category"],
+                }
 
             # City (inside location map)
             if cities_parsed and isinstance(item.get("location"), dict):
@@ -484,6 +565,8 @@ def _update_profiles(all_renames, all_removals, dry_run):
                 if (loc_city, loc_state) in cities_parsed:
                     new_city, new_state = cities_parsed[(loc_city, loc_state)]
                     updates["location"] = {**loc, "city": new_city, "state": new_state}
+                    updates["location_state"] = new_state
+                    changes["location"] = {"old": item.get("location"), "new": updates["location"]}
 
             if updates:
                 updated += 1
@@ -507,6 +590,7 @@ def _update_profiles(all_renames, all_removals, dry_run):
                         ExpressionAttributeNames=expr_names,
                         ExpressionAttributeValues=expr_values,
                     )
+                    _write_audit_entry(pk, now, changes, item.get("name"))
                     print(f"  Updated {pk}: {list(updates.keys())}")
 
         if "LastEvaluatedKey" not in response:
@@ -547,6 +631,7 @@ def _cleanup_lookup_table(table_name, key_attr, rename_map, dry_run):
 
 def handler(event, context):
     dry_run = event.get("dry_run", False)
+    run_trigger = _detect_run_trigger(event)
     mode = "DRY RUN" if dry_run else "LIVE"
     print(f"=== Lookup Dedup Job ({mode}) ===")
 
@@ -599,10 +684,22 @@ def handler(event, context):
 
     if not all_renames and not all_removals:
         print("\nNo duplicates or useless entries found across any lookup tables. Done.")
+
+        _write_run_audit_entry(
+            timestamp=datetime.now(timezone.utc).isoformat(),
+            details=f"{run_trigger.title()} lookup dedup run completed with no duplicates or removals.",
+            profiles_updated=0,
+            renames=0,
+            removals=0,
+            dry_run=dry_run,
+            trigger=run_trigger,
+        )
+
         return {
             "status": "ok",
             "message": "No duplicates or useless entries found",
             "dry_run": dry_run,
+            "trigger": run_trigger,
             "renames": {},
             "removals": {},
             "profiles_updated": 0,
@@ -665,10 +762,24 @@ def handler(event, context):
                 table.delete_item(Key={key_attr: name})
                 print(f"  Deleted: {name!r}")
 
+    _write_run_audit_entry(
+        timestamp=datetime.now(timezone.utc).isoformat(),
+        details=(
+            f"{run_trigger.title()} lookup dedup run completed: {profiles_updated} profiles updated, "
+            f"{total_renames} renames, {total_removals} removals."
+        ),
+        profiles_updated=profiles_updated,
+        renames=total_renames,
+        removals=total_removals,
+        dry_run=dry_run,
+        trigger=run_trigger,
+    )
+
     print("\n=== Done ===")
     return {
         "status": "ok",
         "dry_run": dry_run,
+        "trigger": run_trigger,
         "renames": {k: len(v) for k, v in all_renames.items()},
         "removals": {k: len(v) for k, v in all_removals.items()},
         "rename_details": all_renames,

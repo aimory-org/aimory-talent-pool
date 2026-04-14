@@ -3,6 +3,7 @@
 from decimal import Decimal
 
 import pytest
+from boto3.dynamodb.conditions import Key
 from _lambda_loader import load as _load_lambda
 
 
@@ -387,3 +388,25 @@ class TestPersistLookupTables:
 
         table = boto3.resource("dynamodb", region_name="us-east-1").Table("skills-lookup")
         assert table.scan()["Items"] == []
+
+
+class TestPersistAuditLogging:
+    def test_initial_ingest_writes_create_audit_entry(self, all_tables, sample_profile):
+        app = _reload_app()
+        result = app.handler(_make_event(sample_profile), None)
+
+        items = all_tables["audit_log"].query(KeyConditionExpression=Key("pk").eq(result["pk"]))["Items"]
+        assert len(items) == 1
+        assert items[0]["action"] == "CREATE"
+        assert items[0]["user_email"] == "pipeline@system"
+
+    def test_reprocess_writes_update_audit_entry(self, all_tables, sample_profile):
+        app = _reload_app()
+        result = app.handler(_make_event(sample_profile), None)
+
+        app = _reload_app()
+        app.handler(_make_event(sample_profile), None)
+
+        items = all_tables["audit_log"].query(KeyConditionExpression=Key("pk").eq(result["pk"]))["Items"]
+        actions = sorted(item["action"] for item in items)
+        assert actions == ["CREATE", "UPDATE"]

@@ -29,7 +29,7 @@ def main():
     args = parser.parse_args()
 
     function_name = f"aimory-talent-pool-{args.env}-lookup-dedup"
-    payload = {"dry_run": args.dry_run}
+    payload = {"dry_run": args.dry_run, "trigger": "manual"}
     mode = "DRY RUN" if args.dry_run else "LIVE"
 
     print(f"Invoking {function_name} ({mode})...")

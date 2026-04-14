@@ -28,6 +28,16 @@ variable "talent_profiles_table_arn" {
   description = "DynamoDB table ARN for talent profiles"
 }
 
+variable "audit_log_table_name" {
+  type        = string
+  description = "DynamoDB table name for audit history"
+}
+
+variable "audit_log_table_arn" {
+  type        = string
+  description = "DynamoDB table ARN for audit history"
+}
+
 variable "skills_lookup_table_name" {
   type        = string
   description = "DynamoDB table name for skills lookup"
@@ -117,4 +127,22 @@ variable "opensearch_domain_arn" {
 variable "opensearch_layer_arn" {
   type        = string
   description = "ARN of the opensearch-py Lambda layer"
+}
+
+variable "github_pat_param" {
+  type        = string
+  description = "SSM parameter containing the GitHub personal access token"
+  default     = "/aimory/github-pat"
+}
+
+variable "github_repo" {
+  type        = string
+  description = "GitHub repository in owner/repo form"
+  default     = "bencas21/aimory-talent-pool"
+}
+
+variable "github_workflow_file" {
+  type        = string
+  description = "GitHub Actions workflow filename used for deployments"
+  default     = "terraform-deploy.yml"
 }
