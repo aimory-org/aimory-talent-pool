@@ -17,7 +17,7 @@ sfn_arn_param_name = "/aimory-talent-pool/dev/resume-pipeline-arn"
 # Deployment history proxy
 github_pat_param     = "/aimory/github-pat"
 github_repo          = "bencas21/aimory-talent-pool"
-github_workflow_file = "terraform-deploy.yml"
+github_workflow_file = "merge-deploy.yml"
 
 # Frontend hosting (optional custom domain)
 frontend_domain_aliases  = []  # e.g., ["talent.example.com"]

@@ -122,5 +122,5 @@ variable "github_repo" {
 variable "github_workflow_file" {
   description = "GitHub Actions workflow filename used for deployments"
   type        = string
-  default     = "terraform-deploy.yml"
+  default     = "merge-deploy.yml"
 }
