@@ -3,8 +3,8 @@
 from decimal import Decimal
 
 import pytest
-from boto3.dynamodb.conditions import Key
 from _lambda_loader import load as _load_lambda
+from boto3.dynamodb.conditions import Key
 
 
 def _reload_app():

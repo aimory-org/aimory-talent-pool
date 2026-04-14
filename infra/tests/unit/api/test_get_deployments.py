@@ -2,8 +2,8 @@
 
 import io
 import json
-from urllib.error import HTTPError
 from unittest.mock import MagicMock, patch
+from urllib.error import HTTPError
 
 from _lambda_loader import load as _load_lambda
 
