@@ -121,7 +121,7 @@ export function TalentTable({
   searchTerm = "",
 }: TalentTableProps) {
   return (
-    <div className="relative bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-black/[0.07] dark:border-white/[0.07] overflow-hidden shadow-xl shadow-black/5 animate-slide-in-up">
+    <div className="relative z-10 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-black/[0.07] dark:border-white/[0.07] overflow-hidden shadow-xl shadow-black/5 animate-slide-in-up">
       {/* Top shimmer line */}
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-500/60 to-transparent" />
       <div className="overflow-x-auto">
