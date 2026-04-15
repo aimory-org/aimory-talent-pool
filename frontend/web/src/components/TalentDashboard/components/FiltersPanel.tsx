@@ -77,7 +77,7 @@ export function FiltersPanel({
   };
 
   return (
-    <div className="relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl border border-black/10 dark:border-white/15 p-6 mb-6 shadow-xl shadow-black/5">
+    <div className="relative z-30 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl border border-black/10 dark:border-white/15 p-6 mb-6 shadow-xl shadow-black/5">
       {/* Subtle gradient overlay */}
       <div className="absolute inset-0 bg-linear-to-br from-indigo-500/5 via-transparent to-purple-500/5 rounded-2xl pointer-events-none" />
 
