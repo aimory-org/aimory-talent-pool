@@ -3,6 +3,11 @@ output "resume_bucket_name" {
   value       = module.storage.resume_bucket_name
 }
 
+output "raw_prefix" {
+  description = "S3 key prefix for raw resume uploads"
+  value       = var.raw_prefix
+}
+
 output "project_name" {
   description = "Project name used for resource naming"
   value       = var.project_name
