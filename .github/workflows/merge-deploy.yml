@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Deploy — runs on every push (merge) to main.
+# Deploy — runs on every merged PR into main.
 # 1. Builds Lambda layer
 # 2. terraform plan → apply
 # 3. Rebuilds & deploys the frontend to S3/CloudFront
@@ -28,8 +28,9 @@
 name: Deploy
 
 on:
-  push:
+  pull_request:
     branches: [main]
+    types: [closed]
 
 permissions:
   contents: read
@@ -52,6 +53,7 @@ jobs:
   # ═══════════════════════════════════════════════════════════════════════════
   terraform:
     name: Terraform Apply
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     environment: dev
 
@@ -368,7 +370,7 @@ jobs:
   #   1. Attempt to release any stale Terraform state lock (safe no-op if not locked)
   #   2. Resolve rollback target SHA:
   #      - Prefer last successful merge-deploy run on main
-  #      - Fallback to github.event.before
+  #      - Fallback to PR base SHA (or github.event.before for legacy push runs)
   #   3. Re-apply Terraform + redeploy frontend from that known-good commit
   #
   # This avoids creating a revert commit, so git history stays clean and
@@ -400,12 +402,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           CURRENT_RUN_ID: ${{ github.run_id }}
-          FALLBACK_SHA: ${{ github.event.before }}
+          FALLBACK_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: |
           set -euo pipefail
 
           candidate_sha=""
-          api_url="https://api.github.com/repos/${REPO}/actions/workflows/merge-deploy.yml/runs?branch=main&status=completed&per_page=50"
+          api_url="https://api.github.com/repos/${REPO}/actions/workflows/merge-deploy.yml/runs?status=completed&per_page=100"
 
           if response="$(curl -fsSL \
             -H "Authorization: Bearer ${GH_TOKEN}" \
@@ -422,10 +424,22 @@ current_run_id = int(os.environ.get("CURRENT_RUN_ID", "0"))
 for run in data.get("workflow_runs", []):
     if run.get("conclusion") != "success":
         continue
-    if run.get("event") != "push":
+
+    event = run.get("event")
+    if event not in {"push", "pull_request"}:
         continue
-    if run.get("head_branch") != "main":
+
+    # Keep support for legacy push-triggered runs while preferring merged-PR runs.
+    if event == "push" and run.get("head_branch") != "main":
         continue
+
+    if event == "pull_request":
+        prs = run.get("pull_requests") or []
+        if prs:
+            base_ref = ((prs[0].get("base") or {}).get("ref") or "").strip()
+            if base_ref and base_ref != "main":
+                continue
+
     run_id = int(run.get("id") or 0)
     if run_id >= current_run_id:
         continue
@@ -445,9 +459,9 @@ PY
             source="last-successful-deploy-run"
           elif [ -n "${FALLBACK_SHA}" ] && [ "${FALLBACK_SHA}" != "0000000000000000000000000000000000000000" ]; then
             target_sha="${FALLBACK_SHA}"
-            source="github.event.before"
+            source="github.event.pull_request.base.sha"
           else
-            echo "::error::Could not determine rollback target SHA from workflow history or github.event.before"
+            echo "::error::Could not determine rollback target SHA from workflow history or PR base SHA"
             exit 1
           fi
 
