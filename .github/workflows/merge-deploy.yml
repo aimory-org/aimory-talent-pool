@@ -409,48 +409,19 @@ jobs:
 
           candidate_sha=""
           api_url="https://api.github.com/repos/${REPO}/actions/workflows/merge-deploy.yml/runs?branch=main&status=completed&per_page=50"
-            response_file="$(mktemp)"
+          response_file="$(mktemp)"
 
-            if curl -fsSL \
+          if curl -fsSL \
             -H "Authorization: Bearer ${GH_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
-              "${api_url}" \
-              -o "${response_file}" 2>/dev/null; then
-              candidate_sha="$(python3 - "${CURRENT_RUN_ID}" "${response_file}" <<'PY'
-            import json
-            import sys
-
-            current_run_id = int(sys.argv[1])
-            response_path = sys.argv[2]
-
-            with open(response_path, "r", encoding="utf-8") as fh:
-                data = json.load(fh)
-
-            for run in data.get("workflow_runs", []):
-                if run.get("conclusion") != "success":
-                    continue
-
-                if run.get("event") != "push":
-                    continue
-
-                if run.get("head_branch") != "main":
-                    continue
-
-                run_id = int(run.get("id") or 0)
-                if run_id >= current_run_id:
-                    continue
-
-                sha = (run.get("head_sha") or "").strip()
-                if sha:
-                    print(sha)
-                    break
-          PY
-            )"
+            "${api_url}" \
+            -o "${response_file}" 2>/dev/null; then
+            candidate_sha="$(python3 -c 'import json, sys; current = int(sys.argv[1]); data = json.load(open(sys.argv[2], encoding="utf-8")); print(next(((run.get("head_sha") or "").strip() for run in data.get("workflow_runs", []) if run.get("conclusion") == "success" and run.get("event") == "push" and run.get("head_branch") == "main" and int(run.get("id") or 0) < current and (run.get("head_sha") or "").strip()), ""))' "${CURRENT_RUN_ID}" "${response_file}")"
           else
             echo "::warning::Unable to query previous successful workflow runs; using fallback SHA logic."
           fi
 
-            rm -f "${response_file}"
+          rm -f "${response_file}"
 
           if [ -n "${candidate_sha}" ]; then
             target_sha="${candidate_sha}"
