@@ -415,40 +415,40 @@ jobs:
             "${api_url}" 2>/dev/null)"; then
             export response CURRENT_RUN_ID
             candidate_sha="$(python3 - <<'PY'
-import json
-import os
+          import json
+          import os
 
-data = json.loads(os.environ.get("response", "{}"))
-current_run_id = int(os.environ.get("CURRENT_RUN_ID", "0"))
+          data = json.loads(os.environ.get("response", "{}"))
+          current_run_id = int(os.environ.get("CURRENT_RUN_ID", "0"))
 
-for run in data.get("workflow_runs", []):
-    if run.get("conclusion") != "success":
-        continue
+          for run in data.get("workflow_runs", []):
+            if run.get("conclusion") != "success":
+              continue
 
-    event = run.get("event")
-    if event not in {"push", "pull_request"}:
-        continue
+            event = run.get("event")
+            if event not in {"push", "pull_request"}:
+              continue
 
-    # Keep support for legacy push-triggered runs while preferring merged-PR runs.
-    if event == "push" and run.get("head_branch") != "main":
-        continue
+            # Keep support for legacy push-triggered runs while preferring merged-PR runs.
+            if event == "push" and run.get("head_branch") != "main":
+              continue
 
-    if event == "pull_request":
-        prs = run.get("pull_requests") or []
-        if prs:
-            base_ref = ((prs[0].get("base") or {}).get("ref") or "").strip()
-            if base_ref and base_ref != "main":
-                continue
+            if event == "pull_request":
+              prs = run.get("pull_requests") or []
+              if prs:
+                base_ref = ((prs[0].get("base") or {}).get("ref") or "").strip()
+                if base_ref and base_ref != "main":
+                  continue
 
-    run_id = int(run.get("id") or 0)
-    if run_id >= current_run_id:
-        continue
+            run_id = int(run.get("id") or 0)
+            if run_id >= current_run_id:
+              continue
 
-    sha = (run.get("head_sha") or "").strip()
-    if sha:
-        print(sha)
-        break
-PY
+            sha = (run.get("head_sha") or "").strip()
+            if sha:
+              print(sha)
+              break
+          PY
             )"
           else
             echo "::warning::Unable to query previous successful workflow runs; using fallback SHA logic."
