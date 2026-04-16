@@ -424,26 +424,26 @@ jobs:
             response_path = sys.argv[2]
 
             with open(response_path, "r", encoding="utf-8") as fh:
-              data = json.load(fh)
+                data = json.load(fh)
 
             for run in data.get("workflow_runs", []):
-              if run.get("conclusion") != "success":
-                continue
+                if run.get("conclusion") != "success":
+                    continue
 
-              if run.get("event") != "push":
-                continue
+                if run.get("event") != "push":
+                    continue
 
-              if run.get("head_branch") != "main":
-                continue
+                if run.get("head_branch") != "main":
+                    continue
 
-              run_id = int(run.get("id") or 0)
-              if run_id >= current_run_id:
-                continue
+                run_id = int(run.get("id") or 0)
+                if run_id >= current_run_id:
+                    continue
 
-              sha = (run.get("head_sha") or "").strip()
-              if sha:
-                print(sha)
-                break
+                sha = (run.get("head_sha") or "").strip()
+                if sha:
+                    print(sha)
+                    break
           PY
             )"
           else
