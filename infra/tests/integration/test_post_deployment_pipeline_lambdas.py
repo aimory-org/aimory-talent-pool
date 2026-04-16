@@ -20,6 +20,7 @@ pytestmark = pytest.mark.integration
 
 REGION = os.environ.get("AWS_REGION", "us-east-1")
 RESUME_BUCKET = os.environ.get("RESUME_BUCKET", "").strip()
+RAW_PREFIX = os.environ.get("RAW_PREFIX", "raw").strip().strip("/")
 TALENT_TABLE = os.environ.get("TALENT_PROFILES_TABLE", "").strip()
 STATE_MACHINE_ARN = (
     os.environ.get("PIPELINE_STATE_MACHINE_ARN", "").strip() or os.environ.get("STATE_MACHINE_ARN", "").strip()
@@ -109,6 +110,10 @@ def _make_docx_bytes(text: str) -> bytes:
     return buffer.getvalue()
 
 
+def _raw_test_key(filename: str) -> str:
+    return f"{RAW_PREFIX}/integration-tests/{filename}"
+
+
 def _wait_for_textract_success(check_function_name: str, job_id: str, timeout_seconds: int = 240) -> str:
     deadline = time.time() + timeout_seconds
     latest_status = "UNKNOWN"
@@ -149,7 +154,7 @@ def test_pipeline_classify_lambda_docx_path():
     _ensure_resume_bucket()
 
     function_name = resolve_function_name("pipeline", "classify", "PIPELINE_CLASSIFY_FUNCTION_NAME")
-    key = f"raw/integration-tests/classify-{uuid.uuid4().hex}.docx"
+    key = _raw_test_key(f"classify-{uuid.uuid4().hex}.docx")
 
     try:
         document = _make_docx_bytes("Jane Doe Senior Software Engineer Python AWS Experience Education Certifications")
@@ -188,7 +193,7 @@ def test_pipeline_persist_lambda_smoke_write_and_cleanup():
 
     function_name = resolve_function_name("pipeline", "persist", "PIPELINE_PERSIST_FUNCTION_NAME")
     suffix = uuid.uuid4().hex[:8]
-    key = f"raw/integration-tests/persist-{suffix}.docx"
+    key = _raw_test_key(f"persist-{suffix}.docx")
     pk = f"{RESUME_BUCKET}#{key}"
 
     profile = {
@@ -259,7 +264,7 @@ def test_pipeline_textract_lambdas_start_check_fetch_png():
     check_fn = resolve_function_name("pipeline", "check_textract", "PIPELINE_CHECK_TEXTRACT_FUNCTION_NAME")
     fetch_fn = resolve_function_name("pipeline", "fetch_textract", "PIPELINE_FETCH_TEXTRACT_FUNCTION_NAME")
 
-    key = f"raw/integration-tests/textract-{uuid.uuid4().hex}.png"
+    key = _raw_test_key(f"textract-{uuid.uuid4().hex}.png")
     extracted_key = ""
     extracted_bucket = ""
 
@@ -293,7 +298,7 @@ def test_pipeline_llm_extract_lambda_smoke():
     function_name = resolve_function_name("pipeline", "llm_extract", "PIPELINE_LLM_EXTRACT_FUNCTION_NAME")
     event = {
         "bucket": RESUME_BUCKET or "integration-bucket",
-        "key": f"raw/integration-tests/llm-{uuid.uuid4().hex}.docx",
+        "key": _raw_test_key(f"llm-{uuid.uuid4().hex}.docx"),
         "normalized": {
             "text": (
                 "Jane Doe\nSenior Software Engineer\n"
@@ -317,7 +322,7 @@ def test_pipeline_full_state_machine_resume_e2e():
         pytest.skip("PIPELINE_STATE_MACHINE_ARN (or STATE_MACHINE_ARN) not set")
 
     suffix = uuid.uuid4().hex[:12]
-    key = f"raw/integration-tests/full-run-resume-{suffix}.docx"
+    key = _raw_test_key(f"full-run-resume-{suffix}.docx")
     pk = f"{RESUME_BUCKET}#{key}"
 
     try:
@@ -358,7 +363,7 @@ def test_pipeline_full_state_machine_non_resume_e2e_delete_or_no_persist():
         pytest.skip("PIPELINE_STATE_MACHINE_ARN (or STATE_MACHINE_ARN) not set")
 
     suffix = uuid.uuid4().hex[:12]
-    key = f"raw/integration-tests/full-run-not-resume-{suffix}.docx"
+    key = _raw_test_key(f"full-run-not-resume-{suffix}.docx")
     pk = f"{RESUME_BUCKET}#{key}"
 
     try:

@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Deploy — runs on every merged PR into main.
+# Deploy — runs on every push (merge) to main.
 # 1. Builds Lambda layer
 # 2. terraform plan → apply
 # 3. Rebuilds & deploys the frontend to S3/CloudFront
@@ -28,9 +28,8 @@
 name: Deploy
 
 on:
-  pull_request:
+  push:
     branches: [main]
-    types: [closed]
 
 permissions:
   contents: read
@@ -53,7 +52,6 @@ jobs:
   # ═══════════════════════════════════════════════════════════════════════════
   terraform:
     name: Terraform Apply
-    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     environment: dev
 
@@ -67,6 +65,7 @@ jobs:
       api_endpoint: ${{ steps.outputs.outputs.api_endpoint }}
       presign_function_url: ${{ steps.outputs.outputs.presign_function_url }}
       resume_bucket: ${{ steps.outputs.outputs.resume_bucket }}
+      raw_prefix: ${{ steps.outputs.outputs.raw_prefix }}
       project_name: ${{ steps.outputs.outputs.project_name }}
       environment_name: ${{ steps.outputs.outputs.environment_name }}
       pipeline_state_machine_arn: ${{ steps.outputs.outputs.pipeline_state_machine_arn }}
@@ -206,6 +205,7 @@ jobs:
           echo "api_endpoint=$(terraform output -raw api_endpoint)" >> "$GITHUB_OUTPUT"
           echo "presign_function_url=$(terraform output -raw presign_function_url)" >> "$GITHUB_OUTPUT"
           echo "resume_bucket=$(terraform output -raw resume_bucket_name)" >> "$GITHUB_OUTPUT"
+          echo "raw_prefix=$(terraform output -raw raw_prefix)" >> "$GITHUB_OUTPUT"
           echo "project_name=$(terraform output -raw project_name)" >> "$GITHUB_OUTPUT"
           echo "environment_name=$(terraform output -raw environment)" >> "$GITHUB_OUTPUT"
           echo "pipeline_state_machine_arn=$(terraform output -raw pipeline_state_machine_arn)" >> "$GITHUB_OUTPUT"
@@ -348,6 +348,7 @@ jobs:
           PROJECT_NAME: ${{ needs.terraform.outputs.project_name }}
           ENVIRONMENT: ${{ needs.terraform.outputs.environment_name }}
           RESUME_BUCKET: ${{ needs.terraform.outputs.resume_bucket }}
+          RAW_PREFIX: ${{ needs.terraform.outputs.raw_prefix }}
           PIPELINE_STATE_MACHINE_ARN: ${{ needs.terraform.outputs.pipeline_state_machine_arn }}
           TALENT_PROFILES_TABLE: ${{ needs.terraform.outputs.talent_profiles_table }}
           AUDIT_LOG_TABLE: ${{ needs.terraform.outputs.audit_log_table }}
@@ -370,7 +371,7 @@ jobs:
   #   1. Attempt to release any stale Terraform state lock (safe no-op if not locked)
   #   2. Resolve rollback target SHA:
   #      - Prefer last successful merge-deploy run on main
-  #      - Fallback to PR base SHA (or github.event.before for legacy push runs)
+  #      - Fallback to github.event.before
   #   3. Re-apply Terraform + redeploy frontend from that known-good commit
   #
   # This avoids creating a revert commit, so git history stays clean and
@@ -402,66 +403,63 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           CURRENT_RUN_ID: ${{ github.run_id }}
-          FALLBACK_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          FALLBACK_SHA: ${{ github.event.before }}
         run: |
           set -euo pipefail
 
           candidate_sha=""
-          api_url="https://api.github.com/repos/${REPO}/actions/workflows/merge-deploy.yml/runs?status=completed&per_page=100"
+          api_url="https://api.github.com/repos/${REPO}/actions/workflows/merge-deploy.yml/runs?branch=main&status=completed&per_page=50"
+            response_file="$(mktemp)"
 
-          if response="$(curl -fsSL \
+            if curl -fsSL \
             -H "Authorization: Bearer ${GH_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
-            "${api_url}" 2>/dev/null)"; then
-            export response CURRENT_RUN_ID
-            candidate_sha="$(python3 - <<'PY'
-          import json
-          import os
+              "${api_url}" \
+              -o "${response_file}" 2>/dev/null; then
+              candidate_sha="$(python3 - "${CURRENT_RUN_ID}" "${response_file}" <<'PY'
+            import json
+            import sys
 
-          data = json.loads(os.environ.get("response", "{}"))
-          current_run_id = int(os.environ.get("CURRENT_RUN_ID", "0"))
+            current_run_id = int(sys.argv[1])
+            response_path = sys.argv[2]
 
-          for run in data.get("workflow_runs", []):
-            if run.get("conclusion") != "success":
-              continue
+            with open(response_path, "r", encoding="utf-8") as fh:
+              data = json.load(fh)
 
-            event = run.get("event")
-            if event not in {"push", "pull_request"}:
-              continue
+            for run in data.get("workflow_runs", []):
+              if run.get("conclusion") != "success":
+                continue
 
-            # Keep support for legacy push-triggered runs while preferring merged-PR runs.
-            if event == "push" and run.get("head_branch") != "main":
-              continue
+              if run.get("event") != "push":
+                continue
 
-            if event == "pull_request":
-              prs = run.get("pull_requests") or []
-              if prs:
-                base_ref = ((prs[0].get("base") or {}).get("ref") or "").strip()
-                if base_ref and base_ref != "main":
-                  continue
+              if run.get("head_branch") != "main":
+                continue
 
-            run_id = int(run.get("id") or 0)
-            if run_id >= current_run_id:
-              continue
+              run_id = int(run.get("id") or 0)
+              if run_id >= current_run_id:
+                continue
 
-            sha = (run.get("head_sha") or "").strip()
-            if sha:
-              print(sha)
-              break
+              sha = (run.get("head_sha") or "").strip()
+              if sha:
+                print(sha)
+                break
           PY
             )"
           else
             echo "::warning::Unable to query previous successful workflow runs; using fallback SHA logic."
           fi
 
+            rm -f "${response_file}"
+
           if [ -n "${candidate_sha}" ]; then
             target_sha="${candidate_sha}"
             source="last-successful-deploy-run"
           elif [ -n "${FALLBACK_SHA}" ] && [ "${FALLBACK_SHA}" != "0000000000000000000000000000000000000000" ]; then
             target_sha="${FALLBACK_SHA}"
-            source="github.event.pull_request.base.sha"
+            source="github.event.before"
           else
-            echo "::error::Could not determine rollback target SHA from workflow history or PR base SHA"
+            echo "::error::Could not determine rollback target SHA from workflow history or github.event.before"
             exit 1
           fi
 
