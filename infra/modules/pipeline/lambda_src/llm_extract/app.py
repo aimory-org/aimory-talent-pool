@@ -22,14 +22,21 @@ JOB_TITLES_LOOKUP_TABLE = os.environ.get("JOB_TITLES_LOOKUP_TABLE", "")
 INDUSTRY_CATEGORIES_LOOKUP_TABLE = os.environ.get("INDUSTRY_CATEGORIES_LOOKUP_TABLE", "")
 
 
-def _fetch_lookup_values(table_name, key_attr, limit=500):
-    """Scan a lookup table and return up to `limit` values."""
+def _fetch_lookup_values(table_name, key_attr):
+    """Scan a lookup table and return all values (paginated)."""
     if not table_name:
         return []
     try:
         tbl = dynamodb.Table(table_name)
-        response = tbl.scan(ProjectionExpression=key_attr, Limit=limit)
-        return sorted({item[key_attr] for item in response.get("Items", [])})
+        values = set()
+        kwargs = {"ProjectionExpression": key_attr}
+        while True:
+            response = tbl.scan(**kwargs)
+            values.update(item[key_attr] for item in response.get("Items", []))
+            if "LastEvaluatedKey" not in response:
+                break
+            kwargs["ExclusiveStartKey"] = response["LastEvaluatedKey"]
+        return sorted(values)
     except Exception as e:
         print(f"Warning: failed to fetch lookups from {table_name}: {e}")
         return []
