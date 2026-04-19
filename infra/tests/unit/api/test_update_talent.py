@@ -246,3 +246,21 @@ class TestUpdateTalentAuditLogging:
         assert items[0]["action"] == "UPDATE"
         assert items[0]["changes"]["job_title"]["old"] == "Developer"
         assert items[0]["changes"]["job_title"]["new"] == "Senior Developer"
+
+
+class TestUpdateTalentDismissDuplicate:
+    def test_dismiss_duplicate_removes_flag(self, all_tables):
+        all_tables["talent_profiles"].put_item(Item={"pk": "b#k", "possible_duplicate_of": "b#other.pdf"})
+        app = _reload_app()
+        resp = app.handler(_make_event("b#k", {"dismiss_duplicate": True}), None)
+        assert resp["statusCode"] == 200
+
+        item = all_tables["talent_profiles"].get_item(Key={"pk": "b#k"}).get("Item")
+        assert "possible_duplicate_of" not in item
+
+    def test_dismiss_duplicate_returns_updated_profile(self, all_tables):
+        all_tables["talent_profiles"].put_item(Item={"pk": "b#k", "possible_duplicate_of": "b#other.pdf"})
+        app = _reload_app()
+        resp = app.handler(_make_event("b#k", {"dismiss_duplicate": True}), None)
+        body = json.loads(resp["body"])
+        assert "possible_duplicate_of" not in body["profile"]

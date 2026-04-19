@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { BookOpen, Server } from "lucide-react";
-import { UserGuide } from "./UserGuide";
-import { TechReference } from "./TechReference";
+import { UserGuide, USER_NAV } from "./UserGuide/UserGuide";
+import { TechReference, TECH_NAV } from "./TechReference/TechReference";
 
 type Tab = "user-guide" | "tech-reference";
 
@@ -27,15 +27,57 @@ const TABS: {
 
 export function HelpCenter() {
   const [activeTab, setActiveTab] = useState<Tab>("user-guide");
+  const [activeSection, setActiveSection] = useState<string>("");
+  const observerRef = useRef<IntersectionObserver | null>(null);
+
+  const navItems = activeTab === "user-guide" ? USER_NAV : TECH_NAV;
+
+  // Track which section is currently visible
+  useEffect(() => {
+    observerRef.current?.disconnect();
+
+    const ids = navItems.map((s) => s.id);
+    const visibleSections = new Map<string, number>();
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            visibleSections.set(entry.target.id, entry.intersectionRatio);
+          } else {
+            visibleSections.delete(entry.target.id);
+          }
+        }
+        // Pick the first visible section in document order
+        for (const id of ids) {
+          if (visibleSections.has(id)) {
+            setActiveSection(id);
+            return;
+          }
+        }
+      },
+      { rootMargin: "-10% 0px -60% 0px", threshold: [0, 0.25] },
+    );
+
+    // Small delay to let tab content mount
+    const timer = setTimeout(() => {
+      for (const id of ids) {
+        const el = document.getElementById(id);
+        if (el) observerRef.current?.observe(el);
+      }
+    }, 100);
+
+    return () => {
+      clearTimeout(timer);
+      observerRef.current?.disconnect();
+    };
+  }, [activeTab, navItems]);
 
   return (
     <div className="bg-background min-h-screen">
-      <div className="max-w-4xl mx-auto px-6 py-12">
+      <div className="max-w-6xl mx-auto px-6 py-12">
         {/* Page Header */}
         <div className="mb-10 animate-fade-in">
-          <p className="text-xs font-semibold uppercase tracking-widest text-indigo-500 dark:text-indigo-400 mb-3">
-            Documentation
-          </p>
           <h1 className="text-4xl font-bold tracking-tight mb-3">
             <span className="shimmer-text">Help Center</span>
           </h1>
@@ -80,9 +122,54 @@ export function HelpCenter() {
           })}
         </div>
 
-        {/* Tab Content — key forces remount for re-animation */}
-        <div key={activeTab} className="animate-fade-in">
-          {activeTab === "user-guide" ? <UserGuide /> : <TechReference />}
+        {/* Sidebar + Content */}
+        <div className="flex gap-8">
+          {/* Left Sidebar TOC — floats alongside content */}
+          <nav className="hidden lg:block w-52 shrink-0">
+            <div className="sticky top-24 rounded-2xl bg-white/60 dark:bg-white/[0.04] backdrop-blur-xl border border-black/[0.06] dark:border-white/[0.06] shadow-sm p-4 animate-fade-in">
+              <p className="text-xs font-semibold uppercase tracking-widest text-foreground/30 mb-4 px-2">
+                On this page
+              </p>
+              <div className="relative">
+                {/* Vertical track line */}
+                <div className="absolute left-0 top-0 bottom-0 w-px bg-black/[0.06] dark:bg-white/[0.06] rounded-full" />
+                <ul className="space-y-1 pl-3.5">
+                  {navItems.map((s) => {
+                    const isActive = activeSection === s.id;
+                    return (
+                      <li key={s.id} className="relative">
+                        {/* Active indicator dot */}
+                        {isActive && (
+                          <span className="absolute -left-3.5 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-indigo-500 shadow-sm shadow-indigo-500/50 -translate-x-[2px]" />
+                        )}
+                        <a
+                          href={`#${s.id}`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            document
+                              .getElementById(s.id)
+                              ?.scrollIntoView({ behavior: "smooth" });
+                          }}
+                          className={`block px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                            isActive
+                              ? "text-indigo-600 dark:text-indigo-400 bg-indigo-500/8"
+                              : "text-foreground/40 hover:text-foreground/70 hover:bg-black/[0.03] dark:hover:bg-white/[0.03]"
+                          }`}
+                        >
+                          {s.label}
+                        </a>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            </div>
+          </nav>
+
+          {/* Tab Content — key forces remount for re-animation */}
+          <div key={activeTab} className="flex-1 min-w-0 animate-fade-in">
+            {activeTab === "user-guide" ? <UserGuide /> : <TechReference />}
+          </div>
         </div>
 
         {/* Footer */}

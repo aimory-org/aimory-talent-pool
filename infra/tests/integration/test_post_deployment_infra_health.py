@@ -10,6 +10,7 @@ pytestmark = pytest.mark.integration
 REGION = os.environ.get("AWS_REGION", "us-east-1")
 RESUME_BUCKET = os.environ.get("RESUME_BUCKET", "")
 TALENT_TABLE = os.environ.get("TALENT_PROFILES_TABLE", "")
+JOB_DESCRIPTIONS_TABLE = os.environ.get("JOB_DESCRIPTIONS_TABLE", "")
 
 
 class TestDynamoDBHealth:
@@ -30,6 +31,14 @@ class TestDynamoDBHealth:
             pytest.skip("SKILLS_LOOKUP_TABLE not set")
         ddb = self._ddb()
         table = ddb.Table(table_name)
+        resp = table.scan(Limit=1)
+        assert "Items" in resp
+
+    def test_job_descriptions_table_accessible(self):
+        if not JOB_DESCRIPTIONS_TABLE:
+            pytest.skip("JOB_DESCRIPTIONS_TABLE not set")
+        ddb = self._ddb()
+        table = ddb.Table(JOB_DESCRIPTIONS_TABLE)
         resp = table.scan(Limit=1)
         assert "Items" in resp
 

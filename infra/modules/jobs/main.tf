@@ -137,11 +137,11 @@ resource "aws_lambda_function" "lookup_dedup" {
     variables = {
       TALENT_PROFILES_TABLE            = var.talent_profiles_table_name
       AUDIT_LOG_TABLE                  = var.audit_log_table_name
-      SKILLS_LOOKUP_TABLE              = var.skills_lookup_table_name
-      CERTIFICATIONS_LOOKUP_TABLE      = var.certifications_lookup_table_name
-      JOB_TITLES_LOOKUP_TABLE          = var.job_titles_lookup_table_name
-      INDUSTRY_CATEGORIES_LOOKUP_TABLE = var.industry_categories_lookup_table_name
-      CITIES_LOOKUP_TABLE              = var.cities_lookup_table_name
+      SKILLS_LOOKUP_TABLE              = var.lookup_tables.skills.name
+      CERTIFICATIONS_LOOKUP_TABLE      = var.lookup_tables.certifications.name
+      JOB_TITLES_LOOKUP_TABLE          = var.lookup_tables.job_titles.name
+      INDUSTRY_CATEGORIES_LOOKUP_TABLE = var.lookup_tables.industry_categories.name
+      CITIES_LOOKUP_TABLE              = var.lookup_tables.cities.name
       BEDROCK_MODEL_ID                 = var.bedrock_model_id
     }
   }
@@ -193,11 +193,11 @@ resource "aws_iam_role_policy" "lookup_dedup_dynamodb" {
         Effect = "Allow",
         Action = ["dynamodb:Scan", "dynamodb:PutItem", "dynamodb:DeleteItem"],
         Resource = [
-          var.skills_lookup_table_arn,
-          var.certifications_lookup_table_arn,
-          var.job_titles_lookup_table_arn,
-          var.industry_categories_lookup_table_arn,
-          var.cities_lookup_table_arn,
+          var.lookup_tables.skills.arn,
+          var.lookup_tables.certifications.arn,
+          var.lookup_tables.job_titles.arn,
+          var.lookup_tables.industry_categories.arn,
+          var.lookup_tables.cities.arn,
         ]
       },
       {

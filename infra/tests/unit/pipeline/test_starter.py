@@ -5,7 +5,7 @@ from _lambda_loader import load as _load_lambda
 
 
 def _reload_app():
-    return _load_lambda("modules/pipeline/lambda_src/starter")
+    return _load_lambda("modules/document_pipeline/lambda_src/starter")
 
 
 class TestStarterHandler:

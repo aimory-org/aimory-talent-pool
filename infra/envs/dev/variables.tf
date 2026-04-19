@@ -41,13 +41,13 @@ variable "bedrock_model_id" {
 variable "raw_prefix" {
   description = "S3 key prefix for resume uploads"
   type        = string
-  default     = "raw/onedrive"
+  default     = "resumes/raw"
 }
 
 variable "extracted_prefix" {
   description = "S3 key prefix for textract json"
   type        = string
-  default     = "extracted"
+  default     = "resumes/extracted"
 }
 
 variable "sfn_arn_param_name" {

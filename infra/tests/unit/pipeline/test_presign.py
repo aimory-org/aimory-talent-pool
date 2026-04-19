@@ -7,7 +7,7 @@ from _lambda_loader import load as _load_lambda
 
 
 def _reload_app():
-    return _load_lambda("modules/pipeline/lambda_src/presign")
+    return _load_lambda("modules/document_pipeline/lambda_src/presign")
 
 
 def _make_event(body=None, api_key="test-api-key-1234567890abcdef"):

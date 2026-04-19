@@ -8,7 +8,7 @@ from boto3.dynamodb.conditions import Key
 
 
 def _reload_app():
-    return _load_lambda("modules/pipeline/lambda_src/persist")
+    return _load_lambda("pipeline_configs/resume/persist")
 
 
 def _make_event(profile, bucket="test-bucket", key="raw/onedrive/resume.pdf"):
@@ -46,10 +46,10 @@ class TestPersistValidation:
         with pytest.raises(ValueError, match="unexpected keys"):
             app.handler(_make_event(sample_profile), None)
 
-    def test_is_resume_field_allowed(self, all_tables, sample_profile):
-        """is_resume passes through from llm_extract without error."""
+    def test_is_valid_field_allowed(self, all_tables, sample_profile):
+        """is_valid passes through from llm_extract without error."""
         app = _reload_app()
-        sample_profile["is_resume"] = True
+        sample_profile["is_valid"] = True
         result = app.handler(_make_event(sample_profile), None)
         assert result["status"] == "ok"
 
@@ -410,3 +410,47 @@ class TestPersistAuditLogging:
         items = all_tables["audit_log"].query(KeyConditionExpression=Key("pk").eq(result["pk"]))["Items"]
         actions = sorted(item["action"] for item in items)
         assert actions == ["CREATE", "UPDATE"]
+
+
+# ── Duplicate detection tests ─────────────────────────────────────────────
+
+
+class TestPersistDuplicateDetection:
+    def test_flags_duplicate_by_name_only(self, all_tables, sample_profile):
+        app = _reload_app()
+        # First resume
+        app.handler(_make_event(sample_profile, key="raw/resume_v1.pdf"), None)
+
+        # Second resume, same name, different file and no email
+        profile2 = {**sample_profile, "contact": {"email": None, "phone": None, "linkedin": None, "github": None}}
+        app = _reload_app()
+        app.handler(_make_event(profile2, key="raw/resume_v2.pdf"), None)
+
+        item = all_tables["talent_profiles"].get_item(Key={"pk": "test-bucket#raw/resume_v2.pdf"}).get("Item")
+        assert item is not None
+        assert item.get("possible_duplicate_of") == "test-bucket#raw/resume_v1.pdf"
+
+    def test_different_names_no_duplicate_flag(self, all_tables, sample_profile):
+        app = _reload_app()
+        app.handler(_make_event(sample_profile, key="raw/resume1.pdf"), None)
+
+        profile2 = {**sample_profile, "name": "Different Person"}
+        app = _reload_app()
+        app.handler(_make_event(profile2, key="raw/resume2.pdf"), None)
+
+        item = all_tables["talent_profiles"].get_item(Key={"pk": "test-bucket#raw/resume2.pdf"}).get("Item")
+        assert item is not None
+        assert "possible_duplicate_of" not in item
+
+    def test_unknown_name_not_flagged(self, all_tables, sample_profile):
+        app = _reload_app()
+        profile1 = {**sample_profile, "name": None}
+        app.handler(_make_event(profile1, key="raw/resume1.pdf"), None)
+
+        app = _reload_app()
+        profile2 = {**sample_profile, "name": None}
+        app.handler(_make_event(profile2, key="raw/resume2.pdf"), None)
+
+        item = all_tables["talent_profiles"].get_item(Key={"pk": "test-bucket#raw/resume2.pdf"}).get("Item")
+        assert item is not None
+        assert "possible_duplicate_of" not in item

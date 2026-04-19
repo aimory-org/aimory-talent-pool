@@ -8,12 +8,12 @@ from _lambda_loader import load as _load_lambda
 
 
 def _reload_app():
-    return _load_lambda("modules/pipeline/lambda_src/fetch_textract")
+    return _load_lambda("modules/document_pipeline/lambda_src/fetch_textract")
 
 
 class TestFetchTextractHandler:
     def setup_method(self):
-        _load_lambda("modules/pipeline/lambda_src/fetch_textract")
+        _load_lambda("modules/document_pipeline/lambda_src/fetch_textract")
 
     @patch("app.textract")
     def test_single_page_result(self, mock_textract, aws_mocks):

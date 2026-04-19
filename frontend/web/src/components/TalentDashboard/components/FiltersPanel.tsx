@@ -2,7 +2,7 @@
  * Filters panel component for filtering talent pool results.
  */
 import { useState } from "react";
-import { Filter, X, Trash2, Settings } from "lucide-react";
+import { Filter, X, Trash2, Settings, AlertTriangle } from "lucide-react";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Label } from "@/components/ui/label";
 import {
@@ -34,6 +34,9 @@ interface FiltersPanelProps {
   lookupIndustryCategories: string[];
   lookupCities: City[];
   lookupTags?: string[];
+  duplicateCount?: number;
+  showDuplicatesOnly?: boolean;
+  onToggleDuplicates?: () => void;
 }
 
 export function FiltersPanel({
@@ -51,6 +54,9 @@ export function FiltersPanel({
   lookupIndustryCategories,
   lookupCities,
   lookupTags = [],
+  duplicateCount = 0,
+  showDuplicatesOnly = false,
+  onToggleDuplicates,
 }: FiltersPanelProps) {
   const [managingTags, setManagingTags] = useState(false);
   const [confirmDeleteTag, setConfirmDeleteTag] = useState<string | null>(null);
@@ -103,6 +109,28 @@ export function FiltersPanel({
             >
               <X className="h-4 w-4" />
               Clear all ({activeFilterCount})
+            </button>
+          )}
+          {duplicateCount > 0 && onToggleDuplicates && (
+            <button
+              onClick={onToggleDuplicates}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+                showDuplicatesOnly
+                  ? "bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300"
+                  : "border border-black/[0.06] dark:border-white/[0.06] text-foreground/40 hover:text-amber-600 dark:hover:text-amber-400 hover:border-amber-500/20"
+              }`}
+            >
+              <AlertTriangle className="h-3.5 w-3.5" />
+              Warnings
+              <span
+                className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                  showDuplicatesOnly
+                    ? "bg-amber-500 text-white"
+                    : "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                }`}
+              >
+                {duplicateCount}
+              </span>
             </button>
           )}
         </div>

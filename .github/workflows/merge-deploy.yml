@@ -76,6 +76,8 @@ jobs:
       cities_lookup_table: ${{ steps.outputs.outputs.cities_lookup_table }}
       job_titles_lookup_table: ${{ steps.outputs.outputs.job_titles_lookup_table }}
       industry_categories_lookup_table: ${{ steps.outputs.outputs.industry_categories_lookup_table }}
+      job_descriptions_table: ${{ steps.outputs.outputs.job_descriptions_table }}
+      jd_pipeline_state_machine_arn: ${{ steps.outputs.outputs.jd_pipeline_state_machine_arn }}
 
     env:
       TF_VAR_presign_api_key: ${{ secrets.TF_VAR_PRESIGN_API_KEY }}
@@ -216,6 +218,8 @@ jobs:
           echo "cities_lookup_table=$(terraform output -raw cities_lookup_table_name)" >> "$GITHUB_OUTPUT"
           echo "job_titles_lookup_table=$(terraform output -raw job_titles_lookup_table_name)" >> "$GITHUB_OUTPUT"
           echo "industry_categories_lookup_table=$(terraform output -raw industry_categories_lookup_table_name)" >> "$GITHUB_OUTPUT"
+          echo "job_descriptions_table=$(terraform output -raw job_descriptions_table_name)" >> "$GITHUB_OUTPUT"
+          echo "jd_pipeline_state_machine_arn=$(terraform output -raw jd_pipeline_state_machine_arn)" >> "$GITHUB_OUTPUT"
 
       # ── Upload logs for auditing ──────────────────────────────────────────
       - name: Upload Terraform Logs
@@ -357,6 +361,8 @@ jobs:
           CITIES_LOOKUP_TABLE: ${{ needs.terraform.outputs.cities_lookup_table }}
           JOB_TITLES_LOOKUP_TABLE: ${{ needs.terraform.outputs.job_titles_lookup_table }}
           INDUSTRY_CATEGORIES_LOOKUP_TABLE: ${{ needs.terraform.outputs.industry_categories_lookup_table }}
+          JOB_DESCRIPTIONS_TABLE: ${{ needs.terraform.outputs.job_descriptions_table }}
+          JD_PIPELINE_STATE_MACHINE_ARN: ${{ needs.terraform.outputs.jd_pipeline_state_machine_arn }}
           REQUIRE_GITHUB_DEPLOYMENTS_SUCCESS: "1"
           RUN_TEXTRACT_INTEGRATION: "0"
           RUN_BEDROCK_LAMBDA_TEST: "0"

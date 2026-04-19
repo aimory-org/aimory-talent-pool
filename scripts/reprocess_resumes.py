@@ -177,7 +177,7 @@ def main():
     parser.add_argument("--bucket", required=True, help="S3 bucket containing resumes")
     parser.add_argument("--sfn-arn", required=True, help="Step Functions state machine ARN")
     parser.add_argument("--region", default="us-east-1", help="AWS region")
-    parser.add_argument("--prefix", default="raw/", help="S3 key prefix to scan (default: raw/)")
+    parser.add_argument("--prefix", default="resumes/raw/", help="S3 key prefix to scan (default: resumes/raw/)")
     parser.add_argument("--dry-run", action="store_true", help="List files without starting executions")
     parser.add_argument(
         "--clear-lookups",

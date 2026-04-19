@@ -33,9 +33,6 @@ export function AuditLog() {
       <div className="max-w-4xl mx-auto px-6 py-12">
         {/* Page Header */}
         <div className="mb-10 animate-fade-in">
-          <p className="text-xs font-semibold uppercase tracking-widest text-indigo-500 dark:text-indigo-400 mb-3">
-            Audit & Activity
-          </p>
           <h1 className="text-4xl font-bold tracking-tight mb-3">
             <span className="shimmer-text">Activity Log</span>
           </h1>
