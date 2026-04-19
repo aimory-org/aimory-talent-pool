@@ -177,6 +177,136 @@ function getSnapshotValue(entry: AuditEntry, key: string): unknown {
   return (entry.snapshot as Record<string, unknown>)[key];
 }
 
+function getSnapshotNumber(entry: AuditEntry, key: string): number | undefined {
+  const value = getSnapshotValue(entry, key);
+  return typeof value === "number" ? value : undefined;
+}
+
+function formatLookupType(typeName: string): string {
+  return typeName.replace(/_/g, " ");
+}
+
+function summarizeRenameDetails(rawValue: unknown): string | null {
+  if (!rawValue || typeof rawValue !== "object") {
+    return null;
+  }
+
+  const sections: string[] = [];
+  for (const [typeName, renameMap] of Object.entries(
+    rawValue as Record<string, unknown>,
+  )) {
+    if (!renameMap || typeof renameMap !== "object") {
+      continue;
+    }
+
+    const entries = Object.entries(renameMap as Record<string, unknown>)
+      .filter(([, canonical]) => typeof canonical === "string")
+      .sort(([left], [right]) => left.localeCompare(right));
+
+    if (entries.length === 0) {
+      continue;
+    }
+
+    const preview = entries
+      .slice(0, 2)
+      .map(([oldName, canonical]) => `${oldName} -> ${canonical as string}`);
+    const remaining = entries.length - preview.length;
+    if (remaining > 0) {
+      preview.push(`+${remaining} more`);
+    }
+
+    sections.push(
+      `${formatLookupType(typeName)} (${entries.length}): ${preview.join(", ")}`,
+    );
+  }
+
+  return sections.length > 0 ? sections.join("; ") : null;
+}
+
+function summarizeRemovalDetails(rawValue: unknown): string | null {
+  if (!rawValue || typeof rawValue !== "object") {
+    return null;
+  }
+
+  const sections: string[] = [];
+  for (const [typeName, values] of Object.entries(
+    rawValue as Record<string, unknown>,
+  )) {
+    if (!Array.isArray(values)) {
+      continue;
+    }
+
+    const names = values
+      .filter((value): value is string => typeof value === "string")
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0)
+      .sort((left, right) => left.localeCompare(right));
+
+    if (names.length === 0) {
+      continue;
+    }
+
+    const preview = names.slice(0, 3);
+    const remaining = names.length - preview.length;
+    if (remaining > 0) {
+      preview.push(`+${remaining} more`);
+    }
+
+    sections.push(
+      `${formatLookupType(typeName)} (${names.length}): ${preview.join(", ")}`,
+    );
+  }
+
+  return sections.length > 0 ? sections.join("; ") : null;
+}
+
+function buildDedupRunDetails(entry: AuditEntry): string | null {
+  const profilesUpdated = getSnapshotNumber(entry, "profiles_updated");
+  const renames = getSnapshotNumber(entry, "renames");
+  const removals = getSnapshotNumber(entry, "removals");
+  const renameSummary = summarizeRenameDetails(
+    getSnapshotValue(entry, "rename_details"),
+  );
+  const removalSummary = summarizeRemovalDetails(
+    getSnapshotValue(entry, "removal_details"),
+  );
+
+  if (
+    profilesUpdated == null &&
+    renames == null &&
+    removals == null &&
+    !renameSummary &&
+    !removalSummary
+  ) {
+    return null;
+  }
+
+  const trigger = inferDedupTrigger(entry);
+  const triggerLabel = trigger === "scheduled" ? "Scheduled" : "Manual";
+  const countParts: string[] = [];
+  if (profilesUpdated != null) {
+    countParts.push(`${profilesUpdated} profiles updated`);
+  }
+  if (renames != null) {
+    countParts.push(`${renames} renames`);
+  }
+  if (removals != null) {
+    countParts.push(`${removals} removals`);
+  }
+
+  let details = `${triggerLabel} lookup dedup run completed`;
+  details += countParts.length > 0 ? `: ${countParts.join(", ")}.` : ".";
+
+  if (renameSummary) {
+    details += ` Renamed entries: ${renameSummary}.`;
+  }
+  if (removalSummary) {
+    details += ` Removed entries: ${removalSummary}.`;
+  }
+
+  return details;
+}
+
 function inferDedupTrigger(entry: AuditEntry): "scheduled" | "manual" {
   const snapshotTrigger = getSnapshotValue(entry, "trigger");
   if (snapshotTrigger === "scheduled" || snapshotTrigger === "manual") {
@@ -234,6 +364,7 @@ function auditToSystemEvent(entry: AuditEntry): SystemEvent | null {
       entry.pk === DEDUP_RUN_PK ||
       entry.pk === "LOOKUP_DEDUP_RUN" ||
       entry.pk.endsWith("#LOOKUP_DEDUP_RUN");
+    const dedupRunDetails = isRunSummary ? buildDedupRunDetails(entry) : null;
     const candidateName = isRunSummary
       ? undefined
       : fallbackCandidateName(entry);
@@ -252,6 +383,7 @@ function auditToSystemEvent(entry: AuditEntry): SystemEvent | null {
       dedup_trigger: inferDedupTrigger(entry),
       dedup_merged: isRunSummary ? undefined : changeCount || undefined,
       details:
+        dedupRunDetails ||
         entry.details ||
         (isRunSummary
           ? "Lookup dedup run completed."

@@ -128,6 +128,9 @@ export function JdDetailPanel({
   const [selectedProfile, setSelectedProfile] = useState<TalentProfile | null>(
     null,
   );
+  const [selectedMatch, setSelectedMatch] = useState<CandidateMatch | null>(
+    null,
+  );
   const [profileLoading, setProfileLoading] = useState<string | null>(null);
 
   const handleMatch = useCallback(async () => {
@@ -181,13 +184,15 @@ export function JdDetailPanel({
     }
   }, [jd.key]);
 
-  const handleProfileClick = useCallback(async (pk: string) => {
-    setProfileLoading(pk);
+  const handleProfileClick = useCallback(async (match: CandidateMatch) => {
+    setProfileLoading(match.pk);
+    setSelectedMatch(match);
     try {
-      const profile = await getTalent(pk);
+      const profile = await getTalent(match.pk);
       setSelectedProfile(profile);
     } catch (error) {
       console.error("Failed to load profile:", error);
+      setSelectedMatch(null);
     } finally {
       setProfileLoading(null);
     }
@@ -203,8 +208,12 @@ export function JdDetailPanel({
       <>
         <ProfileDetailPanel
           profile={selectedProfile}
-          onClose={() => setSelectedProfile(null)}
+          onClose={() => {
+            setSelectedProfile(null);
+            setSelectedMatch(null);
+          }}
           onRefresh={async () => {}}
+          matchContext={{ jd, match: selectedMatch }}
         />
       </>
     );
@@ -537,7 +546,7 @@ export function JdDetailPanel({
               {matches.map((m) => (
                 <button
                   key={m.pk}
-                  onClick={() => handleProfileClick(m.pk)}
+                  onClick={() => handleProfileClick(m)}
                   disabled={profileLoading === m.pk}
                   className="w-full text-left rounded-xl border border-black/[0.06] dark:border-white/[0.06] p-3 bg-white/40 dark:bg-slate-800/40 hover:bg-indigo-500/[0.05] hover:border-indigo-500/20 transition-all group cursor-pointer"
                 >

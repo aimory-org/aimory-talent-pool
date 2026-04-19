@@ -257,6 +257,8 @@ class TestHandler:
         assert run_items[0]["user_email"] == "dedup@system"
         assert "no duplicates or removals" in run_items[0]["details"].lower()
         assert run_items[0]["snapshot"]["trigger"] == "manual"
+        assert run_items[0]["snapshot"]["rename_details"] == {}
+        assert run_items[0]["snapshot"]["removal_details"] == {}
 
     @patch("app.bedrock")
     def test_job_title_rename(self, mock_bedrock, all_lookup_tables):
@@ -469,7 +471,10 @@ class TestHandler:
         )["Items"]
         assert len(run_items) == 1
         assert "profiles updated" in run_items[0]["details"].lower()
+        assert "agile methodologies -> agile" in run_items[0]["details"].lower()
         assert run_items[0]["snapshot"]["trigger"] == "manual"
+        assert run_items[0]["snapshot"]["rename_details"]["skills"] == {"Agile Methodologies": "Agile"}
+        assert run_items[0]["snapshot"]["removal_details"] == {}
 
     @patch("app.bedrock")
     def test_scheduled_event_writes_scheduled_trigger(self, mock_bedrock, all_lookup_tables):

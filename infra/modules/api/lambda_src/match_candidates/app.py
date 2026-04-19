@@ -9,6 +9,7 @@ Match candidates against a job description.
 
 import json
 import os
+import re
 from decimal import Decimal
 
 import boto3
@@ -69,6 +70,93 @@ def _clearance_rank(clearance):
         return _CLEARANCE_HIERARCHY.index(clearance)
     except (ValueError, TypeError):
         return -1
+
+
+_TITLE_NOISE_WORDS = {
+    "senior",
+    "jr",
+    "junior",
+    "sr",
+    "lead",
+    "staff",
+    "principal",
+    "ii",
+    "iii",
+    "iv",
+    "the",
+    "and",
+    "of",
+}
+
+
+def _to_list(value):
+    """Normalize comma-delimited or list fields into a clean string list."""
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return [str(v).strip() for v in value if str(v).strip()]
+    if isinstance(value, str):
+        return [v.strip() for v in value.split(",") if v.strip()]
+    return [str(value).strip()] if str(value).strip() else []
+
+
+def _to_float(value):
+    try:
+        if value is None:
+            return None
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _title_tokens(title):
+    if not title:
+        return set()
+    clean = re.sub(r"[^a-z0-9\s]", " ", str(title).lower())
+    return {tok for tok in clean.split() if tok and tok not in _TITLE_NOISE_WORDS}
+
+
+def _apply_score_guardrails(jd, candidate, score, rationale):
+    """Apply deterministic caps so skills-only matches do not over-score misaligned candidates."""
+    capped_score = max(0, min(100, int(score)))
+    cap = 100
+    reasons = []
+
+    # Penalize missing required skills even when overall skill overlap is high.
+    required_skills = {s.lower() for s in _to_list(jd.get("required_skills"))}
+    candidate_skills = {s.lower() for s in _to_list(candidate.get("skill_names"))}
+    missing_required = sum(1 for s in required_skills if s not in candidate_skills)
+    if missing_required >= 2:
+        cap = min(cap, 65)
+        reasons.append("missing multiple required skills")
+    elif missing_required == 1:
+        cap = min(cap, 78)
+        reasons.append("missing one required skill")
+
+    # Penalize years-of-experience gaps.
+    min_exp = _to_float(jd.get("min_experience_years"))
+    cand_exp = _to_float(candidate.get("years_of_experience"))
+    if min_exp is not None and cand_exp is not None and cand_exp < min_exp:
+        shortfall = min_exp - cand_exp
+        if shortfall >= 3:
+            cap = min(cap, 60)
+            reasons.append("experience shortfall (3+ years)")
+        elif shortfall >= 1:
+            cap = min(cap, 75)
+            reasons.append("experience shortfall")
+
+    # Penalize role-title mismatch to avoid overvaluing keyword overlap.
+    jd_title_tokens = _title_tokens(jd.get("job_title"))
+    cand_title_tokens = _title_tokens(candidate.get("job_title"))
+    if jd_title_tokens and cand_title_tokens and jd_title_tokens.isdisjoint(cand_title_tokens):
+        cap = min(cap, 72)
+        reasons.append("job title mismatch")
+
+    adjusted = min(capped_score, cap)
+    if adjusted < capped_score and rationale:
+        rationale = f"{rationale} Guardrail adjustment: {', '.join(reasons)}."
+
+    return adjusted, rationale
 
 
 def _build_prefilter_query(jd):
@@ -137,18 +225,26 @@ def _build_scoring_prompt(jd, candidates):
 
     candidate_summaries = []
     for c in candidates:
+        company_names = []
+        for company in c.get("companies") or []:
+            if isinstance(company, dict):
+                company_name = company.get("name")
+                if company_name:
+                    company_names.append(str(company_name))
+
         candidate_summaries.append(
             {
                 "pk": c.get("pk"),
                 "name": c.get("name"),
-                "skills": c.get("skill_names", []),
-                "certifications": c.get("cert_names", []),
+                "skills": _to_list(c.get("skill_names")),
+                "certifications": _to_list(c.get("cert_names")),
                 "clearance_level": c.get("clearance_level"),
                 "years_of_experience": c.get("years_of_experience"),
                 "industry_category": c.get("industry_category"),
                 "job_title": c.get("job_title"),
                 "location_state": c.get("location_state"),
-                "summary": (c.get("summary") or "")[:500],
+                "companies": company_names[:5],
+                "summary": (c.get("summary") or "")[:1000],
             }
         )
 
@@ -165,12 +261,29 @@ For each candidate, produce a JSON object with:
 - "score": alignment score from 0-100 (integer)
 - "rationale": 1-2 sentence explanation of the score
 
-Scoring guidelines:
-- 90-100: Meets all required skills/certs/clearance, has desired skills, strong experience match
-- 70-89: Meets most required skills/clearance, some gaps in desired skills
-- 50-69: Meets some requirements, notable gaps in skills or experience
-- 30-49: Significant gaps, but has transferable skills
-- 0-29: Poor match, few relevant qualifications
+Scoring rubric (100 points total):
+- Skills + certifications alignment: 35
+- Role/responsibility alignment (actual work history vs JD mission): 30
+- Years-of-experience fit: 20
+- Clearance + location + industry fit: 15
+
+Hard constraints:
+- If the candidate is below required years of experience by 1-2 years, score MUST NOT exceed 75.
+- If the candidate is below required years by 3+ years, score MUST NOT exceed 60.
+- If the candidate's role/work history is not genuinely aligned (keyword overlap only), score MUST NOT exceed 72.
+- Missing multiple required skills should keep score <= 65.
+
+Scoring bands:
+- 90-100: Strongly aligned role history, meets requirements, minimal risk
+- 70-89: Good fit with small gaps
+- 50-69: Partial fit with notable gaps
+- 30-49: Weak fit with substantial gaps
+- 0-29: Poor fit
+
+Rationale requirements:
+- Mention role alignment (or mismatch) explicitly.
+- Mention years-of-experience comparison to JD requirement explicitly.
+- Keep rationale to 1-2 concise sentences.
 
 Return ONLY a JSON array of objects, sorted by score descending. No markdown, no extra text."""
 
@@ -202,13 +315,22 @@ def _score_candidates(jd, candidates):
         scores = json.loads(text)
 
         # Build lookup of scores by pk
+        candidate_by_pk = {c.get("pk"): c for c in candidates if c.get("pk")}
         score_map = {}
         for entry in scores:
             pk = entry.get("pk")
             if pk:
+                raw_score = max(0, min(100, int(entry.get("score", 0))))
+                raw_rationale = str(entry.get("rationale", ""))
+                adjusted_score, adjusted_rationale = _apply_score_guardrails(
+                    jd,
+                    candidate_by_pk.get(pk, {}),
+                    raw_score,
+                    raw_rationale,
+                )
                 score_map[pk] = {
-                    "score": max(0, min(100, int(entry.get("score", 0)))),
-                    "rationale": str(entry.get("rationale", "")),
+                    "score": adjusted_score,
+                    "rationale": adjusted_rationale,
                 }
 
         return score_map
@@ -283,8 +405,8 @@ def handler(event, context):
                         "clearance_level": candidate.get("clearance_level"),
                         "years_of_experience": candidate.get("years_of_experience"),
                         "location_state": candidate.get("location_state"),
-                        "skills": candidate.get("skill_names", []),
-                        "certifications": candidate.get("cert_names", []),
+                        "skills": _to_list(candidate.get("skill_names")),
+                        "certifications": _to_list(candidate.get("cert_names")),
                         "industry_category": candidate.get("industry_category"),
                         "score": scoring["score"],
                         "rationale": scoring["rationale"],
@@ -300,8 +422,8 @@ def handler(event, context):
                         "clearance_level": candidate.get("clearance_level"),
                         "years_of_experience": candidate.get("years_of_experience"),
                         "location_state": candidate.get("location_state"),
-                        "skills": candidate.get("skill_names", []),
-                        "certifications": candidate.get("cert_names", []),
+                        "skills": _to_list(candidate.get("skill_names")),
+                        "certifications": _to_list(candidate.get("cert_names")),
                         "industry_category": candidate.get("industry_category"),
                         "score": None,
                         "rationale": None,

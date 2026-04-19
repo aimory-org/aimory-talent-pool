@@ -239,6 +239,84 @@ def _parse_city_state(city_state_str):
     return city_state_str.strip(), ""
 
 
+def _friendly_type_name(type_name):
+    return type_name.replace("_", " ")
+
+
+def _summarize_rename_details(all_renames, max_examples=2):
+    sections = []
+    for type_name in sorted(all_renames):
+        rename_map = all_renames.get(type_name) or {}
+        if not isinstance(rename_map, dict):
+            continue
+
+        pairs = [
+            (old, new)
+            for old, new in sorted(rename_map.items(), key=lambda pair: str(pair[0]).lower())
+            if isinstance(old, str) and isinstance(new, str)
+        ]
+        if not pairs:
+            continue
+
+        preview = [f"{old} -> {new}" for old, new in pairs[:max_examples]]
+        remaining = len(pairs) - len(preview)
+        if remaining > 0:
+            preview.append(f"+{remaining} more")
+
+        sections.append(f"{_friendly_type_name(type_name)} ({len(pairs)}): {', '.join(preview)}")
+
+    return "; ".join(sections)
+
+
+def _summarize_removal_details(all_removals, max_examples=3):
+    sections = []
+    for type_name in sorted(all_removals):
+        removals = all_removals.get(type_name) or []
+        if not isinstance(removals, list):
+            continue
+
+        names = sorted(
+            [name for name in removals if isinstance(name, str) and name.strip()],
+            key=lambda value: value.lower(),
+        )
+        if not names:
+            continue
+
+        preview = names[:max_examples]
+        remaining = len(names) - len(preview)
+        if remaining > 0:
+            preview.append(f"+{remaining} more")
+
+        sections.append(f"{_friendly_type_name(type_name)} ({len(names)}): {', '.join(preview)}")
+
+    return "; ".join(sections)
+
+
+def _build_run_details(
+    run_trigger,
+    profiles_updated,
+    total_renames,
+    total_removals,
+    all_renames,
+    all_removals,
+):
+    trigger_label = "Scheduled" if run_trigger == "scheduled" else "Manual"
+    details = (
+        f"{trigger_label} lookup dedup run completed: {profiles_updated} profiles updated, "
+        f"{total_renames} renames, {total_removals} removals."
+    )
+
+    rename_summary = _summarize_rename_details(all_renames)
+    if rename_summary:
+        details += f" Renamed entries: {rename_summary}."
+
+    removal_summary = _summarize_removal_details(all_removals)
+    if removal_summary:
+        details += f" Removed entries: {removal_summary}."
+
+    return details
+
+
 def _write_audit_entry(pk, timestamp, changes, candidate_name=None):
     if not AUDIT_LOG_TABLE or not changes:
         return
@@ -267,6 +345,8 @@ def _write_run_audit_entry(
     profiles_updated,
     renames,
     removals,
+    rename_details,
+    removal_details,
     dry_run,
     trigger,
 ):
@@ -285,6 +365,8 @@ def _write_run_audit_entry(
             "profiles_updated": profiles_updated,
             "renames": renames,
             "removals": removals,
+            "rename_details": rename_details,
+            "removal_details": removal_details,
             "dry_run": dry_run,
             "trigger": trigger,
         },
@@ -691,6 +773,8 @@ def handler(event, context):
             profiles_updated=0,
             renames=0,
             removals=0,
+            rename_details={},
+            removal_details={},
             dry_run=dry_run,
             trigger=run_trigger,
         )
@@ -764,13 +848,19 @@ def handler(event, context):
 
     _write_run_audit_entry(
         timestamp=datetime.now(timezone.utc).isoformat(),
-        details=(
-            f"{run_trigger.title()} lookup dedup run completed: {profiles_updated} profiles updated, "
-            f"{total_renames} renames, {total_removals} removals."
+        details=_build_run_details(
+            run_trigger,
+            profiles_updated,
+            total_renames,
+            total_removals,
+            all_renames,
+            all_removals,
         ),
         profiles_updated=profiles_updated,
         renames=total_renames,
         removals=total_removals,
+        rename_details=all_renames,
+        removal_details=all_removals,
         dry_run=dry_run,
         trigger=run_trigger,
     )

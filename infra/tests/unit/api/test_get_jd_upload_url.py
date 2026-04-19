@@ -135,6 +135,55 @@ class TestGetJdUploadUrlHandler:
         body = json.loads(resp["body"])
         assert "subdir" not in body["key"].split("/")[-1] or "safe_name" in body["key"]
 
+    def test_special_characters_are_sanitized_not_rejected(self, aws_mocks):
+        self._setup_s3()
+        app = _reload_app()
+        resp = app.handler(
+            {
+                "queryStringParameters": {
+                    "filename": "Senior Engineer #1 & Final!.pdf",
+                    "contentType": "application/pdf",
+                }
+            },
+            None,
+        )
+        assert resp["statusCode"] == 200
+        body = json.loads(resp["body"])
+        assert "Senior Engineer" in body["key"]
+        assert body["key"].endswith(".pdf")
+
+    def test_missing_extension_gets_added_from_content_type(self, aws_mocks):
+        self._setup_s3()
+        app = _reload_app()
+        resp = app.handler(
+            {
+                "queryStringParameters": {
+                    "filename": "Software Engineer JD",
+                    "contentType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                }
+            },
+            None,
+        )
+        assert resp["statusCode"] == 200
+        body = json.loads(resp["body"])
+        assert body["key"].endswith(".docx")
+
+    def test_mismatched_extension_is_normalized_to_content_type(self, aws_mocks):
+        self._setup_s3()
+        app = _reload_app()
+        resp = app.handler(
+            {
+                "queryStringParameters": {
+                    "filename": "Upload Name.pdf",
+                    "contentType": "application/msword",
+                }
+            },
+            None,
+        )
+        assert resp["statusCode"] == 200
+        body = json.loads(resp["body"])
+        assert body["key"].endswith(".doc")
+
     def test_null_query_params_returns_400(self, aws_mocks):
         self._setup_s3()
         app = _reload_app()
