@@ -362,7 +362,8 @@ For each candidate, produce a JSON object with:
 
 Scoring rubric (100 points total):
 - Skills + certifications alignment: 30
-- Summary & role alignment (compare candidate summary against JD description_summary — do their actual responsibilities, domain expertise, and mission focus overlap?): 35
+- Summary & role alignment (compare candidate summary against JD description_summary —
+  do their actual responsibilities, domain expertise, and mission focus overlap?): 35
 - Years-of-experience fit: 20
 - Clearance + location + industry fit: 15
 
@@ -386,7 +387,8 @@ Scoring bands:
 - 0-29: Poor fit
 
 Rationale requirements:
-- Mention specific summary/role alignment (or mismatch) — what in their work history does or does not match the JD mission.
+- Mention specific summary/role alignment (or mismatch) —
+  what in their work history does or does not match the JD mission.
 - Mention years-of-experience comparison to JD requirement explicitly.
 - Keep rationale to 1-2 concise sentences.
 

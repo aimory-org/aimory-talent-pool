@@ -567,7 +567,6 @@ class TestUpdateJobDescriptions:
     def test_renames_jd_skills(self, mock_bedrock, all_lookup_tables):
         mock_bedrock.converse.return_value = _make_bedrock_response({"Agile Methodologies": "Agile"})
         jd_table = all_lookup_tables["job_descriptions"]
-        profiles_table = all_lookup_tables["talent_profiles"]
         self._add_jd(jd_table, "jd#1", req_skills=["Agile Methodologies", "Python"], des_skills=["AWS"])
 
         app = _reload_app()

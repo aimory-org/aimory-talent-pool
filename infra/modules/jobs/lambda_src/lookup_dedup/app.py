@@ -992,7 +992,7 @@ def handler(event, context):
     profiles_updated = _update_profiles(all_renames, all_removals, dry_run)
 
     # Step 2b: Update job descriptions
-    print(f"\n--- Updating job descriptions ---")
+    print("\n--- Updating job descriptions ---")
     jds_updated = _update_job_descriptions(all_renames, all_removals, dry_run)
 
     # Step 3: Clean up lookup tables (renames)
