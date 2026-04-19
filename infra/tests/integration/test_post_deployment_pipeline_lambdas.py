@@ -215,7 +215,7 @@ def test_pipeline_persist_lambda_smoke_write_and_cleanup():
         "companies": [{"name": f"Integration Company {suffix}", "evidence": ["integration"]}],
         "location": {"city": f"IntegrationCity{suffix}", "state": "va"},
         "requested_salary": 150000,
-        "is_resume": True,
+        "is_valid": True,
     }
 
     event = {
@@ -309,8 +309,8 @@ def test_pipeline_llm_extract_lambda_smoke():
     }
 
     payload = invoke_lambda(function_name, event)
-    assert "is_resume" in payload
-    assert isinstance(payload["is_resume"], bool)
+    assert "is_valid" in payload
+    assert isinstance(payload["is_valid"], bool)
 
 
 def test_pipeline_full_state_machine_resume_e2e():
@@ -344,7 +344,7 @@ def test_pipeline_full_state_machine_resume_e2e():
         assert output.get("bucket") == RESUME_BUCKET
         assert output.get("key") == key
 
-        if TALENT_TABLE and output.get("extracted", {}).get("is_resume") is True:
+        if TALENT_TABLE and output.get("extracted", {}).get("is_valid") is True:
             item = DDB_RESOURCE.Table(TALENT_TABLE).get_item(Key={"pk": pk}).get("Item")
             assert item is not None
     finally:
@@ -385,7 +385,7 @@ def test_pipeline_full_state_machine_non_resume_e2e_delete_or_no_persist():
         output = json.loads(execution.get("output", "{}"))
         assert output.get("bucket") == RESUME_BUCKET
         assert output.get("key") == key
-        assert output.get("extracted", {}).get("is_resume") is False
+        assert output.get("extracted", {}).get("is_valid") is False
 
         if TALENT_TABLE:
             item = DDB_RESOURCE.Table(TALENT_TABLE).get_item(Key={"pk": pk}).get("Item")
