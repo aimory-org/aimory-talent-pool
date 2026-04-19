@@ -64,7 +64,7 @@ class TestAPIGatewayAuth:
 
     def test_get_talent_requires_auth(self):
         _skip_if_no_api()
-        resp = _api("GET", "/talents/some-pk")
+        resp = _api("GET", "/talent", params={"pk": "some-pk"})
         assert resp.status_code == 401
 
     def test_patch_talent_requires_auth(self):
