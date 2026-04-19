@@ -10,8 +10,8 @@ Match candidates against a job description.
 import json
 import os
 import re
-from difflib import SequenceMatcher
 from decimal import Decimal
+from difflib import SequenceMatcher
 
 import boto3
 from opensearchpy import AWSV4SignerAuth, OpenSearch, RequestsHttpConnection
