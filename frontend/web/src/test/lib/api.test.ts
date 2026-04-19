@@ -95,8 +95,9 @@ describe("API Client", () => {
     it("handles URL encoding for special characters in pk", async () => {
       let capturedPk = "";
       server.use(
-        http.get(`${API_BASE}/talents/:pk`, ({ params }) => {
-          capturedPk = params.pk as string;
+        http.get(`${API_BASE}/talent`, ({ request }) => {
+          const url = new URL(request.url);
+          capturedPk = url.searchParams.get("pk") || "";
           return HttpResponse.json({
             pk: "bucket#with spaces/file.pdf",
             name: "Test",
@@ -107,7 +108,7 @@ describe("API Client", () => {
 
       await getTalent("bucket#with spaces/file.pdf");
 
-      // MSW auto-decodes the pk param
+      // URLSearchParams returns decoded values
       expect(capturedPk).toBe("bucket#with spaces/file.pdf");
     });
 

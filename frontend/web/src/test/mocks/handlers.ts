@@ -340,9 +340,16 @@ export const handlers = [
   }),
 
   // Get single talent
-  http.get(`${API_BASE}/talents/:pk`, ({ params }) => {
-    const pk = decodeURIComponent(params.pk as string);
-    const talent = mockTalents.find((t) => t.pk === pk);
+  http.get(`${API_BASE}/talent`, ({ request }) => {
+    const url = new URL(request.url);
+    const pk = url.searchParams.get("pk");
+
+    if (!pk) {
+      return HttpResponse.json({ error: "pk required" }, { status: 400 });
+    }
+
+    const decodedPk = decodeURIComponent(pk);
+    const talent = mockTalents.find((t) => t.pk === decodedPk);
 
     if (!talent) {
       return HttpResponse.json({ error: "Talent not found" }, { status: 404 });
