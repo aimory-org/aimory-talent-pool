@@ -14,6 +14,10 @@ import {
   getAuditHistory,
   listAuditHistory,
   getDeployments,
+  listJobDescriptions,
+  getJobDescription,
+  deleteJobDescription,
+  matchCandidates,
 } from "@/lib/api";
 
 // Mock the aws-amplify auth module
@@ -91,8 +95,9 @@ describe("API Client", () => {
     it("handles URL encoding for special characters in pk", async () => {
       let capturedPk = "";
       server.use(
-        http.get(`${API_BASE}/talents/:pk`, ({ params }) => {
-          capturedPk = params.pk as string;
+        http.get(`${API_BASE}/talent`, ({ request }) => {
+          const url = new URL(request.url);
+          capturedPk = url.searchParams.get("pk") || "";
           return HttpResponse.json({
             pk: "bucket#with spaces/file.pdf",
             name: "Test",
@@ -103,7 +108,7 @@ describe("API Client", () => {
 
       await getTalent("bucket#with spaces/file.pdf");
 
-      // MSW auto-decodes the pk param
+      // URLSearchParams returns decoded values
       expect(capturedPk).toBe("bucket#with spaces/file.pdf");
     });
 
@@ -405,6 +410,51 @@ describe("API Client", () => {
         }),
       );
       await expect(getDeployments()).rejects.toThrow("GitHub API rate limited");
+    });
+  });
+
+  describe("listJobDescriptions", () => {
+    it("fetches all job descriptions", async () => {
+      const result = await listJobDescriptions();
+      expect(result).toHaveLength(2);
+    });
+
+    it("applies clearance filter", async () => {
+      const result = await listJobDescriptions({
+        required_clearance: "TS/SCI",
+      });
+      expect(result).toHaveLength(1);
+      expect(result[0].title).toBe("Data Analyst");
+    });
+  });
+
+  describe("getJobDescription", () => {
+    it("fetches a single JD by pk", async () => {
+      const result = await getJobDescription("jd-001");
+      expect(result.title).toBe("Senior Python Engineer");
+    });
+
+    it("throws on not found", async () => {
+      await expect(getJobDescription("nonexistent")).rejects.toThrow();
+    });
+  });
+
+  describe("deleteJobDescription", () => {
+    it("deletes a JD", async () => {
+      await expect(deleteJobDescription("jd-001")).resolves.toBeUndefined();
+    });
+  });
+
+  describe("matchCandidates", () => {
+    it("returns scored matches", async () => {
+      const result = await matchCandidates("jd-001");
+      expect(result.matches).toHaveLength(2);
+      expect(result.job_description.pk).toBe("jd-001");
+      expect(result.matches[0].score).toBe(85);
+    });
+
+    it("throws on not found", async () => {
+      await expect(matchCandidates("nonexistent")).rejects.toThrow();
     });
   });
 });

@@ -39,20 +39,27 @@ _LAMBDA_DIRS = [
     "modules/api/lambda_src/delete_tag",
     "modules/api/lambda_src/get_lookups",
     "modules/api/lambda_src/get_resume_url",
-    "modules/pipeline/lambda_src/starter",
-    "modules/pipeline/lambda_src/classify",
-    "modules/pipeline/lambda_src/start_textract",
-    "modules/pipeline/lambda_src/check_textract",
-    "modules/pipeline/lambda_src/fetch_textract",
-    "modules/pipeline/lambda_src/normalize",
-    "modules/pipeline/lambda_src/llm_extract",
-    "modules/pipeline/lambda_src/persist",
-    "modules/pipeline/lambda_src/presign",
+    "modules/document_pipeline/lambda_src/starter",
+    "modules/document_pipeline/lambda_src/classify",
+    "modules/document_pipeline/lambda_src/start_textract",
+    "modules/document_pipeline/lambda_src/check_textract",
+    "modules/document_pipeline/lambda_src/fetch_textract",
+    "modules/document_pipeline/lambda_src/normalize",
+    "modules/document_pipeline/lambda_src/llm_extract",
+    "pipeline_configs/resume/persist",
+    "modules/document_pipeline/lambda_src/presign",
+    "pipeline_configs/job_description/persist",
     "modules/storage/lambda_src/sync_to_opensearch",
     "modules/jobs/lambda_src/stale_checker",
     "modules/jobs/lambda_src/lookup_dedup",
     "modules/api/lambda_src/get_audit_history",
     "modules/api/lambda_src/get_deployments",
+    "modules/api/lambda_src/list_job_descriptions",
+    "modules/api/lambda_src/get_job_description",
+    "modules/api/lambda_src/update_job_description",
+    "modules/api/lambda_src/delete_job_description",
+    "modules/api/lambda_src/match_candidates",
+    "modules/api/lambda_src/get_jd_upload_url",
 ]
 
 # Add the unit tests directory itself so _lambda_loader is importable from subfolders.
@@ -84,9 +91,11 @@ def _aws_env(monkeypatch):
         "CERTIFICATIONS_LOOKUP_TABLE": "certifications-lookup",
         "CITIES_LOOKUP_TABLE": "cities-lookup",
         "RESUME_BUCKET": "test-resume-bucket",
+        "DOCUMENT_BUCKET": "test-resume-bucket",
         "OPENSEARCH_ENDPOINT": "search-test.us-east-1.es.amazonaws.com",
         "SFN_ARN_PARAM": "/test/sfn-arn",
         "RAW_PREFIX": "raw/",
+        "DOCUMENT_PREFIX": "raw/onedrive",
         "OUT_BUCKET": "test-output-bucket",
         "OUT_PREFIX": "extracted/",
         "MODEL_ID": "anthropic.claude-3-sonnet-20240229-v1:0",
@@ -102,6 +111,8 @@ def _aws_env(monkeypatch):
         "GITHUB_PAT_PARAM": "/aimory/github-pat",
         "GITHUB_REPO": "bencas21/aimory-talent-pool",
         "GITHUB_WORKFLOW_FILE": "terraform-deploy.yml",
+        "PIPELINE_CONFIG_DIR": os.path.join(_INFRA_ROOT, "pipeline_configs/resume"),
+        "JOB_DESCRIPTIONS_TABLE": "job-descriptions",
     }
     for k, v in env.items():
         monkeypatch.setenv(k, v)
@@ -351,6 +362,37 @@ def all_tables(aws_mocks):
     }
 
 
+def _create_job_descriptions_table():
+    ddb = boto3.resource("dynamodb", region_name="us-east-1")
+    table = ddb.create_table(
+        TableName="job-descriptions",
+        KeySchema=[{"AttributeName": "pk", "KeyType": "HASH"}],
+        AttributeDefinitions=[{"AttributeName": "pk", "AttributeType": "S"}],
+        BillingMode="PAY_PER_REQUEST",
+    )
+    table.meta.client.get_waiter("table_exists").wait(TableName="job-descriptions")
+    return table
+
+
+@pytest.fixture
+def job_descriptions_table(aws_mocks):
+    return _create_job_descriptions_table()
+
+
+@pytest.fixture
+def all_jd_tables(aws_mocks):
+    """Create all tables needed by the JD persist Lambda."""
+    return {
+        "job_descriptions": _create_job_descriptions_table(),
+        "skills_lookup": _create_skills_lookup_table(),
+        "certifications_lookup": _create_certifications_lookup_table(),
+        "cities_lookup": _create_cities_lookup_table(),
+        "job_titles_lookup": _create_job_titles_lookup_table(),
+        "industry_categories_lookup": _create_industry_categories_lookup_table(),
+        "audit_log": _create_audit_log_table(),
+    }
+
+
 # ---------------------------------------------------------------------------
 # S3
 # ---------------------------------------------------------------------------
@@ -370,7 +412,7 @@ def s3_buckets(aws_mocks):
 def sample_profile():
     """A complete, valid talent profile as LLM extract would produce."""
     return {
-        "is_resume": True,
+        "is_valid": True,
         "name": "Jane Doe",
         "contact": {
             "email": "jane.doe@example.com",
@@ -435,4 +477,23 @@ def sample_dynamodb_item():
         "status": "Potential Candidate",
         "date_received": "2025-01-15",
         "updated_at": "2025-01-15T12:00:00+00:00",
+    }
+
+
+@pytest.fixture
+def sample_jd():
+    """A complete, valid job description as LLM extract would produce."""
+    return {
+        "is_valid": True,
+        "title": "Data & Excel Analyst",
+        "required_skills": ["Microsoft Excel", "SQL", "Data Analysis"],
+        "desired_skills": ["Power BI", "Python"],
+        "required_certifications": [],
+        "desired_certifications": ["CompTIA Security+"],
+        "required_clearance": "TS/SCI/FSP",
+        "min_experience_years": 5,
+        "location": {"city": "Herndon", "state": "Virginia", "remote": "Hybrid"},
+        "industry_category": "Federal Government",
+        "job_title": "Data Analyst",
+        "salary_range": {"min": 90000, "max": 120000},
     }

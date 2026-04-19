@@ -47,3 +47,17 @@ resource "aws_s3_bucket_versioning" "resumes" {
     status = "Enabled"
   }
 }
+
+# CORS configuration — allows the frontend to upload files directly via presigned URLs.
+resource "aws_s3_bucket_cors_configuration" "resumes" {
+  count  = length(var.cors_allowed_origins) > 0 ? 1 : 0
+  bucket = aws_s3_bucket.resumes.id
+
+  cors_rule {
+    allowed_headers = ["*"]
+    allowed_methods = ["PUT", "GET"]
+    allowed_origins = var.cors_allowed_origins
+    expose_headers  = ["ETag"]
+    max_age_seconds = 3600
+  }
+}

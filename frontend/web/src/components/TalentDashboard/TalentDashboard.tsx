@@ -33,6 +33,7 @@ export function TalentDashboard() {
     null,
   );
   const [showFilters, setShowFilters] = useState(true);
+  const [showDuplicatesOnly, setShowDuplicatesOnly] = useState(false);
 
   // Fetch data from API
   const {
@@ -194,6 +195,17 @@ export function TalentDashboard() {
     return result;
   }, [talents, sortField, sortDirection]);
 
+  // Client-side duplicate filter
+  const displayedProfiles = useMemo(() => {
+    if (!showDuplicatesOnly) return sortedProfiles;
+    return sortedProfiles.filter((p) => p.possible_duplicate_of);
+  }, [sortedProfiles, showDuplicatesOnly]);
+
+  const duplicateCount = useMemo(
+    () => talents.filter((p) => p.possible_duplicate_of).length,
+    [talents],
+  );
+
   // Calculate active filter count
   const activeFilterCount = useMemo(() => {
     return Object.entries(filters).filter(([key, v]) =>
@@ -206,16 +218,18 @@ export function TalentDashboard() {
   // Calculate stats from filtered data
   const stats = useMemo(
     () => ({
-      total: sortedProfiles.length,
-      potentialCount: sortedProfiles.filter(
+      total: displayedProfiles.length,
+      potentialCount: displayedProfiles.filter(
         (p) => p.status === "Potential Candidate",
       ).length,
-      activeCount: sortedProfiles.filter((p) => p.status === "Active Candidate")
-        .length,
-      placedCount: sortedProfiles.filter((p) => p.status === "Placed Candidate")
-        .length,
+      activeCount: displayedProfiles.filter(
+        (p) => p.status === "Active Candidate",
+      ).length,
+      placedCount: displayedProfiles.filter(
+        (p) => p.status === "Placed Candidate",
+      ).length,
     }),
-    [sortedProfiles],
+    [displayedProfiles],
   );
 
   return (
@@ -326,6 +340,11 @@ export function TalentDashboard() {
             lookupIndustryCategories={lookupIndustryCategories}
             lookupCities={lookupCities}
             lookupTags={lookupTags}
+            duplicateCount={duplicateCount}
+            showDuplicatesOnly={showDuplicatesOnly}
+            onToggleDuplicates={() =>
+              setShowDuplicatesOnly(!showDuplicatesOnly)
+            }
           />
         )}
 
@@ -342,9 +361,9 @@ export function TalentDashboard() {
                 <p className="text-sm text-foreground/60">
                   Showing{" "}
                   <span className="text-foreground font-semibold">
-                    {sortedProfiles.length}
+                    {displayedProfiles.length}
                   </span>{" "}
-                  {sortedProfiles.length === 1 ? "candidate" : "candidates"}
+                  {displayedProfiles.length === 1 ? "candidate" : "candidates"}
                 </p>
                 {activeFilterCount > 0 && (
                   <span className="text-xs bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/30">
@@ -371,7 +390,7 @@ export function TalentDashboard() {
 
         {/* Results Table */}
         <TalentTable
-          profiles={sortedProfiles}
+          profiles={displayedProfiles}
           isLoading={talentsLoading}
           sortField={sortField}
           sortDirection={sortDirection}

@@ -6,12 +6,12 @@ from _lambda_loader import load as _load_lambda
 
 
 def _reload_app():
-    return _load_lambda("modules/pipeline/lambda_src/check_textract")
+    return _load_lambda("modules/document_pipeline/lambda_src/check_textract")
 
 
 class TestCheckTextractHandler:
     def setup_method(self):
-        _load_lambda("modules/pipeline/lambda_src/check_textract")
+        _load_lambda("modules/document_pipeline/lambda_src/check_textract")
 
     @patch("app.textract")
     def test_succeeded_status(self, mock_textract):

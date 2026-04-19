@@ -265,8 +265,20 @@ export function TalentTable({
                 >
                   <TableCell>
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="shrink-0 h-9 w-9 rounded-full bg-gradient-to-br from-indigo-500/40 to-violet-600/40 flex items-center justify-center border border-indigo-500/20 dark:border-indigo-400/20 text-indigo-600 dark:text-indigo-300 font-semibold text-sm shadow-sm">
-                        {(profile.name || "?").charAt(0).toUpperCase()}
+                      <div className="relative shrink-0">
+                        <div className="h-9 w-9 rounded-full bg-gradient-to-br from-indigo-500/40 to-violet-600/40 flex items-center justify-center border border-indigo-500/20 dark:border-indigo-400/20 text-indigo-600 dark:text-indigo-300 font-semibold text-sm shadow-sm">
+                          {(profile.name || "?").charAt(0).toUpperCase()}
+                        </div>
+                        {profile.possible_duplicate_of && (
+                          <span
+                            className="absolute -top-1 -right-1 flex items-center justify-center h-4 w-4 rounded-full bg-amber-500 border-2 border-white dark:border-slate-800"
+                            title="Possible duplicate"
+                          >
+                            <span className="text-white text-[9px] font-bold leading-none">
+                              !
+                            </span>
+                          </span>
+                        )}
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="font-medium text-foreground group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors truncate">
@@ -348,23 +360,11 @@ export function TalentTable({
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center justify-between gap-1">
                       <span className="text-foreground/50 text-sm">
                         {new Date(profile.date_received).toLocaleDateString()}
                       </span>
-                      <div className="flex items-center gap-1">
-                        {profile.possible_duplicate_of && (
-                          <span
-                            className="flex items-center justify-center h-5 w-5 rounded-full bg-amber-500/20 border border-amber-500/30"
-                            title="Possible duplicate"
-                          >
-                            <span className="text-amber-600 dark:text-amber-400 text-xs font-bold">
-                              !
-                            </span>
-                          </span>
-                        )}
-                        <ChevronRight className="h-4 w-4 text-foreground/20 group-hover:text-foreground/50 group-hover:translate-x-0.5 transition-all opacity-0 group-hover:opacity-100" />
-                      </div>
+                      <ChevronRight className="h-4 w-4 text-foreground/20 group-hover:text-foreground/50 group-hover:translate-x-0.5 transition-all opacity-0 group-hover:opacity-100" />
                     </div>
                   </TableCell>
                 </TableRow>

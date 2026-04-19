@@ -1,6 +1,7 @@
 import { http, HttpResponse } from "msw";
 import type { TalentProfile } from "@/types/talent";
 import type { AuditEntry, Deployment } from "@/lib/api";
+import type { JobDescription, CandidateMatch } from "@/types/jobDescription";
 
 const API_BASE = "https://api.test.com";
 
@@ -214,6 +215,80 @@ export const mockDeployments: Deployment[] = [
   },
 ];
 
+export const mockJobDescriptions: JobDescription[] = [
+  {
+    pk: "jd-001",
+    title: "Senior Python Engineer",
+    required_skills: ["Python", "AWS"],
+    desired_skills: ["Terraform"],
+    required_certifications: ["AWS Solutions Architect"],
+    desired_certifications: [],
+    required_clearance: "Secret",
+    min_experience_years: 5,
+    location: { city: "Herndon", state: "VA", remote: "Hybrid" },
+    location_state: "VA",
+    industry_category: "Technology",
+    job_title: "Software Engineer",
+    salary_range: { min: 120000, max: 160000 },
+    skill_names: "Python,AWS,Terraform",
+    cert_names: "AWS Solutions Architect",
+    bucket: "test-bucket",
+    key: "job-descriptions/raw/jd1.pdf",
+    created_at: "2025-06-01T12:00:00Z",
+    updated_at: "2025-06-01T12:00:00Z",
+  },
+  {
+    pk: "jd-002",
+    title: "Data Analyst",
+    required_skills: ["SQL", "Excel"],
+    desired_skills: ["Python", "Power BI"],
+    required_certifications: [],
+    desired_certifications: ["CompTIA Security+"],
+    required_clearance: "TS/SCI",
+    min_experience_years: 3,
+    location: { city: "McLean", state: "VA", remote: "On-site" },
+    location_state: "VA",
+    industry_category: "Federal Government",
+    job_title: "Data Analyst",
+    salary_range: { min: 90000, max: 120000 },
+    skill_names: "SQL,Excel,Python,Power BI",
+    cert_names: "CompTIA Security+",
+    bucket: "test-bucket",
+    key: "job-descriptions/raw/jd2.pdf",
+    created_at: "2025-05-15T10:00:00Z",
+    updated_at: "2025-05-15T10:00:00Z",
+  },
+];
+
+export const mockCandidateMatches: CandidateMatch[] = [
+  {
+    pk: "bucket1#resume1.pdf",
+    name: "John Doe",
+    job_title: "Senior Software Engineer",
+    clearance_level: "Secret",
+    years_of_experience: 10,
+    location_state: "NY",
+    skills: ["TypeScript", "React"],
+    certifications: ["AWS Solutions Architect"],
+    industry_category: "Technology",
+    score: 85,
+    rationale: "Strong technical background, meets clearance requirement.",
+  },
+  {
+    pk: "bucket2#resume2.pdf",
+    name: "Jane Smith",
+    job_title: "Project Manager",
+    clearance_level: "TS",
+    years_of_experience: 8,
+    location_state: "DC",
+    skills: ["Agile"],
+    certifications: ["PMP"],
+    industry_category: "Government",
+    score: 45,
+    rationale: "Exceeds clearance but lacks required technical skills.",
+  },
+];
+
 // Default handlers
 export const handlers = [
   // List talents
@@ -265,9 +340,16 @@ export const handlers = [
   }),
 
   // Get single talent
-  http.get(`${API_BASE}/talents/:pk`, ({ params }) => {
-    const pk = decodeURIComponent(params.pk as string);
-    const talent = mockTalents.find((t) => t.pk === pk);
+  http.get(`${API_BASE}/talent`, ({ request }) => {
+    const url = new URL(request.url);
+    const pk = url.searchParams.get("pk");
+
+    if (!pk) {
+      return HttpResponse.json({ error: "pk required" }, { status: 400 });
+    }
+
+    const decodedPk = decodeURIComponent(pk);
+    const talent = mockTalents.find((t) => t.pk === decodedPk);
 
     if (!talent) {
       return HttpResponse.json({ error: "Talent not found" }, { status: 404 });
@@ -378,5 +460,85 @@ export const handlers = [
   // Deployments
   http.get(`${API_BASE}/deployments`, () => {
     return HttpResponse.json({ deployments: mockDeployments });
+  }),
+
+  // List job descriptions
+  http.get(`${API_BASE}/job-descriptions`, ({ request }) => {
+    const url = new URL(request.url);
+    let filtered = [...mockJobDescriptions];
+
+    const jobTitle = url.searchParams.get("job_title");
+    if (jobTitle) filtered = filtered.filter((jd) => jd.job_title === jobTitle);
+
+    const clearance = url.searchParams.get("required_clearance");
+    if (clearance)
+      filtered = filtered.filter((jd) => jd.required_clearance === clearance);
+
+    const state = url.searchParams.get("location_state");
+    if (state) filtered = filtered.filter((jd) => jd.location_state === state);
+
+    return HttpResponse.json(filtered);
+  }),
+
+  // Get single job description
+  http.get(`${API_BASE}/job-descriptions/:pk`, ({ params }) => {
+    const pk = decodeURIComponent(params.pk as string);
+    const jd = mockJobDescriptions.find((j) => j.pk === pk);
+    if (!jd)
+      return HttpResponse.json(
+        { error: "Job description not found" },
+        { status: 404 },
+      );
+    return HttpResponse.json(jd);
+  }),
+
+  // Delete job description
+  http.delete(`${API_BASE}/job-descriptions`, ({ request }) => {
+    const url = new URL(request.url);
+    const pk = url.searchParams.get("pk");
+    if (!pk)
+      return HttpResponse.json({ error: "pk required" }, { status: 400 });
+    return HttpResponse.json({ status: "deleted", pk });
+  }),
+
+  // Update job description
+  http.patch(`${API_BASE}/job-descriptions`, async () => {
+    return HttpResponse.json({
+      status: "ok",
+      pk: "jd-001",
+      updated_at: new Date().toISOString(),
+    });
+  }),
+
+  // Match candidates
+  http.post(`${API_BASE}/job-descriptions/:pk/match`, ({ params }) => {
+    const pk = decodeURIComponent(params.pk as string);
+    const jd = mockJobDescriptions.find((j) => j.pk === pk);
+    if (!jd)
+      return HttpResponse.json(
+        { error: "Job description not found" },
+        { status: 404 },
+      );
+    return HttpResponse.json({
+      job_description: { pk: jd.pk, title: jd.title },
+      total_candidates: mockCandidateMatches.length,
+      matches: mockCandidateMatches,
+    });
+  }),
+
+  // Get JD upload URL
+  http.get(`${API_BASE}/jd-upload-url`, ({ request }) => {
+    const url = new URL(request.url);
+    const filename = url.searchParams.get("filename");
+    if (!filename)
+      return HttpResponse.json(
+        { error: "Missing filename parameter" },
+        { status: 400 },
+      );
+    return HttpResponse.json({
+      uploadUrl: `https://s3.amazonaws.com/test-bucket/job-descriptions/raw/${filename}?X-Amz-Signature=abc`,
+      key: `job-descriptions/raw/2026-04-19_${filename}`,
+      expiresIn: 900,
+    });
   }),
 ];

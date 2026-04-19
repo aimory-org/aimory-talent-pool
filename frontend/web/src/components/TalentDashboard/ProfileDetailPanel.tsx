@@ -30,7 +30,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { getResumeUrl, updateTalent, deleteTalent } from "@/lib/api";
+import { getResumeUrl, updateTalent, deleteTalent, getTalent } from "@/lib/api";
 import type {
   TalentProfile,
   CandidateStatus,
@@ -83,25 +83,27 @@ interface EditableProfile {
 }
 
 function profileToEditable(profile: TalentProfile): EditableProfile {
+  const contact = profile.contact || {};
+  const location = profile.location || {};
   return {
     name: profile.name || "",
     contact: {
-      email: profile.contact.email || "",
-      phone: profile.contact.phone || "",
-      linkedin: profile.contact.linkedin || "",
-      github: profile.contact.github || "",
+      email: contact.email || "",
+      phone: contact.phone || "",
+      linkedin: contact.linkedin || "",
+      github: contact.github || "",
     },
     summary: profile.summary || "",
     service_category: profile.service_category as ServiceCategory,
     industry_category: profile.industry_category || "",
     job_title: profile.job_title || "",
     clearance_level: profile.clearance_level || "",
-    skillsets: profile.skillsets.map((s) => ({ name: s.name })),
-    certifications: [...profile.certifications],
-    companies: profile.companies.map((c) => ({ name: c.name })),
+    skillsets: (profile.skillsets || []).map((s) => ({ name: s.name })),
+    certifications: [...(profile.certifications || [])],
+    companies: (profile.companies || []).map((c) => ({ name: c.name })),
     location: {
-      city: profile.location.city || "",
-      state: profile.location.state || profile.location_state || "",
+      city: location.city || "",
+      state: location.state || profile.location_state || "",
     },
     years_of_experience: profile.years_of_experience?.toString() || "",
     requested_salary: profile.requested_salary?.toString() || "",
@@ -1385,12 +1387,64 @@ export function ProfileDetailPanel({
             {/* Possible Duplicate Warning */}
             {!isEditMode && profile.possible_duplicate_of && (
               <div className="bg-amber-500/10 rounded-xl p-4 border border-amber-500/30">
-                <p className="text-amber-700 dark:text-amber-300 text-sm font-medium">
-                  ⚠ Possible duplicate of another candidate record
+                <p className="text-amber-700 dark:text-amber-300 text-sm font-medium mb-1">
+                  ⚠ Possible duplicate of another candidate
                 </p>
-                <p className="text-amber-600/70 dark:text-amber-400/70 text-xs mt-1">
-                  ID: {profile.possible_duplicate_of}
+                <p className="text-amber-600/70 dark:text-amber-400/70 text-xs mb-3 break-all">
+                  {profile.possible_duplicate_of}
                 </p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={async () => {
+                      try {
+                        const original = await getTalent(
+                          profile.possible_duplicate_of!,
+                        );
+                        onProfileUpdated?.(original);
+                      } catch {
+                        alert("Could not load the original profile.");
+                      }
+                    }}
+                    className="px-2.5 py-1 rounded-lg text-xs font-medium border border-indigo-500/30 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-500/10 transition-colors"
+                  >
+                    View Original
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (
+                        !confirm(
+                          "Delete this profile and keep the original? This cannot be undone.",
+                        )
+                      )
+                        return;
+                      try {
+                        await deleteTalent(profile.pk);
+                        onClose();
+                        await onRefresh();
+                      } catch {
+                        alert("Failed to delete this profile.");
+                      }
+                    }}
+                    className="px-2.5 py-1 rounded-lg text-xs font-medium border border-red-500/30 text-red-600 dark:text-red-300 hover:bg-red-500/10 transition-colors"
+                  >
+                    Delete This
+                  </button>
+                  <button
+                    onClick={async () => {
+                      try {
+                        const updated = await updateTalent(profile.pk, {
+                          dismiss_duplicate: true,
+                        });
+                        onProfileUpdated?.(updated);
+                      } catch {
+                        alert("Failed to dismiss duplicate flag.");
+                      }
+                    }}
+                    className="px-2.5 py-1 rounded-lg text-xs font-medium border border-amber-500/30 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 transition-colors"
+                  >
+                    Not a Duplicate
+                  </button>
+                </div>
               </div>
             )}
 

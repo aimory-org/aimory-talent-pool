@@ -109,18 +109,27 @@ resource "aws_iam_role_policy" "api_dynamodb_read" {
         ]
       },
       {
+        Sid    = "ReadJobDescriptions"
+        Effect = "Allow"
+        Action = [
+          "dynamodb:GetItem",
+          "dynamodb:Scan"
+        ]
+        Resource = var.job_descriptions_table_arn
+      },
+      {
         Sid    = "ReadLookupTables"
         Effect = "Allow"
         Action = [
           "dynamodb:Scan"
         ]
         Resource = [
-          var.skills_lookup_table_arn,
-          var.certifications_lookup_table_arn,
-          var.cities_lookup_table_arn,
-          var.job_titles_lookup_table_arn,
-          var.industry_categories_lookup_table_arn,
-          var.tags_lookup_table_arn
+          var.lookup_tables.skills.arn,
+          var.lookup_tables.certifications.arn,
+          var.lookup_tables.cities.arn,
+          var.lookup_tables.job_titles.arn,
+          var.lookup_tables.industry_categories.arn,
+          var.lookup_tables.tags.arn
         ]
       },
       {
@@ -156,6 +165,15 @@ resource "aws_iam_role_policy" "api_dynamodb_write" {
       Resource = var.talent_profiles_table_arn
       },
       {
+        Sid    = "WriteJobDescriptions"
+        Effect = "Allow"
+        Action = [
+          "dynamodb:UpdateItem",
+          "dynamodb:DeleteItem"
+        ]
+        Resource = var.job_descriptions_table_arn
+      },
+      {
         Sid    = "WriteLookupTables"
         Effect = "Allow"
         Action = [
@@ -163,12 +181,12 @@ resource "aws_iam_role_policy" "api_dynamodb_write" {
           "dynamodb:DeleteItem"
         ]
         Resource = [
-          var.skills_lookup_table_arn,
-          var.certifications_lookup_table_arn,
-          var.cities_lookup_table_arn,
-          var.job_titles_lookup_table_arn,
-          var.industry_categories_lookup_table_arn,
-          var.tags_lookup_table_arn
+          var.lookup_tables.skills.arn,
+          var.lookup_tables.certifications.arn,
+          var.lookup_tables.cities.arn,
+          var.lookup_tables.job_titles.arn,
+          var.lookup_tables.industry_categories.arn,
+          var.lookup_tables.tags.arn
         ]
       },
       {
@@ -189,16 +207,26 @@ resource "aws_iam_role_policy" "api_s3_read" {
 
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Sid    = "ManageResumes"
-      Effect = "Allow"
-      Action = [
-        "s3:GetObject",
-        "s3:HeadObject",
-        "s3:DeleteObject"
-      ]
-      Resource = "${var.resume_bucket_arn}/*"
-    }]
+    Statement = [
+      {
+        Sid    = "ManageResumes"
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:HeadObject",
+          "s3:DeleteObject"
+        ]
+        Resource = "${var.resume_bucket_arn}/*"
+      },
+      {
+        Sid    = "UploadJobDescriptions"
+        Effect = "Allow"
+        Action = [
+          "s3:PutObject"
+        ]
+        Resource = "${var.resume_bucket_arn}/job-descriptions/raw/*"
+      }
+    ]
   })
 }
 
@@ -234,6 +262,25 @@ resource "aws_iam_role_policy" "api_ssm" {
       Effect   = "Allow"
       Action   = ["ssm:GetParameter"]
       Resource = "arn:aws:ssm:*:*:parameter${var.github_pat_param}"
+    }]
+  })
+}
+
+# Bedrock access for match_candidates scoring
+resource "aws_iam_role_policy" "api_bedrock" {
+  name = "${var.project_name}-${var.environment}-api-bedrock"
+  role = aws_iam_role.api_lambda_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid    = "InvokeBedrockModel"
+      Effect = "Allow"
+      Action = ["bedrock:InvokeModel", "bedrock:Converse"]
+      Resource = [
+        "arn:aws:bedrock:*::foundation-model/*",
+        "arn:aws:bedrock:*:*:inference-profile/*",
+      ]
     }]
   })
 }

@@ -23,8 +23,12 @@ class DecimalEncoder(json.JSONEncoder):
 
 def handler(event, context):
     try:
-        # Get pk from path parameters
-        pk = event.get("pathParameters", {}).get("pk")
+        # Get pk from query string parameters
+        pk = (event.get("queryStringParameters") or {}).get("pk")
+
+        if not pk:
+            # Fall back to path parameters for backward compatibility
+            pk = (event.get("pathParameters") or {}).get("pk")
 
         if not pk:
             return {

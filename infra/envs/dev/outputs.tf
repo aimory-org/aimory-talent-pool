@@ -20,7 +20,7 @@ output "environment" {
 
 output "pipeline_state_machine_arn" {
   description = "Step Functions state machine ARN for resume pipeline"
-  value       = module.pipeline.state_machine_arn
+  value       = module.resume_pipeline.state_machine_arn
 }
 
 output "talent_profiles_table_name" {
@@ -60,7 +60,7 @@ output "industry_categories_lookup_table_name" {
 
 output "presign_function_url" {
   description = "Public function URL for the presign Lambda"
-  value       = module.pipeline.presign_function_url
+  value       = module.resume_pipeline.presign_function_url
 }
 
 output "frontend_site_bucket_name" {
@@ -108,4 +108,14 @@ output "api_endpoint" {
 output "opensearch_endpoint" {
   description = "OpenSearch domain endpoint for backfill script"
   value       = module.storage.opensearch_endpoint
+}
+
+output "job_descriptions_table_name" {
+  description = "DynamoDB table name for job descriptions"
+  value       = module.storage.job_descriptions_table_name
+}
+
+output "jd_pipeline_state_machine_arn" {
+  description = "Step Functions state machine ARN for JD pipeline"
+  value       = module.jd_pipeline.state_machine_arn
 }

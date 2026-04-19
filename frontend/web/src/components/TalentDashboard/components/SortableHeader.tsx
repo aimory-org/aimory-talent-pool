@@ -2,23 +2,22 @@
  * Sortable table header component with sort indicators.
  */
 import { ChevronUp, ChevronDown } from "lucide-react";
-import type { SortField, SortDirection } from "../types";
 
-interface SortableHeaderProps {
+interface SortableHeaderProps<T extends string> {
   label: string;
-  field: SortField;
-  currentSort: SortField;
-  currentDirection: SortDirection;
-  onSort: (field: SortField) => void;
+  field: T;
+  currentSort: T;
+  currentDirection: "asc" | "desc";
+  onSort: (field: T) => void;
 }
 
-export function SortableHeader({
+export function SortableHeader<T extends string>({
   label,
   field,
   currentSort,
   currentDirection,
   onSort,
-}: SortableHeaderProps) {
+}: SortableHeaderProps<T>) {
   const isActive = currentSort === field;
   return (
     <button

@@ -16,18 +16,26 @@ infra/
 │       ├── terraform.tfvars  # Your values (not in git)
 │       └── terraform.tfvars.example
 └── modules/
-    ├── api/                  # API Gateway + Lambda endpoints + stale checker
-    │   └── lambda_src/       # Python handlers (list_talents, get_talent, stale_checker, etc.)
-    ├── frontend/
-    │   ├── cognito/          # User pool + Microsoft Entra ID federation
-    │   └── site/             # S3 + CloudFront static hosting
-    ├── pipeline/
-    │   ├── lambdas/          # Resume processing Lambdas
-    │   │   ├── lambda_src/   # Python handlers (9 functions)
-    │   │   └── layers/       # Custom Lambda layers (pdfminer)
-    │   └── step_functions/   # State machine orchestration
+    ├── api/                  # API Gateway + Lambda endpoints
+    │   └── lambda_src/       # Python handlers (list_talents, get_talent, etc.)
+    ├── auth/                 # Cognito User Pool + Microsoft Entra ID federation
+    ├── document_pipeline/    # Reusable document processing pipeline (see its README)
+    │   ├── lambda_src/       # Shared Lambdas (starter, classify, textract, normalize, llm_extract)
+    │   └── layers/           # Custom Lambda layers (pdfminer)
+    ├── frontend/             # S3 + CloudFront static hosting
+    ├── jobs/                 # Scheduled background jobs (stale checker, lookup dedup)
+    │   └── lambda_src/
+    ├── pipeline/             # [Legacy] Original resume pipeline — migrating to document_pipeline
     └── storage/              # DynamoDB tables + S3 buckets + OpenSearch domain
         └── lambda_src/       # DynamoDB→OpenSearch sync Lambda
+
+pipeline_configs/             # Per-pipeline config (schema, prompt, hooks, persist)
+├── resume/                   # Resume pipeline config
+│   ├── schema.json
+│   ├── prompt.txt
+│   ├── hooks.py
+│   └── persist/app.py
+└── <future>/                 # Add new pipeline types here
 ```
 
 ## Architecture
@@ -181,6 +189,40 @@ API Gateway is configured with a "JWT Authorizer" that knows the Cognito User Po
 | AWS CLI | v2 | AWS authentication |
 | Docker | Latest | Building Lambda layers |
 | Python | 3.12 | Lambda runtime compatibility |
+
+## Conventions
+
+### Lookup Tables
+
+All lookup tables (skills, certifications, cities, job_titles, industry_categories, tags)
+are exported as a single `lookup_tables` object from the storage module. In `modules.tf`:
+
+```hcl
+locals {
+  lookup_tables = module.storage.lookup_tables
+}
+```
+
+Every module that needs lookup tables accepts a single `lookup_tables` variable
+instead of 10+ individual name/arn pairs:
+
+```hcl
+module "some_module" {
+  lookup_tables = local.lookup_tables
+  # ...
+}
+```
+
+### Adding a Document Pipeline
+
+See [modules/document_pipeline/README.md](modules/document_pipeline/README.md)
+for the step-by-step guide.
+
+### Naming
+
+- Resource names: `${project_name}-${environment}-<descriptor>`
+- Lambda functions: `${prefix}-<function_name>` (e.g. `aimory-talent-pool-dev-starter`)
+- DynamoDB tables: `${project_name}-${environment}-<table>` (e.g. `aimory-talent-pool-dev-talent-profiles`)
 
 ### AWS Permissions Required
 

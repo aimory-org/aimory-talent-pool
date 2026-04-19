@@ -20,7 +20,7 @@ pytestmark = pytest.mark.integration
 
 REGION = os.environ.get("AWS_REGION", "us-east-1")
 RESUME_BUCKET = os.environ.get("RESUME_BUCKET", "").strip()
-RAW_PREFIX = os.environ.get("RAW_PREFIX", "raw").strip().strip("/")
+RAW_PREFIX = os.environ.get("RAW_PREFIX", "resumes/raw").strip().strip("/")
 TALENT_TABLE = os.environ.get("TALENT_PROFILES_TABLE", "").strip()
 STATE_MACHINE_ARN = (
     os.environ.get("PIPELINE_STATE_MACHINE_ARN", "").strip() or os.environ.get("STATE_MACHINE_ARN", "").strip()

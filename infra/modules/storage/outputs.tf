@@ -89,6 +89,30 @@ output "tags_lookup_table_arn" {
   value       = aws_dynamodb_table.tags_lookup.arn
 }
 
+# Job descriptions table
+output "job_descriptions_table_name" {
+  description = "DynamoDB table name for job descriptions"
+  value       = aws_dynamodb_table.job_descriptions.name
+}
+
+output "job_descriptions_table_arn" {
+  description = "DynamoDB table ARN for job descriptions"
+  value       = aws_dynamodb_table.job_descriptions.arn
+}
+
+# Consolidated lookup tables object — pass this to modules instead of 10+ individual vars
+output "lookup_tables" {
+  description = "All lookup tables as a single object with name and arn per table"
+  value = {
+    skills              = { name = aws_dynamodb_table.skills_lookup.name, arn = aws_dynamodb_table.skills_lookup.arn }
+    certifications      = { name = aws_dynamodb_table.certifications_lookup.name, arn = aws_dynamodb_table.certifications_lookup.arn }
+    cities              = { name = aws_dynamodb_table.cities_lookup.name, arn = aws_dynamodb_table.cities_lookup.arn }
+    job_titles          = { name = aws_dynamodb_table.job_titles_lookup.name, arn = aws_dynamodb_table.job_titles_lookup.arn }
+    industry_categories = { name = aws_dynamodb_table.industry_categories_lookup.name, arn = aws_dynamodb_table.industry_categories_lookup.arn }
+    tags                = { name = aws_dynamodb_table.tags_lookup.name, arn = aws_dynamodb_table.tags_lookup.arn }
+  }
+}
+
 output "talent_profiles_table_stream_arn" {
   description = "DynamoDB Stream ARN for talent profiles table"
   value       = aws_dynamodb_table.talent_profiles.stream_arn

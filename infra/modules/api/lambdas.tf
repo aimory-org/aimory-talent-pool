@@ -14,7 +14,7 @@ locals {
       }
     }
     get_talent = {
-      route   = "GET /talents/{pk}"
+      route   = "GET /talent"
       timeout = 10
       memory  = 256
       layers  = []
@@ -28,12 +28,12 @@ locals {
       memory  = 256
       layers  = []
       env = {
-        SKILLS_LOOKUP_TABLE              = var.skills_lookup_table_name
-        CERTIFICATIONS_LOOKUP_TABLE      = var.certifications_lookup_table_name
-        CITIES_LOOKUP_TABLE              = var.cities_lookup_table_name
-        JOB_TITLES_LOOKUP_TABLE          = var.job_titles_lookup_table_name
-        INDUSTRY_CATEGORIES_LOOKUP_TABLE = var.industry_categories_lookup_table_name
-        TAGS_LOOKUP_TABLE                = var.tags_lookup_table_name
+        SKILLS_LOOKUP_TABLE              = var.lookup_tables.skills.name
+        CERTIFICATIONS_LOOKUP_TABLE      = var.lookup_tables.certifications.name
+        CITIES_LOOKUP_TABLE              = var.lookup_tables.cities.name
+        JOB_TITLES_LOOKUP_TABLE          = var.lookup_tables.job_titles.name
+        INDUSTRY_CATEGORIES_LOOKUP_TABLE = var.lookup_tables.industry_categories.name
+        TAGS_LOOKUP_TABLE                = var.lookup_tables.tags.name
       }
     }
     get_resume_url = {
@@ -73,12 +73,12 @@ locals {
       env = {
         TALENT_PROFILES_TABLE            = var.talent_profiles_table_name
         AUDIT_LOG_TABLE                  = var.audit_log_table_name
-        SKILLS_LOOKUP_TABLE              = var.skills_lookup_table_name
-        CERTIFICATIONS_LOOKUP_TABLE      = var.certifications_lookup_table_name
-        CITIES_LOOKUP_TABLE              = var.cities_lookup_table_name
-        JOB_TITLES_LOOKUP_TABLE          = var.job_titles_lookup_table_name
-        INDUSTRY_CATEGORIES_LOOKUP_TABLE = var.industry_categories_lookup_table_name
-        TAGS_LOOKUP_TABLE                = var.tags_lookup_table_name
+        SKILLS_LOOKUP_TABLE              = var.lookup_tables.skills.name
+        CERTIFICATIONS_LOOKUP_TABLE      = var.lookup_tables.certifications.name
+        CITIES_LOOKUP_TABLE              = var.lookup_tables.cities.name
+        JOB_TITLES_LOOKUP_TABLE          = var.lookup_tables.job_titles.name
+        INDUSTRY_CATEGORIES_LOOKUP_TABLE = var.lookup_tables.industry_categories.name
+        TAGS_LOOKUP_TABLE                = var.lookup_tables.tags.name
       }
     }
     delete_talent = {
@@ -99,8 +99,67 @@ locals {
       layers  = []
       env = {
         AUDIT_LOG_TABLE       = var.audit_log_table_name
-        TAGS_LOOKUP_TABLE     = var.tags_lookup_table_name
+        TAGS_LOOKUP_TABLE     = var.lookup_tables.tags.name
         TALENT_PROFILES_TABLE = var.talent_profiles_table_name
+      }
+    }
+    list_job_descriptions = {
+      route   = "GET /job-descriptions"
+      timeout = 15
+      memory  = 256
+      layers  = []
+      env = {
+        JOB_DESCRIPTIONS_TABLE = var.job_descriptions_table_name
+      }
+    }
+    get_job_description = {
+      route   = "GET /job-descriptions/{pk}"
+      timeout = 10
+      memory  = 256
+      layers  = []
+      env = {
+        JOB_DESCRIPTIONS_TABLE = var.job_descriptions_table_name
+      }
+    }
+    update_job_description = {
+      route   = "PATCH /job-descriptions"
+      timeout = 10
+      memory  = 256
+      layers  = []
+      env = {
+        JOB_DESCRIPTIONS_TABLE = var.job_descriptions_table_name
+        AUDIT_LOG_TABLE        = var.audit_log_table_name
+      }
+    }
+    delete_job_description = {
+      route   = "DELETE /job-descriptions"
+      timeout = 10
+      memory  = 256
+      layers  = []
+      env = {
+        JOB_DESCRIPTIONS_TABLE = var.job_descriptions_table_name
+        AUDIT_LOG_TABLE        = var.audit_log_table_name
+      }
+    }
+    match_candidates = {
+      route   = "POST /job-descriptions/{pk}/match"
+      timeout = 60
+      memory  = 512
+      layers  = [var.opensearch_layer_arn]
+      env = {
+        JOB_DESCRIPTIONS_TABLE = var.job_descriptions_table_name
+        OPENSEARCH_ENDPOINT    = var.opensearch_endpoint
+        BEDROCK_MODEL_ID       = var.bedrock_model_id
+      }
+    }
+    get_jd_upload_url = {
+      route   = "GET /jd-upload-url"
+      timeout = 10
+      memory  = 256
+      layers  = []
+      env = {
+        RESUME_BUCKET = var.resume_bucket_name
+        JD_RAW_PREFIX = "job-descriptions/raw"
       }
     }
   }

@@ -305,8 +305,8 @@ def _validate_profile(profile):
         "location",
         "requested_salary",
     }
-    # Allow is_resume field from llm_extract (used by Step Function choice)
-    allowed = required | {"is_resume"}
+    # Allow is_valid field from llm_extract (used by Step Function choice)
+    allowed = required | {"is_valid"}
     _require_keys(profile, required, allowed, "extracted")
 
     _validate_string(profile["name"], "name", min_len=1)
@@ -423,14 +423,14 @@ def _write_audit_entry(pk, action, timestamp, candidate_name=None):
         print(f"Warning: failed to write pipeline audit entry for {pk}: {exc}")
 
 
-def _check_duplicate(name_lower, email, current_pk):
-    """Check if a candidate with the same name+email already exists. Returns existing pk or None."""
-    if not name_lower or not email:
+def _check_duplicate(name_lower, current_pk):
+    """Check if a candidate with the same name already exists. Returns existing pk or None."""
+    if not name_lower or name_lower == "unknown":
         return None
     try:
         kwargs = {
-            "FilterExpression": "name_lower = :name AND contact.email = :email AND pk <> :self",
-            "ExpressionAttributeValues": {":name": name_lower, ":email": email, ":self": current_pk},
+            "FilterExpression": "name_lower = :name AND pk <> :self",
+            "ExpressionAttributeValues": {":name": name_lower, ":self": current_pk},
             "ProjectionExpression": "pk",
             "Limit": 1,
         }
@@ -485,9 +485,8 @@ def handler(event, context):
     industry_category = profile["industry_category"] if profile["industry_category"] else "Unknown"
     job_title = profile["job_title"] if profile["job_title"] else "Unknown"
 
-    # Check for duplicate candidates (same name + email)
-    email = profile["contact"].get("email") if profile.get("contact") else None
-    existing_pk = _check_duplicate(name_lower, email, pk)
+    # Check for duplicate candidates (same name)
+    existing_pk = _check_duplicate(name_lower, pk)
 
     # Preserve recruiter-curated fields if the record already exists
     existing = None
