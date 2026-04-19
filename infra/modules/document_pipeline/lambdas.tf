@@ -64,6 +64,10 @@ resource "null_resource" "llm_extract_build" {
     schema_hash  = filesha256("${var.pipeline_config_dir}/schema.json")
     prompt_hash  = filesha256("${var.pipeline_config_dir}/prompt.txt")
     hooks_hash   = filesha256("${var.pipeline_config_dir}/hooks.py")
+    build_app    = tostring(fileexists("${path.module}/.build/llm_extract_${var.pipeline_name}/app.py"))
+    build_schema = tostring(fileexists("${path.module}/.build/llm_extract_${var.pipeline_name}/schema.json"))
+    build_prompt = tostring(fileexists("${path.module}/.build/llm_extract_${var.pipeline_name}/prompt.txt"))
+    build_hooks  = tostring(fileexists("${path.module}/.build/llm_extract_${var.pipeline_name}/hooks.py"))
   }
 
   provisioner "local-exec" {
