@@ -79,8 +79,6 @@ def handler(event, context):
         raise ValueError("MODEL_ID env var is required (set to a Bedrock model ID available in your region).")
 
     document_text = _extract_text(event)
-    bucket = event.get("bucket")
-    key = event.get("key")
 
     # Load pipeline-specific config
     schema = _load_schema()

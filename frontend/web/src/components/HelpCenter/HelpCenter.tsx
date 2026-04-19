@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { BookOpen, Server } from "lucide-react";
-import { UserGuide, USER_NAV } from "./UserGuide/UserGuide";
-import { TechReference, TECH_NAV } from "./TechReference/TechReference";
+import { UserGuide } from "./UserGuide/UserGuide";
+import { USER_NAV } from "./UserGuide/userNav";
+import { TechReference } from "./TechReference/TechReference";
+import { TECH_NAV } from "./TechReference/techNav";
 
 type Tab = "user-guide" | "tech-reference";
 
