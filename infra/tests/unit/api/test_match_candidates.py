@@ -62,6 +62,10 @@ SAMPLE_SCORES = [
     {"pk": "b#bob.pdf", "score": 45, "rationale": "Partial match: has AWS but lacks Python, low experience."},
 ]
 
+SAMPLE_SCORES_OVERRATED = [
+    {"pk": "b#bob.pdf", "score": 96, "rationale": "High keyword overlap."},
+]
+
 
 class TestMatchCandidatesHandler:
     def setup_method(self):
@@ -139,6 +143,26 @@ class TestMatchCandidatesHandler:
         assert body["matches"] == []
         # Should NOT call Bedrock when no candidates
         mock_bedrock.converse.assert_not_called()
+
+    @patch("app.bedrock")
+    @patch("app._get_os_client")
+    def test_guardrails_cap_overrated_scores(self, mock_os_client, mock_bedrock, job_descriptions_table):
+        job_descriptions_table.put_item(Item=SAMPLE_JD)
+        import app
+
+        mc = MagicMock()
+        mc.search.return_value = _os_response([SAMPLE_CANDIDATES[1]])
+        mock_os_client.return_value = mc
+
+        mock_bedrock.converse.return_value = _bedrock_response(SAMPLE_SCORES_OVERRATED)
+
+        resp = app.handler({"pathParameters": {"pk": "jd-001"}}, None)
+        assert resp["statusCode"] == 200
+
+        body = json.loads(resp["body"])
+        assert len(body["matches"]) == 1
+        # Bob is below required experience and role-misaligned, so score should still be capped.
+        assert body["matches"][0]["score"] <= 70
 
     @patch("app.bedrock")
     @patch("app._get_os_client")

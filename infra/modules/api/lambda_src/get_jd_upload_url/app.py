@@ -5,6 +5,7 @@ Generate a presigned URL for uploading a job description to S3.
 import json
 import os
 import re
+import unicodedata
 import uuid
 from datetime import datetime, timezone
 
@@ -23,25 +24,59 @@ ALLOWED_CONTENT_TYPES = {
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 }
 
+CONTENT_TYPE_EXTENSIONS = {
+    "application/pdf": ".pdf",
+    "application/msword": ".doc",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
+}
+
 # Max filename length
 MAX_FILENAME_LENGTH = 255
 
-# Pattern for safe filenames (alphanumeric, hyphens, underscores, dots, spaces)
-SAFE_FILENAME_RE = re.compile(r"^[\w\s\-\.()]+$")
+# Pattern for allowed characters in final S3 filename
+SAFE_FILENAME_RE = re.compile(r"[^A-Za-z0-9\s\-_.()]+")
 
 
 def _sanitize_filename(filename):
     """Sanitize and validate the uploaded filename."""
-    if not filename or len(filename) > MAX_FILENAME_LENGTH:
+    if not filename:
         return None
 
     # Strip path components (prevent directory traversal)
-    filename = filename.replace("\\", "/").split("/")[-1]
-
-    if not filename or not SAFE_FILENAME_RE.match(filename):
+    filename = filename.replace("\\", "/").split("/")[-1].strip()
+    if not filename:
         return None
 
-    return filename
+    # Reject obvious HTML/script-like payloads
+    if "<" in filename or ">" in filename:
+        return None
+
+    # Normalize unicode to ASCII-friendly text so uploads with smart punctuation/accents still work
+    filename = unicodedata.normalize("NFKD", filename).encode("ascii", "ignore").decode("ascii")
+    if not filename:
+        return None
+
+    # Replace unsupported characters with '-' instead of hard-failing the upload
+    filename = SAFE_FILENAME_RE.sub("-", filename)
+    filename = re.sub(r"\s+", " ", filename).strip()
+
+    # Keep extension and trim basename safely
+    name, ext = os.path.splitext(filename)
+    name = name.strip(" .-_")
+    ext = ext.lower().strip()
+
+    if not name:
+        return None
+
+    sanitized = f"{name}{ext}"
+    if len(sanitized) > MAX_FILENAME_LENGTH:
+        allowed_name_len = MAX_FILENAME_LENGTH - len(ext)
+        name = name[:allowed_name_len].rstrip(" .-_")
+        if not name:
+            return None
+        sanitized = f"{name}{ext}"
+
+    return sanitized
 
 
 def handler(event, context):
@@ -73,6 +108,14 @@ def handler(event, context):
                 "headers": {"Content-Type": "application/json"},
                 "body": json.dumps({"error": "Invalid filename"}),
             }
+
+        # Ensure the key uses an extension that matches the declared content type
+        name, ext = os.path.splitext(safe_filename)
+        expected_ext = CONTENT_TYPE_EXTENSIONS[content_type]
+        if not ext:
+            safe_filename = f"{name}{expected_ext}"
+        elif ext.lower() != expected_ext:
+            safe_filename = f"{name}{expected_ext}"
 
         # Build S3 key: job-descriptions/raw/YYYY-MM-DD_<filename>
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")

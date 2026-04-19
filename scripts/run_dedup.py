@@ -83,6 +83,8 @@ def main():
         print()
 
     print(f"Profiles updated: {profiles_updated}")
+    jds_updated = result_payload.get("jds_updated", 0)
+    print(f"Job descriptions updated: {jds_updated}")
 
     if args.dry_run:
         print("\nThis was a dry run. Run without --dry-run to apply changes.")

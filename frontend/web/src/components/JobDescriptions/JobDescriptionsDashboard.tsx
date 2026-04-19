@@ -298,6 +298,7 @@ export function JobDescriptionsDashboard() {
       {/* Detail panel */}
       {selectedJd && (
         <JdDetailPanel
+          key={selectedJd.pk}
           jd={selectedJd}
           onClose={() => setSelectedJd(null)}
           onDeleted={handleDeleted}

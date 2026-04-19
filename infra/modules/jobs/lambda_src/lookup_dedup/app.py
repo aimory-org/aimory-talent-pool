@@ -19,6 +19,7 @@ from datetime import datetime, timezone
 import boto3
 
 PROFILES_TABLE = os.environ["TALENT_PROFILES_TABLE"]
+JOB_DESCRIPTIONS_TABLE = os.environ.get("JOB_DESCRIPTIONS_TABLE", "")
 AUDIT_LOG_TABLE = os.environ.get("AUDIT_LOG_TABLE", "")
 SKILLS_TABLE = os.environ.get("SKILLS_LOOKUP_TABLE", "")
 CERTS_TABLE = os.environ.get("CERTIFICATIONS_LOOKUP_TABLE", "")
@@ -56,8 +57,13 @@ Rules:
   "AWS" → "Amazon Web Services", "GCP" → "Google Cloud Platform"
 - Wording variations are duplicates: "Project Management Skills" → "Project Management"
 - Suffix variations are duplicates: "Agile Methodologies" → "Agile"
+- Treat semantic-equivalent variants as duplicates when recruiter search intent is the same:
+    "Data Analytics" and "Data Analysis" should be grouped under one canonical skill.
 - DO NOT group genuinely different concepts (e.g., "Python" and "Java" are NOT duplicates)
 - Prefer the FULL, spelled-out canonical name (not abbreviations)
+- NEVER rename a full spelled-out name to its acronym. Only rename acronyms to full names.
+  WRONG: "Research & Development" → "R&D"   CORRECT: "R&D" → "Research & Development"
+  WRONG: "Risk Management Framework" → "RMF"  CORRECT: "RMF" → "Risk Management Framework"
 - EXCEPTIONS where the abbreviation IS the standard name:
   "SQL", "HTML", "CSS", "API", "REST", "DevOps", "CI/CD", "Power BI", "SAP"
 - The canonical name itself must NOT appear as a key (only duplicates are keys)
@@ -78,11 +84,21 @@ Return ONLY a JSON object with two keys:
 Rename rules:
 - Case-only differences are duplicates: "agile" → "Agile"
 - Abbreviation pairs — prefer FULL names:
-  "AWS" → "Amazon Web Services", "GCP" → "Google Cloud Platform",
-  "AI/ML" → "Artificial Intelligence/Machine Learning"
+  "AWS" → "Amazon Web Services", "GCP" → "Google Cloud Platform"
+- Compound slash-skills that represent distinct concepts should be SPLIT via "remove":
+  Remove "AI/ML" or "Artificial Intelligence/Machine Learning" — they should be two separate skills.
+  Remove "DevSecOps" only if both "DevOps" and "Security" exist separately (otherwise keep it).
 - Wording variations are duplicates: "Project Management Skills" → "Project Management"
+- Semantic-equivalent variants should be grouped:
+    "Data Analytics", "Data Analysis", and "Analytical Skills" should map to one canonical name.
+- For related skill families, merge only terms that represent the same recruiter-search intent.
+- Keep adjacent but distinct skill intents separate when they would be searched separately.
+- If unsure whether two skills are distinct, keep them separate rather than over-merging.
 - DO NOT group genuinely different concepts
 - Prefer the FULL, spelled-out canonical name (not abbreviations)
+- NEVER rename a full spelled-out name to its acronym. Only rename acronyms to full names.
+  WRONG: "Research & Development" → "R&D"   CORRECT: "R&D" → "Research & Development"
+  WRONG: "Risk Management Framework" → "RMF"  CORRECT: "RMF" → "Risk Management Framework"
 - EXCEPTIONS where the abbreviation IS the standard name:
   "SQL", "HTML", "CSS", "API", "REST", "DevOps", "CI/CD", "Power BI", "SAP"
 - The canonical name itself must NOT appear as a rename key
@@ -190,6 +206,13 @@ Rules:
 - DO NOT group genuinely different roles (e.g., "Data Analyst" and "Data Engineer" are NOT duplicates)
 - DO NOT merge titles that differ only by seniority level
   (e.g., "Systems Engineer" and "Senior Systems Engineer" are DIFFERENT titles — keep both)
+- DO NOT shorten titles by dropping qualifiers
+- DO NOT create or preserve compound slash-titles (e.g., "AI/ML Scientist",
+  "Artificial Intelligence/Machine Learning Scientist"). These are JD artifacts, not real
+  job titles a person would hold. Rename to the more specific or dominant discipline
+  (e.g., "Machine Learning Scientist", "Data Scientist"). Keep each title as a single role.
+- NEVER merge two distinct titles INTO a slash-compound
+  (e.g., do NOT rename "Machine Learning Scientist" → "AI/ML Scientist")
 - The canonical name itself must NOT appear as a rename key
 
 Current job titles list ({count} items):
@@ -239,6 +262,84 @@ def _parse_city_state(city_state_str):
     return city_state_str.strip(), ""
 
 
+def _friendly_type_name(type_name):
+    return type_name.replace("_", " ")
+
+
+def _summarize_rename_details(all_renames, max_examples=2):
+    sections = []
+    for type_name in sorted(all_renames):
+        rename_map = all_renames.get(type_name) or {}
+        if not isinstance(rename_map, dict):
+            continue
+
+        pairs = [
+            (old, new)
+            for old, new in sorted(rename_map.items(), key=lambda pair: str(pair[0]).lower())
+            if isinstance(old, str) and isinstance(new, str)
+        ]
+        if not pairs:
+            continue
+
+        preview = [f"{old} -> {new}" for old, new in pairs[:max_examples]]
+        remaining = len(pairs) - len(preview)
+        if remaining > 0:
+            preview.append(f"+{remaining} more")
+
+        sections.append(f"{_friendly_type_name(type_name)} ({len(pairs)}): {', '.join(preview)}")
+
+    return "; ".join(sections)
+
+
+def _summarize_removal_details(all_removals, max_examples=3):
+    sections = []
+    for type_name in sorted(all_removals):
+        removals = all_removals.get(type_name) or []
+        if not isinstance(removals, list):
+            continue
+
+        names = sorted(
+            [name for name in removals if isinstance(name, str) and name.strip()],
+            key=lambda value: value.lower(),
+        )
+        if not names:
+            continue
+
+        preview = names[:max_examples]
+        remaining = len(names) - len(preview)
+        if remaining > 0:
+            preview.append(f"+{remaining} more")
+
+        sections.append(f"{_friendly_type_name(type_name)} ({len(names)}): {', '.join(preview)}")
+
+    return "; ".join(sections)
+
+
+def _build_run_details(
+    run_trigger,
+    profiles_updated,
+    total_renames,
+    total_removals,
+    all_renames,
+    all_removals,
+):
+    trigger_label = "Scheduled" if run_trigger == "scheduled" else "Manual"
+    details = (
+        f"{trigger_label} lookup dedup run completed: {profiles_updated} profiles updated, "
+        f"{total_renames} renames, {total_removals} removals."
+    )
+
+    rename_summary = _summarize_rename_details(all_renames)
+    if rename_summary:
+        details += f" Renamed entries: {rename_summary}."
+
+    removal_summary = _summarize_removal_details(all_removals)
+    if removal_summary:
+        details += f" Removed entries: {removal_summary}."
+
+    return details
+
+
 def _write_audit_entry(pk, timestamp, changes, candidate_name=None):
     if not AUDIT_LOG_TABLE or not changes:
         return
@@ -267,6 +368,8 @@ def _write_run_audit_entry(
     profiles_updated,
     renames,
     removals,
+    rename_details,
+    removal_details,
     dry_run,
     trigger,
 ):
@@ -285,6 +388,8 @@ def _write_run_audit_entry(
             "profiles_updated": profiles_updated,
             "renames": renames,
             "removals": removals,
+            "rename_details": rename_details,
+            "removal_details": removal_details,
             "dry_run": dry_run,
             "trigger": trigger,
         },
@@ -496,6 +601,179 @@ def _apply_cert_renames(certifications, rename_map, removals=None):
     return deduped, changed
 
 
+def _apply_string_list_renames(items, rename_map, removals=None):
+    """Rename and remove entries in a plain list of strings, then dedup."""
+    if not items:
+        return items, False
+
+    remove_set = {r.lower() for r in (removals or [])}
+    changed = False
+    renamed = []
+    for item in items:
+        if item.lower() in remove_set:
+            changed = True
+            continue
+        if item in rename_map:
+            renamed.append(rename_map[item])
+            changed = True
+        else:
+            renamed.append(item)
+
+    # Dedup (case-insensitive)
+    seen = {}
+    deduped = []
+    for item in renamed:
+        key = item.lower()
+        if key not in seen:
+            seen[key] = True
+            deduped.append(item)
+        else:
+            changed = True
+
+    return deduped, changed
+
+
+def _update_job_descriptions(all_renames, all_removals, dry_run):
+    """Scan all job descriptions and apply renames. Returns count of updated JDs."""
+    if not JOB_DESCRIPTIONS_TABLE:
+        return 0
+
+    skills_map = all_renames.get("skills", {})
+    skills_removals = all_removals.get("skills", [])
+    certs_map = all_renames.get("certifications", {})
+    certs_removals = all_removals.get("certifications", [])
+    titles_map = all_renames.get("job_titles", {})
+    industry_map = all_renames.get("industry_categories", {})
+    cities_map = all_renames.get("cities", {})
+    cities_parsed = {}
+    for old_cs, new_cs in cities_map.items():
+        old_city, old_state = _parse_city_state(old_cs)
+        new_city, new_state = _parse_city_state(new_cs)
+        if old_city and old_state and new_city and new_state:
+            cities_parsed[(old_city, old_state)] = (new_city, new_state)
+
+    table = dynamodb.Table(JOB_DESCRIPTIONS_TABLE)
+    updated = 0
+    scanned = 0
+    kwargs = {}
+
+    while True:
+        response = table.scan(**kwargs)
+        items = response.get("Items", [])
+        scanned += len(items)
+
+        for item in items:
+            pk = item["pk"]
+            updates = {}
+            changes = {}
+
+            # Required skills
+            if (skills_map or skills_removals) and item.get("required_skills"):
+                new_req, changed = _apply_string_list_renames(item["required_skills"], skills_map, skills_removals)
+                if changed:
+                    updates["required_skills"] = new_req
+                    changes["required_skills"] = {"old": item["required_skills"], "new": new_req}
+
+            # Desired skills
+            if (skills_map or skills_removals) and item.get("desired_skills"):
+                new_des, changed = _apply_string_list_renames(item["desired_skills"], skills_map, skills_removals)
+                if changed:
+                    updates["desired_skills"] = new_des
+                    changes["desired_skills"] = {"old": item["desired_skills"], "new": new_des}
+
+            # Rebuild denormalized skill_names if either skill list changed
+            if "required_skills" in updates or "desired_skills" in updates:
+                all_skills = list(updates.get("required_skills", item.get("required_skills") or []))
+                all_skills += list(updates.get("desired_skills", item.get("desired_skills") or []))
+                updates["skill_names"] = ",".join(all_skills)
+
+            # Required certifications
+            if (certs_map or certs_removals) and item.get("required_certifications"):
+                new_req_c, changed = _apply_string_list_renames(
+                    item["required_certifications"], certs_map, certs_removals
+                )
+                if changed:
+                    updates["required_certifications"] = new_req_c
+                    changes["required_certifications"] = {
+                        "old": item["required_certifications"],
+                        "new": new_req_c,
+                    }
+
+            # Desired certifications
+            if (certs_map or certs_removals) and item.get("desired_certifications"):
+                new_des_c, changed = _apply_string_list_renames(
+                    item["desired_certifications"], certs_map, certs_removals
+                )
+                if changed:
+                    updates["desired_certifications"] = new_des_c
+                    changes["desired_certifications"] = {
+                        "old": item["desired_certifications"],
+                        "new": new_des_c,
+                    }
+
+            # Rebuild denormalized cert_names if either cert list changed
+            if "required_certifications" in updates or "desired_certifications" in updates:
+                all_certs = list(updates.get("required_certifications", item.get("required_certifications") or []))
+                all_certs += list(updates.get("desired_certifications", item.get("desired_certifications") or []))
+                updates["cert_names"] = ",".join(all_certs)
+
+            # Job title
+            if titles_map and item.get("job_title") in titles_map:
+                updates["job_title"] = titles_map[item["job_title"]]
+                changes["job_title"] = {"old": item["job_title"], "new": updates["job_title"]}
+
+            # Industry category
+            if industry_map and item.get("industry_category") in industry_map:
+                updates["industry_category"] = industry_map[item["industry_category"]]
+                changes["industry_category"] = {
+                    "old": item["industry_category"],
+                    "new": updates["industry_category"],
+                }
+
+            # City (inside location map)
+            if cities_parsed and isinstance(item.get("location"), dict):
+                loc = item["location"]
+                loc_city = (loc.get("city") or "").strip()
+                loc_state = (loc.get("state") or "").strip()
+                if (loc_city, loc_state) in cities_parsed:
+                    new_city, new_state = cities_parsed[(loc_city, loc_state)]
+                    updates["location"] = {**loc, "city": new_city, "state": new_state}
+                    updates["location_state"] = new_state
+                    changes["location"] = {"old": item.get("location"), "new": updates["location"]}
+
+            if updates:
+                updated += 1
+                if dry_run:
+                    print(f"  [dry-run] Would update JD {pk}: {list(updates.keys())}")
+                else:
+                    now = datetime.now(timezone.utc).isoformat()
+                    updates["updated_at"] = now
+                    expr_parts = []
+                    expr_names = {}
+                    expr_values = {}
+                    for i, (field, value) in enumerate(updates.items()):
+                        attr_name = f"#f{i}"
+                        attr_val = f":v{i}"
+                        expr_parts.append(f"{attr_name} = {attr_val}")
+                        expr_names[attr_name] = field
+                        expr_values[attr_val] = value
+                    table.update_item(
+                        Key={"pk": pk},
+                        UpdateExpression="SET " + ", ".join(expr_parts),
+                        ExpressionAttributeNames=expr_names,
+                        ExpressionAttributeValues=expr_values,
+                    )
+                    _write_audit_entry(pk, now, changes, item.get("title"))
+                    print(f"  Updated JD {pk}: {list(updates.keys())}")
+
+        if "LastEvaluatedKey" not in response:
+            break
+        kwargs["ExclusiveStartKey"] = response["LastEvaluatedKey"]
+
+    print(f"  Scanned {scanned} job descriptions, updated {updated}")
+    return updated
+
+
 def _update_profiles(all_renames, all_removals, dry_run):
     """Scan all profiles and apply renames. Returns count of updated profiles."""
     skills_map = all_renames.get("skills", {})
@@ -691,6 +969,8 @@ def handler(event, context):
             profiles_updated=0,
             renames=0,
             removals=0,
+            rename_details={},
+            removal_details={},
             dry_run=dry_run,
             trigger=run_trigger,
         )
@@ -710,6 +990,10 @@ def handler(event, context):
     total_removals = sum(len(v) for v in all_removals.values())
     print(f"\n--- Updating profiles ({total_renames} renames, {total_removals} removals) ---")
     profiles_updated = _update_profiles(all_renames, all_removals, dry_run)
+
+    # Step 2b: Update job descriptions
+    print("\n--- Updating job descriptions ---")
+    jds_updated = _update_job_descriptions(all_renames, all_removals, dry_run)
 
     # Step 3: Clean up lookup tables (renames)
     print("\n--- Cleaning up lookup tables ---")
@@ -764,13 +1048,19 @@ def handler(event, context):
 
     _write_run_audit_entry(
         timestamp=datetime.now(timezone.utc).isoformat(),
-        details=(
-            f"{run_trigger.title()} lookup dedup run completed: {profiles_updated} profiles updated, "
-            f"{total_renames} renames, {total_removals} removals."
+        details=_build_run_details(
+            run_trigger,
+            profiles_updated,
+            total_renames,
+            total_removals,
+            all_renames,
+            all_removals,
         ),
         profiles_updated=profiles_updated,
         renames=total_renames,
         removals=total_removals,
+        rename_details=all_renames,
+        removal_details=all_removals,
         dry_run=dry_run,
         trigger=run_trigger,
     )
@@ -785,4 +1075,5 @@ def handler(event, context):
         "rename_details": all_renames,
         "removal_details": all_removals,
         "profiles_updated": profiles_updated,
+        "jds_updated": jds_updated,
     }

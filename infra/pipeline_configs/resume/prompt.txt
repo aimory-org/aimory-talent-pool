@@ -34,6 +34,8 @@ Job Title:
 - Use standard industry titles (e.g., "Full Stack Developer", not "Code Ninja" or "Dev III").
 - Examples: Network Engineer, Full Stack Developer, ServiceNow Developer, Data Analyst,
   Project Manager, Cybersecurity Analyst, HR Generalist, Staff Accountant, Cloud Architect.
+- Do NOT create compound slash-titles (e.g., "AI/ML Scientist"). Use the most specific
+  single discipline (e.g., "Machine Learning Scientist", "Data Scientist").
 - Normalize to title case (e.g., "Network Engineer" not "network engineer" or "NETWORK ENGINEER").
 - Use null only if the role is truly unclear.
 
@@ -67,17 +69,23 @@ Field guidance:
     "CompTIA Security+" not "Sec+", "Power BI" not "PowerBI"
   - EXCEPTIONS where the abbreviation IS the standard name (keep as-is):
     "SQL", "HTML", "CSS", "API", "REST", "DevOps", "CI/CD", "Power BI", "SAP"
-  - CRITICAL DEDUPLICATION: Never create variations of the same skill:
-    - Use "Agile" not "Agile Methodologies" or "Agile Methodology" or "Agile Development"
-    - Use "Scrum" not "Scrum Framework" or "Scrum Methodology"
-    - Use "Project Management" not "Project Management Skills" or "PM"
-    - Use "Data Analysis" not "Data Analytics" or "Data Analytical Skills"
-    - Use "Microsoft Office" not "MS Office" or "Microsoft Office Suite" or "Office 365"
-    - Use "Microsoft Excel" not "MS Excel" or "Excel"
-    - Use "Communication" not "Communication Skills" or "Verbal Communication"
-    - Use "Leadership" not "Leadership Skills" or "Team Leadership"
-    - Use the FULL SPELLED-OUT canonical name for each skill
-    - If the existing skills list already contains a similar skill, use THAT exact name
+  - SKILL NORMALIZATION POLICY:
+    - Collapse wording variants with the same recruiter-search intent into ONE canonical skill label
+      (example: "Data Analytics" and "Data Analysis" -> "Data Analysis").
+    - Remove suffix/padding words that do not change meaning
+      (example: "Project Management Skills" -> "Project Management").
+    - For closely related skill families, merge only true wording variants of the SAME search intent.
+    - Keep adjacent but distinct skills separate when recruiters would search for them differently
+      (example: analysis vs quality vs engineering are often separate intents).
+    - Split compound slash-skills into separate entries when they represent distinct searchable skills
+      (example: "AI/ML" -> two skills: "Artificial Intelligence" and "Machine Learning").
+    - If the resume clearly demonstrates multiple distinct skill intents in the same family,
+      include each one as separate skills.
+    - Use FULL spelled-out canonical names unless the acronym is already the market-standard form.
+    - If existing lookup values are provided and one is semantically equivalent, use that exact lookup value.
+    - Keep distinct skills separate even when related
+      (example: "Data Analysis" != "Data Science"; "Python" != "R").
+    - Output each skill once only; no alternate forms in the same result.
   - Preserve proper casing: "Amazon Web Services", "SQL", "DevOps", "ServiceNow", "Salesforce"
   - Do NOT list the same skill twice under different names
   - Evidence snippets: SHORT phrases from resume (not full sentences)

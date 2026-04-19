@@ -133,6 +133,32 @@ describe("JdDetailPanel", () => {
     );
   });
 
+  it("shows matched vs missing breakdown after opening a match", async () => {
+    const user = userEvent.setup();
+    render(
+      <JdDetailPanel jd={mockJd} onClose={onClose} onDeleted={onDeleted} />,
+    );
+
+    const matchBtn = screen.getByRole("button", { name: /find matches/i });
+    await user.click(matchBtn);
+
+    await waitFor(
+      () => {
+        expect(screen.getByText("John Doe")).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+
+    const matchCard = screen.getByRole("button", { name: /john doe/i });
+    await user.click(matchCard);
+
+    await waitFor(() => {
+      expect(screen.getByText("Match Breakdown")).toBeInTheDocument();
+    });
+    expect(screen.getByText(/Missing skill: Python/i)).toBeInTheDocument();
+    expect(screen.getByText(/Not Matching/i)).toBeInTheDocument();
+  });
+
   it("shows delete confirmation on delete click", async () => {
     const user = userEvent.setup();
     render(
