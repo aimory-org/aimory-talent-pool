@@ -352,6 +352,7 @@ def all_tables(aws_mocks):
     """Create all DynamoDB tables inside one moto context."""
     return {
         "talent_profiles": _create_talent_profiles_table(),
+        "job_descriptions": _create_job_descriptions_table(),
         "skills_lookup": _create_skills_lookup_table(),
         "certifications_lookup": _create_certifications_lookup_table(),
         "cities_lookup": _create_cities_lookup_table(),

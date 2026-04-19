@@ -17,7 +17,8 @@ Skills Extraction:
 - Separate skills into required_skills and desired_skills based on context.
 - "Required", "Must have", "Mandatory" → required_skills
 - "Preferred", "Desired", "Nice to have", "Bonus", "Plus" → desired_skills
-- If ambiguous (just listed under "Qualifications"), put in required_skills.
+- If ambiguous (just listed under "Qualifications" with no mandatory language), put in desired_skills.
+- Only put a skill in required_skills when the JD clearly marks it as mandatory.
 - Extract only MEANINGFUL, SPECIFIC, recruiter-searchable skills.
 - Do NOT include routine duties, generic verbs, or personality traits as skills
   (e.g., "manage projects", "work in teams", "communicate effectively").
@@ -41,6 +42,16 @@ Skills Extraction:
     - Use "Agile" not "Agile Methodologies" or "Agile Development"
     - Use "Project Management" not "Project Management Skills" or "PM"
     - Use "Data Analysis" not "Data Analytics" or "Data Analytical Skills"
+- SEMANTIC NORMALIZATION: Treat wording variants with the same recruiter-search meaning as one skill.
+  - Example: "Data Analytics", "Data Analysis", and "Analytical Skills" -> "Data Analysis"
+  - Example: "Agile Methodologies" and "Agile Delivery" -> "Agile"
+  - For related skill families, merge only true wording variants of the same search intent.
+  - Keep adjacent but distinct skill intents separate when recruiters would search differently.
+  - Split compound slash-skills into separate entries when they represent distinct searchable skills
+    (example: "AI/ML" -> two skills: "Artificial Intelligence" and "Machine Learning").
+  - If the JD clearly requires multiple distinct intents in the same family, keep all of them.
+  - Choose one canonical skill label and keep only that label.
+  - Do NOT merge distinct skills even if related (for example: "Data Analysis" != "Data Science").
 - If the existing skills list already contains a similar skill, use THAT exact name.
 - Do NOT list the same skill twice under different names.
 
@@ -64,6 +75,10 @@ Job Title:
 - Normalize to a standard industry title for matching.
 - "Data & Excel Analyst II" → "Data Analyst"
 - "Sr. Software Dev" → "Senior Software Developer"
+- Do NOT create or keep compound slash-titles (e.g., "AI/ML Scientist",
+  "Artificial Intelligence/Machine Learning Scientist"). These are JD artifacts,
+  not real titles a candidate would hold. Use the most specific or dominant discipline
+  (e.g., "Machine Learning Scientist").
 - Use title case.
 
 Industry Category:

@@ -10,6 +10,7 @@ Match candidates against a job description.
 import json
 import os
 import re
+from difflib import SequenceMatcher
 from decimal import Decimal
 
 import boto3
@@ -28,7 +29,7 @@ bedrock = boto3.client("bedrock-runtime", region_name=AWS_REGION)
 # How many candidates to pull from OpenSearch pre-filter
 PRE_FILTER_LIMIT = int(os.environ.get("PRE_FILTER_LIMIT", "50"))
 # How many candidates to send to Bedrock for scoring
-SCORING_LIMIT = int(os.environ.get("SCORING_LIMIT", "10"))
+SCORING_LIMIT = int(os.environ.get("SCORING_LIMIT", "15"))
 # Default number of results to return
 DEFAULT_RETURN_LIMIT = 10
 
@@ -88,6 +89,29 @@ _TITLE_NOISE_WORDS = {
     "of",
 }
 
+_SKILL_NOISE_TOKENS = {
+    "skill",
+    "skills",
+    "framework",
+    "frameworks",
+    "methodology",
+    "methodologies",
+    "development",
+    "delivery",
+    "experience",
+    "knowledge",
+    "proficiency",
+    "tools",
+    "tool",
+    "platform",
+    "platforms",
+    "technologies",
+    "technology",
+    "hands",
+    "on",
+    "and",
+}
+
 
 def _to_list(value):
     """Normalize comma-delimited or list fields into a clean string list."""
@@ -116,6 +140,83 @@ def _title_tokens(title):
     return {tok for tok in clean.split() if tok and tok not in _TITLE_NOISE_WORDS}
 
 
+def _skill_tokens(skill):
+    """Return normalized tokens for fuzzy skill matching."""
+    if not skill:
+        return set()
+
+    clean = str(skill).lower().replace("&", " and ")
+    clean = re.sub(r"[^a-z0-9\s]", " ", clean)
+    tokens = []
+    for raw in clean.split():
+        tok = raw.strip()
+        if not tok or tok in _SKILL_NOISE_TOKENS:
+            continue
+        if len(tok) > 4 and tok.endswith("ies"):
+            tok = tok[:-3] + "y"
+        elif len(tok) > 4 and tok.endswith("s"):
+            tok = tok[:-1]
+        tokens.append(tok)
+    return set(tokens)
+
+
+def _skills_semantically_match(required_skill, candidate_skill):
+    """Return True when two skill phrases appear semantically equivalent for matching."""
+    req_raw = str(required_skill or "").strip().lower()
+    cand_raw = str(candidate_skill or "").strip().lower()
+    if not req_raw or not cand_raw:
+        return False
+    if req_raw == cand_raw:
+        return True
+
+    req_tokens = _skill_tokens(required_skill)
+    cand_tokens = _skill_tokens(candidate_skill)
+    if not req_tokens or not cand_tokens:
+        return False
+
+    # Require meaningful tokens — very short token sets match too broadly
+    if len(req_tokens) == 1 and len(cand_tokens) == 1:
+        # Single-token skills must match exactly (e.g. "AI" != "BI")
+        return req_tokens == cand_tokens
+
+    overlap = len(req_tokens & cand_tokens)
+    overlap_req = overlap / max(1, len(req_tokens))
+    if overlap_req >= 0.80:
+        return True
+
+    req_phrase = " ".join(sorted(req_tokens))
+    cand_phrase = " ".join(sorted(cand_tokens))
+    phrase_similarity = SequenceMatcher(None, req_phrase, cand_phrase).ratio()
+    return overlap_req >= 0.6 and phrase_similarity >= 0.85
+
+
+def _count_missing_required_skills(required_skills, candidate_skills):
+    """Count required skills that have no semantic match in candidate skills."""
+    missing = 0
+    for req_skill in required_skills:
+        if not any(_skills_semantically_match(req_skill, cand_skill) for cand_skill in candidate_skills):
+            missing += 1
+    return missing
+
+
+def _titles_semantically_match(jd_title, cand_title):
+    """Return True when two job titles appear to describe the same role family."""
+    jd_tokens = _title_tokens(jd_title)
+    cand_tokens = _title_tokens(cand_title)
+    if not jd_tokens or not cand_tokens:
+        return True  # can't compare — don't penalize
+
+    overlap = len(jd_tokens & cand_tokens)
+    # At least half the JD title tokens should appear in candidate title
+    if overlap / len(jd_tokens) >= 0.5:
+        return True
+
+    # Fall back to string similarity on the full normalized titles
+    jd_norm = " ".join(sorted(jd_tokens))
+    cand_norm = " ".join(sorted(cand_tokens))
+    return SequenceMatcher(None, jd_norm, cand_norm).ratio() >= 0.6
+
+
 def _apply_score_guardrails(jd, candidate, score, rationale):
     """Apply deterministic caps so skills-only matches do not over-score misaligned candidates."""
     capped_score = max(0, min(100, int(score)))
@@ -123,9 +224,9 @@ def _apply_score_guardrails(jd, candidate, score, rationale):
     reasons = []
 
     # Penalize missing required skills even when overall skill overlap is high.
-    required_skills = {s.lower() for s in _to_list(jd.get("required_skills"))}
-    candidate_skills = {s.lower() for s in _to_list(candidate.get("skill_names"))}
-    missing_required = sum(1 for s in required_skills if s not in candidate_skills)
+    required_skills = _to_list(jd.get("required_skills"))
+    candidate_skills = _to_list(candidate.get("skill_names"))
+    missing_required = _count_missing_required_skills(required_skills, candidate_skills)
     if missing_required >= 2:
         cap = min(cap, 65)
         reasons.append("missing multiple required skills")
@@ -146,10 +247,8 @@ def _apply_score_guardrails(jd, candidate, score, rationale):
             reasons.append("experience shortfall")
 
     # Penalize role-title mismatch to avoid overvaluing keyword overlap.
-    jd_title_tokens = _title_tokens(jd.get("job_title"))
-    cand_title_tokens = _title_tokens(candidate.get("job_title"))
-    if jd_title_tokens and cand_title_tokens and jd_title_tokens.isdisjoint(cand_title_tokens):
-        cap = min(cap, 72)
+    if not _titles_semantically_match(jd.get("job_title"), candidate.get("job_title")):
+        cap = min(cap, 70)
         reasons.append("job title mismatch")
 
     adjusted = min(capped_score, cap)
@@ -176,11 +275,11 @@ def _build_prefilter_query(jd):
     for cert in jd.get("desired_certifications") or []:
         should.append({"term": {"cert_names": {"value": cert, "boost": 1}}})
 
-    # Boost matching industry / job title
+    # Boost matching industry / job title (use match for title for partial word overlap)
     if jd.get("industry_category"):
         should.append({"term": {"industry_category": {"value": jd["industry_category"], "boost": 2}}})
     if jd.get("job_title"):
-        should.append({"term": {"job_title": {"value": jd["job_title"], "boost": 2}}})
+        should.append({"match": {"job_title": {"query": jd["job_title"], "boost": 2}}})
 
     # Clearance: filter to candidates who meet or exceed the requirement
     required_clearance = jd.get("required_clearance")
@@ -262,10 +361,16 @@ For each candidate, produce a JSON object with:
 - "rationale": 1-2 sentence explanation of the score
 
 Scoring rubric (100 points total):
-- Skills + certifications alignment: 35
-- Role/responsibility alignment (actual work history vs JD mission): 30
+- Skills + certifications alignment: 30
+- Summary & role alignment (compare candidate summary against JD description_summary — do their actual responsibilities, domain expertise, and mission focus overlap?): 35
 - Years-of-experience fit: 20
 - Clearance + location + industry fit: 15
+
+IMPORTANT: The summary/role alignment category (35 pts) is the MOST weighted factor.
+Read both summaries carefully. A candidate whose work history describes hands-on experience
+in the same domain, mission area, and responsibility scope as the JD should score high here.
+A candidate with overlapping skill keywords but a fundamentally different role focus
+(e.g., project manager vs. hands-on engineer) should score LOW on this category.
 
 Hard constraints:
 - If the candidate is below required years of experience by 1-2 years, score MUST NOT exceed 75.
@@ -281,7 +386,7 @@ Scoring bands:
 - 0-29: Poor fit
 
 Rationale requirements:
-- Mention role alignment (or mismatch) explicitly.
+- Mention specific summary/role alignment (or mismatch) — what in their work history does or does not match the JD mission.
 - Mention years-of-experience comparison to JD requirement explicitly.
 - Keep rationale to 1-2 concise sentences.
 

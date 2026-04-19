@@ -45,3 +45,15 @@ variable "bedrock_model_id" {
   description = "Bedrock model ID for AI deduplication"
   default     = "us.anthropic.claude-sonnet-4-20250514-v1:0"
 }
+
+variable "job_descriptions_table_name" {
+  type        = string
+  description = "DynamoDB table name for job descriptions"
+  default     = ""
+}
+
+variable "job_descriptions_table_arn" {
+  type        = string
+  description = "DynamoDB table ARN for job descriptions"
+  default     = ""
+}

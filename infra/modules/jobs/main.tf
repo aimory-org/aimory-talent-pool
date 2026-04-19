@@ -143,6 +143,7 @@ resource "aws_lambda_function" "lookup_dedup" {
       INDUSTRY_CATEGORIES_LOOKUP_TABLE = var.lookup_tables.industry_categories.name
       CITIES_LOOKUP_TABLE              = var.lookup_tables.cities.name
       BEDROCK_MODEL_ID                 = var.bedrock_model_id
+      JOB_DESCRIPTIONS_TABLE           = var.job_descriptions_table_name
     }
   }
 
@@ -183,7 +184,7 @@ resource "aws_iam_role_policy" "lookup_dedup_dynamodb" {
 
   policy = jsonencode({
     Version = "2012-10-17",
-    Statement = [
+    Statement = concat([
       {
         Effect   = "Allow",
         Action   = ["dynamodb:Scan", "dynamodb:UpdateItem", "dynamodb:GetItem"],
@@ -205,7 +206,12 @@ resource "aws_iam_role_policy" "lookup_dedup_dynamodb" {
         Action   = ["dynamodb:PutItem"],
         Resource = var.audit_log_table_arn
       }
-    ]
+      ],
+      var.job_descriptions_table_arn != "" ? [{
+        Effect   = "Allow",
+        Action   = ["dynamodb:Scan", "dynamodb:UpdateItem", "dynamodb:GetItem"],
+        Resource = var.job_descriptions_table_arn
+    }] : [])
   })
 }
 

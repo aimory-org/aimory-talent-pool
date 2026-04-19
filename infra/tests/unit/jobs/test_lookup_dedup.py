@@ -489,3 +489,158 @@ class TestHandler:
         )["Items"]
         assert len(run_items) == 1
         assert run_items[0]["snapshot"]["trigger"] == "scheduled"
+
+
+class TestApplyStringListRenames:
+    def test_renames_and_deduplicates(self, aws_mocks):
+        app = _reload_app()
+        result, changed = app._apply_string_list_renames(
+            ["AWS", "Python", "aws"],
+            {"AWS": "Amazon Web Services"},
+        )
+        assert changed is True
+        assert "Amazon Web Services" in result
+        assert "AWS" not in result
+        # "aws" should also be deduped after rename doesn't match it directly
+        assert result.count("Python") == 1
+
+    def test_removes_entries(self, aws_mocks):
+        app = _reload_app()
+        result, changed = app._apply_string_list_renames(
+            ["Python", "Briefing", "AWS"],
+            {},
+            removals=["Briefing"],
+        )
+        assert changed is True
+        assert "Briefing" not in result
+        assert "Python" in result
+
+    def test_no_change(self, aws_mocks):
+        app = _reload_app()
+        result, changed = app._apply_string_list_renames(
+            ["Python", "AWS"],
+            {},
+        )
+        assert changed is False
+        assert result == ["Python", "AWS"]
+
+    def test_empty_list(self, aws_mocks):
+        app = _reload_app()
+        result, changed = app._apply_string_list_renames([], {"a": "b"})
+        assert changed is False
+        assert result == []
+
+
+class TestUpdateJobDescriptions:
+    @pytest.fixture
+    def all_lookup_tables(self, all_tables):
+        """Set up lookup tables with some duplicates."""
+        all_tables["skills_lookup"].put_item(Item={"skill": "Agile", "updated_at": "t"})
+        all_tables["skills_lookup"].put_item(Item={"skill": "Agile Methodologies", "updated_at": "t"})
+        all_tables["skills_lookup"].put_item(Item={"skill": "Python", "updated_at": "t"})
+        all_tables["certifications_lookup"].put_item(Item={"certification": "PMP", "updated_at": "t"})
+        all_tables["job_titles_lookup"].put_item(Item={"job_title": "Software Eng", "updated_at": "t"})
+        all_tables["industry_categories_lookup"].put_item(Item={"industry_category": "Tech", "updated_at": "t"})
+        return all_tables
+
+    def _add_jd(
+        self, table, pk, req_skills=None, des_skills=None, req_certs=None, des_certs=None, job_title=None, industry=None
+    ):
+        table.put_item(
+            Item={
+                "pk": pk,
+                "title": f"JD {pk}",
+                "required_skills": req_skills or [],
+                "desired_skills": des_skills or [],
+                "skill_names": ",".join((req_skills or []) + (des_skills or [])),
+                "required_certifications": req_certs or [],
+                "desired_certifications": des_certs or [],
+                "cert_names": ",".join((req_certs or []) + (des_certs or [])),
+                "job_title": job_title or "Dev",
+                "industry_category": industry or "Tech",
+                "created_at": "t",
+                "updated_at": "t",
+            }
+        )
+
+    @patch("app.bedrock")
+    def test_renames_jd_skills(self, mock_bedrock, all_lookup_tables):
+        mock_bedrock.converse.return_value = _make_bedrock_response({"Agile Methodologies": "Agile"})
+        jd_table = all_lookup_tables["job_descriptions"]
+        profiles_table = all_lookup_tables["talent_profiles"]
+        self._add_jd(jd_table, "jd#1", req_skills=["Agile Methodologies", "Python"], des_skills=["AWS"])
+
+        app = _reload_app()
+        app.bedrock = mock_bedrock
+        result = app.handler({}, None)
+
+        assert result["jds_updated"] == 1
+        item = jd_table.get_item(Key={"pk": "jd#1"})["Item"]
+        assert "Agile" in item["required_skills"]
+        assert "Agile Methodologies" not in item["required_skills"]
+        assert "AWS" in item["desired_skills"]  # unchanged
+        assert "Agile" in item["skill_names"]
+
+    @patch("app.bedrock")
+    def test_renames_jd_certs(self, mock_bedrock, all_lookup_tables):
+        all_lookup_tables["certifications_lookup"].put_item(Item={"certification": "AWS SA", "updated_at": "t"})
+        all_lookup_tables["certifications_lookup"].put_item(
+            Item={"certification": "AWS Solutions Architect", "updated_at": "t"}
+        )
+
+        def side_effect(**kwargs):
+            prompt_text = kwargs["messages"][0]["content"][0]["text"]
+            if "Current certifications list" in prompt_text:
+                return _make_bedrock_response({"rename": {"AWS SA": "AWS Solutions Architect"}, "remove": []})
+            return _make_bedrock_response({"rename": {}, "remove": []})
+
+        mock_bedrock.converse.side_effect = side_effect
+        jd_table = all_lookup_tables["job_descriptions"]
+        self._add_jd(jd_table, "jd#1", req_certs=["AWS SA"], des_certs=["PMP"])
+
+        app = _reload_app()
+        app.bedrock = mock_bedrock
+        result = app.handler({}, None)
+
+        assert result["jds_updated"] == 1
+        item = jd_table.get_item(Key={"pk": "jd#1"})["Item"]
+        assert "AWS Solutions Architect" in item["required_certifications"]
+        assert "AWS SA" not in item["required_certifications"]
+        assert "PMP" in item["desired_certifications"]  # unchanged
+
+    @patch("app.bedrock")
+    def test_jd_job_title_rename(self, mock_bedrock, all_lookup_tables):
+        all_lookup_tables["job_titles_lookup"].put_item(Item={"job_title": "Software Engineer", "updated_at": "t"})
+
+        def side_effect(**kwargs):
+            prompt_text = kwargs["messages"][0]["content"][0]["text"]
+            if "Current job titles list" in prompt_text:
+                return _make_bedrock_response({"rename": {"Software Eng": "Software Engineer"}})
+            return _make_bedrock_response({"rename": {}, "remove": []})
+
+        mock_bedrock.converse.side_effect = side_effect
+        jd_table = all_lookup_tables["job_descriptions"]
+        self._add_jd(jd_table, "jd#1", job_title="Software Eng")
+
+        app = _reload_app()
+        app.bedrock = mock_bedrock
+        result = app.handler({}, None)
+
+        assert result["jds_updated"] == 1
+        item = jd_table.get_item(Key={"pk": "jd#1"})["Item"]
+        assert item["job_title"] == "Software Engineer"
+
+    @patch("app.bedrock")
+    def test_dry_run_does_not_modify_jds(self, mock_bedrock, all_lookup_tables):
+        mock_bedrock.converse.return_value = _make_bedrock_response({"Agile Methodologies": "Agile"})
+        jd_table = all_lookup_tables["job_descriptions"]
+        self._add_jd(jd_table, "jd#1", req_skills=["Agile Methodologies"])
+
+        app = _reload_app()
+        app.bedrock = mock_bedrock
+        result = app.handler({"dry_run": True}, None)
+
+        assert result["jds_updated"] == 1
+        # JD should NOT be actually changed in dry-run mode
+        item = jd_table.get_item(Key={"pk": "jd#1"})["Item"]
+        assert "Agile Methodologies" in item["required_skills"]

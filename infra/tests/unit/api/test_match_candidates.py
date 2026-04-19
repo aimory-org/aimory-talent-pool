@@ -161,8 +161,8 @@ class TestMatchCandidatesHandler:
 
         body = json.loads(resp["body"])
         assert len(body["matches"]) == 1
-        # Bob is below required experience and role-misaligned, so score should be capped.
-        assert body["matches"][0]["score"] <= 72
+        # Bob is below required experience and role-misaligned, so score should still be capped.
+        assert body["matches"][0]["score"] <= 70
 
     @patch("app.bedrock")
     @patch("app._get_os_client")

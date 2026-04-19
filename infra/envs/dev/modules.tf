@@ -163,6 +163,9 @@ module "jobs" {
   audit_log_table_name       = module.storage.audit_log_table_name
   audit_log_table_arn        = module.storage.audit_log_table_arn
 
+  job_descriptions_table_name = module.storage.job_descriptions_table_name
+  job_descriptions_table_arn  = module.storage.job_descriptions_table_arn
+
   lookup_tables = local.lookup_tables
 
   bedrock_model_id = var.bedrock_model_id

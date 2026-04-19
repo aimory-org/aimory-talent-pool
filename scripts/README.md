@@ -92,6 +92,36 @@ python scripts/reprocess_resumes.py \
 
 ---
 
+### `reprocess_job_descriptions.py`
+
+Lists all objects under the `job-descriptions/raw/` prefix and triggers a new JD pipeline Step Functions execution for each file.
+
+Supports `--batch-size` mode to process in controlled batches and wait for completion between batches.
+
+```bash
+# Process all job descriptions (fire-and-forget)
+python scripts/reprocess_job_descriptions.py \
+  --bucket  aimory-talent-pool-dev-resumes \
+  --sfn-arn arn:aws:states:us-east-1:123456789012:stateMachine:aimory-talent-pool-dev-jd-pipeline
+
+# Batched with wait (recommended for large datasets)
+python scripts/reprocess_job_descriptions.py \
+  --bucket     aimory-talent-pool-dev-resumes \
+  --sfn-arn    arn:aws:states:... \
+  --batch-size 5
+```
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--bucket` | Yes | S3 bucket name |
+| `--sfn-arn` | Yes | JD pipeline Step Functions state machine ARN |
+| `--prefix` | No | Prefix to scan (default: `job-descriptions/raw/`) |
+| `--batch-size` | No | Process N at a time, waiting for completion between batches |
+
+Note: JD persist currently writes new UUID primary keys, so reprocessing creates new JD records rather than updating existing rows in place.
+
+---
+
 ### `run_dedup.py`
 
 Invokes the `aimory-talent-pool-{env}-lookup-dedup` Lambda, which uses Claude (Bedrock) to identify and canonicalize near-duplicate lookup entries (e.g., "JavaScript" vs "Javascript" vs "JS"). Changes are applied to both the lookup tables and all affected profiles.
