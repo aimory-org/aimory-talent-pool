@@ -42,6 +42,7 @@ locals {
       memory  = 512
       env = {
         TALENT_PROFILES_TABLE            = var.talent_profiles_table_name
+        AUDIT_LOG_TABLE                  = var.audit_log_table_name
         SKILLS_LOOKUP_TABLE              = var.skills_lookup_table_name
         CERTIFICATIONS_LOOKUP_TABLE      = var.certifications_lookup_table_name
         CITIES_LOOKUP_TABLE              = var.cities_lookup_table_name
@@ -179,7 +180,7 @@ resource "aws_iam_role_policy" "pipeline_dynamodb" {
       {
         Sid      = "TalentProfiles"
         Effect   = "Allow"
-        Action   = ["dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:Scan"]
+        Action   = ["dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:Scan", "dynamodb:GetItem"]
         Resource = var.talent_profiles_table_arn
       },
       {
@@ -193,6 +194,12 @@ resource "aws_iam_role_policy" "pipeline_dynamodb" {
           var.job_titles_lookup_table_arn,
           var.industry_categories_lookup_table_arn
         ]
+      },
+      {
+        Sid      = "AuditLog"
+        Effect   = "Allow"
+        Action   = ["dynamodb:PutItem"]
+        Resource = var.audit_log_table_arn
       }
     ]
   })

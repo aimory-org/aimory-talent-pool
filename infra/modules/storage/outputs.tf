@@ -18,6 +18,16 @@ output "talent_profiles_table_arn" {
   value       = aws_dynamodb_table.talent_profiles.arn
 }
 
+output "audit_log_table_name" {
+  description = "DynamoDB table name for audit history"
+  value       = aws_dynamodb_table.audit_log.name
+}
+
+output "audit_log_table_arn" {
+  description = "DynamoDB table ARN for audit history"
+  value       = aws_dynamodb_table.audit_log.arn
+}
+
 # Lookup tables
 output "skills_lookup_table_name" {
   description = "DynamoDB table name for skills lookup"

@@ -36,6 +36,7 @@ _LAMBDA_DIRS = [
     "modules/api/lambda_src/list_talents",
     "modules/api/lambda_src/update_talent",
     "modules/api/lambda_src/delete_talent",
+    "modules/api/lambda_src/delete_tag",
     "modules/api/lambda_src/get_lookups",
     "modules/api/lambda_src/get_resume_url",
     "modules/pipeline/lambda_src/starter",
@@ -50,6 +51,8 @@ _LAMBDA_DIRS = [
     "modules/storage/lambda_src/sync_to_opensearch",
     "modules/jobs/lambda_src/stale_checker",
     "modules/jobs/lambda_src/lookup_dedup",
+    "modules/api/lambda_src/get_audit_history",
+    "modules/api/lambda_src/get_deployments",
 ]
 
 # Add the unit tests directory itself so _lambda_loader is importable from subfolders.
@@ -95,6 +98,10 @@ def _aws_env(monkeypatch):
         "INDUSTRY_CATEGORIES_LOOKUP_TABLE": "industry-categories-lookup",
         "TAGS_LOOKUP_TABLE": "tags-lookup",
         "BEDROCK_MODEL_ID": "anthropic.claude-3-sonnet-20240229-v1:0",
+        "AUDIT_LOG_TABLE": "audit-log",
+        "GITHUB_PAT_PARAM": "/aimory/github-pat",
+        "GITHUB_REPO": "bencas21/aimory-talent-pool",
+        "GITHUB_WORKFLOW_FILE": "terraform-deploy.yml",
     }
     for k, v in env.items():
         monkeypatch.setenv(k, v)
@@ -294,6 +301,41 @@ def tags_lookup_table(aws_mocks):
     return _create_tags_lookup_table()
 
 
+def _create_audit_log_table():
+    ddb = boto3.resource("dynamodb", region_name="us-east-1")
+    table = ddb.create_table(
+        TableName="audit-log",
+        KeySchema=[
+            {"AttributeName": "pk", "KeyType": "HASH"},
+            {"AttributeName": "sk", "KeyType": "RANGE"},
+        ],
+        AttributeDefinitions=[
+            {"AttributeName": "pk", "AttributeType": "S"},
+            {"AttributeName": "sk", "AttributeType": "S"},
+            {"AttributeName": "user_email", "AttributeType": "S"},
+            {"AttributeName": "timestamp", "AttributeType": "S"},
+        ],
+        GlobalSecondaryIndexes=[
+            {
+                "IndexName": "user-email-index",
+                "KeySchema": [
+                    {"AttributeName": "user_email", "KeyType": "HASH"},
+                    {"AttributeName": "timestamp", "KeyType": "RANGE"},
+                ],
+                "Projection": {"ProjectionType": "ALL"},
+            },
+        ],
+        BillingMode="PAY_PER_REQUEST",
+    )
+    table.meta.client.get_waiter("table_exists").wait(TableName="audit-log")
+    return table
+
+
+@pytest.fixture
+def audit_log_table(aws_mocks):
+    return _create_audit_log_table()
+
+
 @pytest.fixture
 def all_tables(aws_mocks):
     """Create all DynamoDB tables inside one moto context."""
@@ -305,6 +347,7 @@ def all_tables(aws_mocks):
         "job_titles_lookup": _create_job_titles_lookup_table(),
         "industry_categories_lookup": _create_industry_categories_lookup_table(),
         "tags_lookup": _create_tags_lookup_table(),
+        "audit_log": _create_audit_log_table(),
     }
 
 

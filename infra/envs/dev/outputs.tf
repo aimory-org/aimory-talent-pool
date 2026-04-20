@@ -3,6 +3,61 @@ output "resume_bucket_name" {
   value       = module.storage.resume_bucket_name
 }
 
+output "raw_prefix" {
+  description = "S3 key prefix for raw resume uploads"
+  value       = var.raw_prefix
+}
+
+output "project_name" {
+  description = "Project name used for resource naming"
+  value       = var.project_name
+}
+
+output "environment" {
+  description = "Deployment environment name"
+  value       = var.environment
+}
+
+output "pipeline_state_machine_arn" {
+  description = "Step Functions state machine ARN for resume pipeline"
+  value       = module.pipeline.state_machine_arn
+}
+
+output "talent_profiles_table_name" {
+  description = "DynamoDB table name for talent profiles"
+  value       = module.storage.talent_profiles_table_name
+}
+
+output "audit_log_table_name" {
+  description = "DynamoDB table name for audit history"
+  value       = module.storage.audit_log_table_name
+}
+
+output "skills_lookup_table_name" {
+  description = "DynamoDB table name for skills lookup"
+  value       = module.storage.skills_lookup_table_name
+}
+
+output "certifications_lookup_table_name" {
+  description = "DynamoDB table name for certifications lookup"
+  value       = module.storage.certifications_lookup_table_name
+}
+
+output "cities_lookup_table_name" {
+  description = "DynamoDB table name for cities lookup"
+  value       = module.storage.cities_lookup_table_name
+}
+
+output "job_titles_lookup_table_name" {
+  description = "DynamoDB table name for job titles lookup"
+  value       = module.storage.job_titles_lookup_table_name
+}
+
+output "industry_categories_lookup_table_name" {
+  description = "DynamoDB table name for industry categories lookup"
+  value       = module.storage.industry_categories_lookup_table_name
+}
+
 output "presign_function_url" {
   description = "Public function URL for the presign Lambda"
   value       = module.pipeline.presign_function_url

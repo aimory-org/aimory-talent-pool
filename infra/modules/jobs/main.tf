@@ -136,10 +136,12 @@ resource "aws_lambda_function" "lookup_dedup" {
   environment {
     variables = {
       TALENT_PROFILES_TABLE            = var.talent_profiles_table_name
+      AUDIT_LOG_TABLE                  = var.audit_log_table_name
       SKILLS_LOOKUP_TABLE              = var.skills_lookup_table_name
       CERTIFICATIONS_LOOKUP_TABLE      = var.certifications_lookup_table_name
       JOB_TITLES_LOOKUP_TABLE          = var.job_titles_lookup_table_name
       INDUSTRY_CATEGORIES_LOOKUP_TABLE = var.industry_categories_lookup_table_name
+      CITIES_LOOKUP_TABLE              = var.cities_lookup_table_name
       BEDROCK_MODEL_ID                 = var.bedrock_model_id
     }
   }
@@ -195,7 +197,13 @@ resource "aws_iam_role_policy" "lookup_dedup_dynamodb" {
           var.certifications_lookup_table_arn,
           var.job_titles_lookup_table_arn,
           var.industry_categories_lookup_table_arn,
+          var.cities_lookup_table_arn,
         ]
+      },
+      {
+        Effect   = "Allow",
+        Action   = ["dynamodb:PutItem"],
+        Resource = var.audit_log_table_arn
       }
     ]
   })

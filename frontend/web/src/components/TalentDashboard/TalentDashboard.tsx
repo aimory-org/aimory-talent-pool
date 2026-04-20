@@ -8,7 +8,7 @@
  * - Detail panel for viewing/editing individual profiles
  */
 import { useState, useMemo, useCallback } from "react";
-import { Users, Search, Filter } from "lucide-react";
+import { Users, Search, Filter, X } from "lucide-react";
 import { useTalents } from "@/hooks/useTalents";
 import { useLookups } from "@/hooks/useLookups";
 import type { TalentProfile } from "@/types/talent";
@@ -24,6 +24,9 @@ import { ProfileDetailPanel } from "./ProfileDetailPanel";
 export function TalentDashboard() {
   // Filter state
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
+  // Local search input — decoupled from filters.search so the API is only
+  // called when the user explicitly submits (Enter or Search button).
+  const [searchInput, setSearchInput] = useState("");
 
   // UI state
   const [sortField, setSortField] = useState<SortField>("date_received");
@@ -121,6 +124,7 @@ export function TalentDashboard() {
 
   const clearFilters = useCallback(() => {
     setFilters(DEFAULT_FILTERS);
+    setSearchInput("");
   }, []);
 
   const handleManualUpload = useCallback(() => {
@@ -140,6 +144,9 @@ export function TalentDashboard() {
     },
     [refreshTalents],
   );
+  const commitSearch = useCallback(() => {
+    setFilters((prev) => ({ ...prev, search: searchInput }));
+  }, [searchInput]);
 
   const handleSort = useCallback(
     (field: SortField) => {
@@ -234,24 +241,22 @@ export function TalentDashboard() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="border-b border-black/10 dark:border-white/15 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl sticky top-14 z-40">
-        {/* Animated gradient accent bar */}
-        <div className="h-1 bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500 animate-gradient-x" />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+      <div className="border-b border-black/[0.06] dark:border-white/[0.06] bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl sticky top-16 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             {/* Title Section */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 animate-fade-in">
               <div className="relative">
-                <div className="absolute inset-0 bg-linear-to-br from-indigo-500 to-purple-600 rounded-xl blur-lg opacity-50" />
-                <div className="relative p-2 bg-linear-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg">
+                <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 blur-md opacity-40" />
+                <div className="relative p-2.5 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-xl shadow-lg shadow-indigo-500/30">
                   <Users className="h-5 w-5 text-white" />
                 </div>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-foreground tracking-tight">
-                  Talent Pool
+                <h1 className="text-xl font-bold tracking-tight">
+                  <span className="shimmer-text">Talent Pool</span>
                 </h1>
-                <p className="text-sm text-foreground/50">
+                <p className="text-xs text-foreground/40 mt-0.5">
                   Discover and manage your candidate pipeline
                 </p>
               </div>
@@ -268,15 +273,42 @@ export function TalentDashboard() {
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
           <div className="relative flex-1 group">
             <div className="absolute inset-0 bg-linear-to-r from-indigo-500/20 to-purple-500/20 rounded-xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-300" />
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-foreground/40 group-focus-within:text-indigo-400 transition-colors" />
-              <input
-                type="text"
-                placeholder="Search by name, tags, and resume content..."
-                value={filters.search}
-                onChange={(e) => handleFilterChange("search", e.target.value)}
-                className="w-full h-12 pl-12 pr-4 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground placeholder-foreground/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 focus:bg-black/10 dark:focus:bg-white/10 transition-all duration-300"
-              />
+            <div className="relative flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-foreground/40 group-focus-within:text-indigo-400 transition-colors pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="Search by name, tags, and resume content..."
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") commitSearch();
+                    if (e.key === "Escape") {
+                      setSearchInput("");
+                      setFilters((prev) => ({ ...prev, search: "" }));
+                    }
+                  }}
+                  className="w-full h-12 pl-12 pr-4 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground placeholder-foreground/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 focus:bg-black/10 dark:focus:bg-white/10 transition-all duration-300"
+                />
+              </div>
+              {(searchInput || filters.search) && (
+                <button
+                  onClick={() => {
+                    setSearchInput("");
+                    setFilters((prev) => ({ ...prev, search: "" }));
+                  }}
+                  className="h-12 px-3 rounded-xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 text-foreground/50 hover:text-foreground hover:bg-black/10 dark:hover:bg-white/10 transition-all"
+                  aria-label="Clear search"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+              <button
+                onClick={commitSearch}
+                className="h-12 px-5 rounded-xl bg-linear-to-r from-indigo-500 to-purple-600 text-white font-medium text-sm hover:from-indigo-600 hover:to-purple-700 transition-all shadow-lg shadow-indigo-500/25 shrink-0"
+              >
+                Search
+              </button>
             </div>
           </div>
           <button

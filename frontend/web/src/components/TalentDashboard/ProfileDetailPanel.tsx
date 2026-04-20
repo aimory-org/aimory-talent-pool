@@ -45,6 +45,7 @@ import {
 } from "@/types/talent";
 import { StatusBadge } from "./components/StatusBadge";
 import { ClearanceBadge } from "./components/ClearanceBadge";
+import { ProfileHistory } from "./components/ProfileHistory";
 
 interface ProfileDetailPanelProps {
   profile: TalentProfile;
@@ -129,10 +130,12 @@ export function ProfileDetailPanel({
   const [isSaving, setIsSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [activeTab, setActiveTab] = useState<"profile" | "history">("profile");
 
   // Reset edit data when profile changes
   useEffect(() => {
     setEditData(profileToEditable(profile));
+    setActiveTab("profile");
   }, [profile]);
 
   const handleCancelEdit = () => {
@@ -275,6 +278,7 @@ export function ProfileDetailPanel({
       if (Object.keys(updates).length > 0) {
         const updatedProfile = await updateTalent(profile.pk, updates);
         onProfileUpdated?.(updatedProfile);
+        await onRefresh();
         setIsEditMode(false);
       } else {
         setIsEditMode(false);
@@ -1070,17 +1074,26 @@ export function ProfileDetailPanel({
           </div>
           <div>
             <h2 className="text-lg font-semibold text-foreground">
-              {isEditMode ? "Edit Profile" : "Profile Details"}
+              {isEditMode
+                ? "Edit Profile"
+                : activeTab === "history"
+                  ? "Candidate History"
+                  : "Profile Details"}
             </h2>
             <p className="text-xs text-foreground/40">
-              {profile.job_title || profile.industry_category}
+              {activeTab === "history"
+                ? profile.name || profile.key
+                : profile.job_title || profile.industry_category}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {!isEditMode && (
+          {!isEditMode && activeTab === "profile" && (
             <button
-              onClick={() => setIsEditMode(true)}
+              onClick={() => {
+                setActiveTab("profile");
+                setIsEditMode(true);
+              }}
               className="p-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors text-foreground/60 hover:text-indigo-600 dark:text-indigo-400"
               title="Edit profile"
             >
@@ -1097,862 +1110,930 @@ export function ProfileDetailPanel({
       </div>
 
       <div className="p-6 space-y-6">
-        {/* Edit Mode Header Actions */}
-        {isEditMode && (
-          <div className="flex gap-2">
+        {!isEditMode && (
+          <div className="inline-flex items-center rounded-xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 p-1">
             <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 text-green-600 dark:text-green-400 hover:from-green-500/30 hover:to-emerald-500/30 transition-all disabled:opacity-50 font-medium"
+              onClick={() => setActiveTab("profile")}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === "profile"
+                  ? "bg-white dark:bg-slate-700 text-foreground shadow-sm"
+                  : "text-foreground/50 hover:text-foreground"
+              }`}
             >
-              <Save className="h-4 w-4" />
-              {isSaving ? "Saving..." : "Save Changes"}
+              Profile
             </button>
             <button
-              onClick={handleCancelEdit}
-              className="px-4 py-2.5 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground/60 hover:bg-black/10 dark:hover:bg-white/10 hover:text-foreground transition-all font-medium"
+              onClick={() => setActiveTab("history")}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === "history"
+                  ? "bg-white dark:bg-slate-700 text-foreground shadow-sm"
+                  : "text-foreground/50 hover:text-foreground"
+              }`}
             >
-              <XCircle className="h-4 w-4" />
+              History
             </button>
           </div>
         )}
 
-        {/* Basic Info Section */}
-        <div className="space-y-4">
-          {isEditMode ? (
-            <>
-              {/* Name */}
-              <div className="space-y-2">
-                <Label className="text-foreground/60">Name</Label>
-                <Input
-                  value={editData.name}
-                  onChange={(e) =>
-                    setEditData((prev) => ({ ...prev, name: e.target.value }))
-                  }
-                  className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
-                  placeholder="Full name"
-                />
+        {activeTab === "history" && !isEditMode ? (
+          <ProfileHistory pk={profile.pk} />
+        ) : (
+          <>
+            {/* Edit Mode Header Actions */}
+            {isEditMode && (
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 text-green-600 dark:text-green-400 hover:from-green-500/30 hover:to-emerald-500/30 transition-all disabled:opacity-50 font-medium"
+                >
+                  <Save className="h-4 w-4" />
+                  {isSaving ? "Saving..." : "Save Changes"}
+                </button>
+                <button
+                  onClick={handleCancelEdit}
+                  className="px-4 py-2.5 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground/60 hover:bg-black/10 dark:hover:bg-white/10 hover:text-foreground transition-all font-medium"
+                >
+                  <XCircle className="h-4 w-4" />
+                </button>
               </div>
+            )}
 
-              {/* Status */}
-              <div className="space-y-2">
-                <Label className="text-foreground/60">Status</Label>
-                <Select
-                  value={editData.status}
-                  onChange={(e) =>
-                    setEditData((prev) => ({
-                      ...prev,
-                      status: e.target.value as CandidateStatus,
-                    }))
-                  }
-                  className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
-                  options={CANDIDATE_STATUSES}
-                />
-              </div>
-
-              {/* Summary */}
-              <div className="space-y-2">
-                <Label className="text-foreground/60">Summary</Label>
-                <textarea
-                  value={editData.summary}
-                  onChange={(e) =>
-                    setEditData((prev) => ({
-                      ...prev,
-                      summary: e.target.value,
-                    }))
-                  }
-                  rows={3}
-                  className="w-full px-3 py-2 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground placeholder-foreground/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all resize-none"
-                  placeholder="Brief professional summary"
-                />
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <h3 className="text-xl font-bold text-foreground mb-1">
-                    {profile.name || "Unknown"}
-                  </h3>
-                  <StatusBadge status={profile.status} />
-                </div>
-              </div>
-              {profile.summary && (
-                <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4 border border-black/5 dark:border-white/5">
-                  <p className="text-foreground/70 text-sm leading-relaxed italic">
-                    &ldquo;{profile.summary}&rdquo;
-                  </p>
-                </div>
-              )}
-            </>
-          )}
-
-          {/* View Resume Button */}
-          {profile.key && !isEditMode && (
-            <button
-              onClick={handleViewResume}
-              disabled={resumeLoading}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 text-indigo-700 dark:text-indigo-300 hover:from-indigo-500/30 hover:to-purple-500/30 transition-all disabled:opacity-50 font-medium"
-            >
-              <FileText className="h-4 w-4" />
-              {resumeLoading ? "Loading Resume..." : "View Original Resume"}
-              <ExternalLink className="h-3.5 w-3.5 ml-1 opacity-50" />
-            </button>
-          )}
-        </div>
-
-        {/* Notes & Tags (positioned high for recruiter visibility) */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-green-500/20 rounded-lg">
-              <FileText className="h-3.5 w-3.5 text-green-400" />
-            </div>
-            <h4 className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
-              Recruiter Notes
-            </h4>
-          </div>
-
-          {isEditMode ? (
-            <div className="space-y-3">
-              <div className="space-y-2">
-                <Label className="text-foreground/60 text-xs">Notes</Label>
-                <textarea
-                  value={editData.notes}
-                  onChange={(e) =>
-                    setEditData((prev) => ({
-                      ...prev,
-                      notes: e.target.value,
-                    }))
-                  }
-                  rows={4}
-                  className="w-full px-3 py-2 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground placeholder-foreground/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all resize-none"
-                  placeholder="Internal notes about this candidate..."
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-foreground/60 text-xs">Tags</Label>
-                <div className="flex flex-wrap gap-1.5 mb-2">
-                  {editData.tags.map((tag, i) => (
-                    <span
-                      key={i}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-700 dark:text-purple-300 text-xs border border-purple-500/30"
-                    >
-                      {tag}
-                      <button
-                        onClick={() =>
-                          setEditData((prev) => ({
-                            ...prev,
-                            tags: prev.tags.filter((_, j) => j !== i),
-                          }))
-                        }
-                        className="hover:text-foreground ml-0.5"
-                      >
-                        <Minus className="h-3 w-3" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-                <div className="flex gap-2">
-                  <input
-                    list={`tags-datalist-full-${profile.pk.replace(/[^a-zA-Z0-9-_]/g, "-")}`}
-                    placeholder="Select or type new tag…"
-                    className="flex h-9 w-full rounded-lg border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 px-3 py-2 text-sm text-foreground placeholder-foreground/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        const val = (e.target as HTMLInputElement).value.trim();
-                        if (val && !editData.tags.includes(val)) {
-                          setEditData((prev) => ({
-                            ...prev,
-                            tags: [...prev.tags, val],
-                          }));
-                          (e.target as HTMLInputElement).value = "";
-                        }
-                      }
-                    }}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (
-                        lookupTags.includes(val) &&
-                        !editData.tags.includes(val)
-                      ) {
+            {/* Basic Info Section */}
+            <div className="space-y-4">
+              {isEditMode ? (
+                <>
+                  {/* Name */}
+                  <div className="space-y-2">
+                    <Label className="text-foreground/60">Name</Label>
+                    <Input
+                      value={editData.name}
+                      onChange={(e) =>
                         setEditData((prev) => ({
                           ...prev,
-                          tags: [...prev.tags, val],
-                        }));
-                        e.target.value = "";
+                          name: e.target.value,
+                        }))
                       }
-                    }}
-                  />
-                </div>
-                <datalist
-                  id={`tags-datalist-full-${profile.pk.replace(/[^a-zA-Z0-9-_]/g, "-")}`}
+                      className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
+                      placeholder="Full name"
+                    />
+                  </div>
+
+                  {/* Status */}
+                  <div className="space-y-2">
+                    <Label className="text-foreground/60">Status</Label>
+                    <Select
+                      value={editData.status}
+                      onChange={(e) =>
+                        setEditData((prev) => ({
+                          ...prev,
+                          status: e.target.value as CandidateStatus,
+                        }))
+                      }
+                      className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
+                      options={CANDIDATE_STATUSES}
+                    />
+                  </div>
+
+                  {/* Summary */}
+                  <div className="space-y-2">
+                    <Label className="text-foreground/60">Summary</Label>
+                    <textarea
+                      value={editData.summary}
+                      onChange={(e) =>
+                        setEditData((prev) => ({
+                          ...prev,
+                          summary: e.target.value,
+                        }))
+                      }
+                      rows={3}
+                      className="w-full px-3 py-2 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground placeholder-foreground/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all resize-none"
+                      placeholder="Brief professional summary"
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <h3 className="text-xl font-bold text-foreground mb-1">
+                        {profile.name || "Unknown"}
+                      </h3>
+                      <StatusBadge status={profile.status} />
+                    </div>
+                  </div>
+                  {profile.summary && (
+                    <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4 border border-black/5 dark:border-white/5">
+                      <p className="text-foreground/70 text-sm leading-relaxed italic">
+                        &ldquo;{profile.summary}&rdquo;
+                      </p>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* View Resume Button */}
+              {profile.key && !isEditMode && (
+                <button
+                  onClick={handleViewResume}
+                  disabled={resumeLoading}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 text-indigo-700 dark:text-indigo-300 hover:from-indigo-500/30 hover:to-purple-500/30 transition-all disabled:opacity-50 font-medium"
                 >
-                  {lookupTags
-                    .filter((t) => !editData.tags.includes(t))
-                    .map((t) => (
-                      <option key={t} value={t} />
-                    ))}
-                </datalist>
-              </div>
+                  <FileText className="h-4 w-4" />
+                  {resumeLoading ? "Loading Resume..." : "View Original Resume"}
+                  <ExternalLink className="h-3.5 w-3.5 ml-1 opacity-50" />
+                </button>
+              )}
             </div>
-          ) : (
+
+            {/* Notes & Tags (positioned high for recruiter visibility) */}
             <div className="space-y-3">
-              {profile.notes ? (
-                <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4 border border-black/5 dark:border-white/5">
-                  <p className="text-foreground/70 text-sm whitespace-pre-wrap">
-                    {profile.notes}
-                  </p>
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-green-500/20 rounded-lg">
+                  <FileText className="h-3.5 w-3.5 text-green-400" />
+                </div>
+                <h4 className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
+                  Recruiter Notes
+                </h4>
+              </div>
+
+              {isEditMode ? (
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label className="text-foreground/60 text-xs">Notes</Label>
+                    <textarea
+                      value={editData.notes}
+                      onChange={(e) =>
+                        setEditData((prev) => ({
+                          ...prev,
+                          notes: e.target.value,
+                        }))
+                      }
+                      rows={4}
+                      className="w-full px-3 py-2 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground placeholder-foreground/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all resize-none"
+                      placeholder="Internal notes about this candidate..."
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-foreground/60 text-xs">Tags</Label>
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      {editData.tags.map((tag, i) => (
+                        <span
+                          key={i}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-700 dark:text-purple-300 text-xs border border-purple-500/30"
+                        >
+                          {tag}
+                          <button
+                            onClick={() =>
+                              setEditData((prev) => ({
+                                ...prev,
+                                tags: prev.tags.filter((_, j) => j !== i),
+                              }))
+                            }
+                            className="hover:text-foreground ml-0.5"
+                          >
+                            <Minus className="h-3 w-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        list={`tags-datalist-full-${profile.pk.replace(/[^a-zA-Z0-9-_]/g, "-")}`}
+                        placeholder="Select or type new tag…"
+                        className="flex h-9 w-full rounded-lg border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 px-3 py-2 text-sm text-foreground placeholder-foreground/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            const val = (
+                              e.target as HTMLInputElement
+                            ).value.trim();
+                            if (val && !editData.tags.includes(val)) {
+                              setEditData((prev) => ({
+                                ...prev,
+                                tags: [...prev.tags, val],
+                              }));
+                              (e.target as HTMLInputElement).value = "";
+                            }
+                          }
+                        }}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (
+                            lookupTags.includes(val) &&
+                            !editData.tags.includes(val)
+                          ) {
+                            setEditData((prev) => ({
+                              ...prev,
+                              tags: [...prev.tags, val],
+                            }));
+                            e.target.value = "";
+                          }
+                        }}
+                      />
+                    </div>
+                    <datalist
+                      id={`tags-datalist-full-${profile.pk.replace(/[^a-zA-Z0-9-_]/g, "-")}`}
+                    >
+                      {lookupTags
+                        .filter((t) => !editData.tags.includes(t))
+                        .map((t) => (
+                          <option key={t} value={t} />
+                        ))}
+                    </datalist>
+                  </div>
                 </div>
               ) : (
-                <p className="text-foreground/30 text-sm italic">
-                  No notes yet
-                </p>
-              )}
-              <div>
-                <p className="text-xs font-semibold text-foreground/40 uppercase tracking-wider mb-1.5">
-                  Tags
-                </p>
-                {profile.tags && profile.tags.length > 0 ? (
-                  <div className="flex flex-wrap gap-1.5">
-                    {profile.tags.map((tag, i) => (
-                      <Badge
-                        key={i}
-                        variant="outline"
-                        className="bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/30"
-                      >
-                        {tag}
-                      </Badge>
-                    ))}
+                <div className="space-y-3">
+                  {profile.notes ? (
+                    <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4 border border-black/5 dark:border-white/5">
+                      <p className="text-foreground/70 text-sm whitespace-pre-wrap">
+                        {profile.notes}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-foreground/30 text-sm italic">
+                      No notes yet
+                    </p>
+                  )}
+                  <div>
+                    <p className="text-xs font-semibold text-foreground/40 uppercase tracking-wider mb-1.5">
+                      Tags
+                    </p>
+                    {profile.tags && profile.tags.length > 0 ? (
+                      <div className="flex flex-wrap gap-1.5">
+                        {profile.tags.map((tag, i) => (
+                          <Badge
+                            key={i}
+                            variant="outline"
+                            className="bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/30"
+                          >
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-foreground/30 text-sm italic">
+                        No tags
+                      </p>
+                    )}
                   </div>
-                ) : (
-                  <p className="text-foreground/30 text-sm italic">No tags</p>
+                </div>
+              )}
+            </div>
+
+            {/* Possible Duplicate Warning */}
+            {!isEditMode && profile.possible_duplicate_of && (
+              <div className="bg-amber-500/10 rounded-xl p-4 border border-amber-500/30">
+                <p className="text-amber-700 dark:text-amber-300 text-sm font-medium">
+                  ⚠ Possible duplicate of another candidate record
+                </p>
+                <p className="text-amber-600/70 dark:text-amber-400/70 text-xs mt-1">
+                  ID: {profile.possible_duplicate_of}
+                </p>
+              </div>
+            )}
+
+            {/* Contact Section */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-blue-500/20 rounded-lg">
+                  <Mail className="h-3.5 w-3.5 text-blue-400" />
+                </div>
+                <h4 className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
+                  Contact Information
+                </h4>
+              </div>
+
+              {isEditMode ? (
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label className="text-foreground/60 text-xs">Email</Label>
+                    <Input
+                      type="email"
+                      value={editData.contact.email}
+                      onChange={(e) =>
+                        setEditData((prev) => ({
+                          ...prev,
+                          contact: { ...prev.contact, email: e.target.value },
+                        }))
+                      }
+                      className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
+                      placeholder="email@example.com"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-foreground/60 text-xs">Phone</Label>
+                    <Input
+                      type="tel"
+                      value={editData.contact.phone}
+                      onChange={(e) =>
+                        setEditData((prev) => ({
+                          ...prev,
+                          contact: { ...prev.contact, phone: e.target.value },
+                        }))
+                      }
+                      className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
+                      placeholder="(555) 123-4567"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-foreground/60 text-xs">
+                      LinkedIn
+                    </Label>
+                    <Input
+                      value={editData.contact.linkedin}
+                      onChange={(e) =>
+                        setEditData((prev) => ({
+                          ...prev,
+                          contact: {
+                            ...prev.contact,
+                            linkedin: e.target.value,
+                          },
+                        }))
+                      }
+                      className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
+                      placeholder="linkedin.com/in/username"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-foreground/60 text-xs">GitHub</Label>
+                    <Input
+                      value={editData.contact.github}
+                      onChange={(e) =>
+                        setEditData((prev) => ({
+                          ...prev,
+                          contact: { ...prev.contact, github: e.target.value },
+                        }))
+                      }
+                      className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
+                      placeholder="github.com/username"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label className="text-foreground/60 text-xs">City</Label>
+                      <Input
+                        value={editData.location.city}
+                        onChange={(e) =>
+                          setEditData((prev) => ({
+                            ...prev,
+                            location: {
+                              ...prev.location,
+                              city: e.target.value,
+                            },
+                          }))
+                        }
+                        className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
+                        placeholder="City"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-foreground/60 text-xs">
+                        State
+                      </Label>
+                      <Select
+                        value={editData.location.state}
+                        onChange={(e) =>
+                          setEditData((prev) => ({
+                            ...prev,
+                            location: {
+                              ...prev.location,
+                              state: e.target.value,
+                            },
+                          }))
+                        }
+                        className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
+                        options={[
+                          { value: "", label: "Select state" },
+                          ...US_STATES,
+                        ]}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-black/5 dark:bg-white/5 rounded-xl border border-black/5 dark:border-white/5 divide-y divide-black/5 dark:divide-white/5">
+                  {profile.contact.email && (
+                    <div className="flex items-center gap-3 px-4 py-3">
+                      <Mail className="h-4 w-4 text-foreground/30" />
+                      <a
+                        href={`mailto:${profile.contact.email}`}
+                        className="text-foreground/80 hover:text-indigo-600 dark:text-indigo-400 transition-colors flex-1 truncate"
+                      >
+                        {profile.contact.email}
+                      </a>
+                    </div>
+                  )}
+                  {profile.contact.phone && (
+                    <div className="flex items-center gap-3 px-4 py-3">
+                      <Phone className="h-4 w-4 text-foreground/30" />
+                      <span className="text-foreground/80">
+                        {profile.contact.phone}
+                      </span>
+                    </div>
+                  )}
+                  {profile.contact.linkedin && (
+                    <div className="flex items-center gap-3 px-4 py-3">
+                      <Linkedin className="h-4 w-4 text-foreground/30" />
+                      <a
+                        href={`https://${profile.contact.linkedin}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-foreground/80 hover:text-indigo-600 dark:text-indigo-400 transition-colors flex-1 truncate"
+                      >
+                        {profile.contact.linkedin}
+                      </a>
+                    </div>
+                  )}
+                  {profile.contact.github && (
+                    <div className="flex items-center gap-3 px-4 py-3">
+                      <Github className="h-4 w-4 text-foreground/30" />
+                      <a
+                        href={`https://${profile.contact.github}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-foreground/80 hover:text-indigo-600 dark:text-indigo-400 transition-colors flex-1 truncate"
+                      >
+                        {profile.contact.github}
+                      </a>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-3 px-4 py-3">
+                    <MapPin className="h-4 w-4 text-foreground/30" />
+                    <span className="text-foreground/80">
+                      {profile.location.city
+                        ? `${profile.location.city}, `
+                        : ""}
+                      {US_STATES.find((s) => s.value === profile.location_state)
+                        ?.label || profile.location_state}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Professional Section */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-purple-500/20 rounded-lg">
+                  <Briefcase className="h-3.5 w-3.5 text-purple-400" />
+                </div>
+                <h4 className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
+                  Professional Details
+                </h4>
+              </div>
+
+              {isEditMode ? (
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label className="text-foreground/60 text-xs">
+                      Service Category
+                    </Label>
+                    <Select
+                      value={editData.service_category}
+                      onChange={(e) =>
+                        setEditData((prev) => ({
+                          ...prev,
+                          service_category: e.target.value as ServiceCategory,
+                        }))
+                      }
+                      className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
+                      options={SERVICE_CATEGORIES}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-foreground/60 text-xs">
+                      Industry Category
+                    </Label>
+                    <Input
+                      value={editData.industry_category}
+                      onChange={(e) =>
+                        setEditData((prev) => ({
+                          ...prev,
+                          industry_category: e.target.value,
+                        }))
+                      }
+                      className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
+                      placeholder="e.g. Healthcare, Government"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-foreground/60 text-xs">
+                      Job Title
+                    </Label>
+                    <Input
+                      value={editData.job_title}
+                      onChange={(e) =>
+                        setEditData((prev) => ({
+                          ...prev,
+                          job_title: e.target.value,
+                        }))
+                      }
+                      className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
+                      placeholder="e.g. Senior Software Engineer"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label className="text-foreground/60 text-xs">
+                        Years of Experience
+                      </Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={editData.years_of_experience}
+                        onChange={(e) =>
+                          setEditData((prev) => ({
+                            ...prev,
+                            years_of_experience: e.target.value,
+                          }))
+                        }
+                        className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
+                        placeholder="Years"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-foreground/60 text-xs">
+                        Requested Salary ($/yr)
+                      </Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="1000"
+                        value={editData.requested_salary}
+                        onChange={(e) =>
+                          setEditData((prev) => ({
+                            ...prev,
+                            requested_salary: e.target.value,
+                          }))
+                        }
+                        className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
+                        placeholder="Annual salary"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-foreground/60 text-xs">
+                      Clearance Level
+                    </Label>
+                    <Select
+                      value={editData.clearance_level}
+                      onChange={(e) =>
+                        setEditData((prev) => ({
+                          ...prev,
+                          clearance_level: e.target.value,
+                        }))
+                      }
+                      className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
+                      options={[
+                        { value: "", label: "None" },
+                        ...CLEARANCE_LEVELS,
+                      ]}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4 border border-black/5 dark:border-white/5">
+                      <div className="flex items-center gap-2 text-foreground/50 text-xs mb-2">
+                        <Briefcase className="h-3.5 w-3.5" />
+                        <span>Job Title</span>
+                      </div>
+                      <p className="text-foreground font-semibold text-sm">
+                        {profile.job_title || "—"}
+                      </p>
+                      <p className="text-foreground/40 text-xs mt-1">
+                        {profile.service_category}
+                      </p>
+                    </div>
+                    <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4 border border-black/5 dark:border-white/5">
+                      <div className="flex items-center gap-2 text-foreground/50 text-xs mb-2">
+                        <Clock className="h-3.5 w-3.5" />
+                        <span>Experience</span>
+                      </div>
+                      <p className="text-foreground font-semibold">
+                        {profile.years_of_experience
+                          ? `${profile.years_of_experience} years`
+                          : "Not specified"}
+                      </p>
+                    </div>
+                  </div>
+                  {profile.industry_category && (
+                    <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4 border border-black/5 dark:border-white/5">
+                      <div className="flex items-center gap-2 text-foreground/50 text-xs mb-2">
+                        <Briefcase className="h-3.5 w-3.5" />
+                        <span>Industry</span>
+                      </div>
+                      <p className="text-foreground font-semibold text-sm">
+                        {profile.industry_category}
+                      </p>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4 border border-black/5 dark:border-white/5">
+                      <div className="flex items-center gap-2 text-foreground/50 text-xs mb-2">
+                        <Shield className="h-3.5 w-3.5" />
+                        <span>Clearance</span>
+                      </div>
+                      {profile.clearance_level ? (
+                        <ClearanceBadge level={profile.clearance_level} />
+                      ) : (
+                        <span className="text-foreground/40 text-sm">None</span>
+                      )}
+                    </div>
+                    <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4 border border-black/5 dark:border-white/5">
+                      <div className="flex items-center gap-2 text-foreground/50 text-xs mb-2">
+                        <DollarSign className="h-3.5 w-3.5" />
+                        <span>Requested Salary</span>
+                      </div>
+                      {profile.requested_salary ? (
+                        <p className="text-emerald-400 font-semibold">
+                          ${profile.requested_salary.toLocaleString()}
+                          <span className="text-foreground/40 font-normal">
+                            /yr
+                          </span>
+                        </p>
+                      ) : (
+                        <span className="text-foreground/40 text-sm">
+                          Not set
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Companies */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-amber-500/20 rounded-lg">
+                    <Building className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <h4 className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
+                    Work History
+                  </h4>
+                </div>
+                {isEditMode && (
+                  <button
+                    onClick={addCompany}
+                    className="p-1.5 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 hover:bg-amber-500/30 transition-colors"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </button>
                 )}
               </div>
-            </div>
-          )}
-        </div>
 
-        {/* Possible Duplicate Warning */}
-        {!isEditMode && profile.possible_duplicate_of && (
-          <div className="bg-amber-500/10 rounded-xl p-4 border border-amber-500/30">
-            <p className="text-amber-700 dark:text-amber-300 text-sm font-medium">
-              ⚠ Possible duplicate of another candidate record
-            </p>
-            <p className="text-amber-600/70 dark:text-amber-400/70 text-xs mt-1">
-              ID: {profile.possible_duplicate_of}
-            </p>
-          </div>
-        )}
-
-        {/* Contact Section */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-blue-500/20 rounded-lg">
-              <Mail className="h-3.5 w-3.5 text-blue-400" />
-            </div>
-            <h4 className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
-              Contact Information
-            </h4>
-          </div>
-
-          {isEditMode ? (
-            <div className="space-y-3">
-              <div className="space-y-2">
-                <Label className="text-foreground/60 text-xs">Email</Label>
-                <Input
-                  type="email"
-                  value={editData.contact.email}
-                  onChange={(e) =>
-                    setEditData((prev) => ({
-                      ...prev,
-                      contact: { ...prev.contact, email: e.target.value },
-                    }))
-                  }
-                  className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
-                  placeholder="email@example.com"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-foreground/60 text-xs">Phone</Label>
-                <Input
-                  type="tel"
-                  value={editData.contact.phone}
-                  onChange={(e) =>
-                    setEditData((prev) => ({
-                      ...prev,
-                      contact: { ...prev.contact, phone: e.target.value },
-                    }))
-                  }
-                  className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
-                  placeholder="(555) 123-4567"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-foreground/60 text-xs">LinkedIn</Label>
-                <Input
-                  value={editData.contact.linkedin}
-                  onChange={(e) =>
-                    setEditData((prev) => ({
-                      ...prev,
-                      contact: { ...prev.contact, linkedin: e.target.value },
-                    }))
-                  }
-                  className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
-                  placeholder="linkedin.com/in/username"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-foreground/60 text-xs">GitHub</Label>
-                <Input
-                  value={editData.contact.github}
-                  onChange={(e) =>
-                    setEditData((prev) => ({
-                      ...prev,
-                      contact: { ...prev.contact, github: e.target.value },
-                    }))
-                  }
-                  className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
-                  placeholder="github.com/username"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
+              {isEditMode ? (
                 <div className="space-y-2">
-                  <Label className="text-foreground/60 text-xs">City</Label>
-                  <Input
-                    value={editData.location.city}
-                    onChange={(e) =>
-                      setEditData((prev) => ({
-                        ...prev,
-                        location: { ...prev.location, city: e.target.value },
-                      }))
-                    }
-                    className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
-                    placeholder="City"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-foreground/60 text-xs">State</Label>
-                  <Select
-                    value={editData.location.state}
-                    onChange={(e) =>
-                      setEditData((prev) => ({
-                        ...prev,
-                        location: { ...prev.location, state: e.target.value },
-                      }))
-                    }
-                    className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
-                    options={[
-                      { value: "", label: "Select state" },
-                      ...US_STATES,
-                    ]}
-                  />
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="bg-black/5 dark:bg-white/5 rounded-xl border border-black/5 dark:border-white/5 divide-y divide-black/5 dark:divide-white/5">
-              {profile.contact.email && (
-                <div className="flex items-center gap-3 px-4 py-3">
-                  <Mail className="h-4 w-4 text-foreground/30" />
-                  <a
-                    href={`mailto:${profile.contact.email}`}
-                    className="text-foreground/80 hover:text-indigo-600 dark:text-indigo-400 transition-colors flex-1 truncate"
-                  >
-                    {profile.contact.email}
-                  </a>
-                </div>
-              )}
-              {profile.contact.phone && (
-                <div className="flex items-center gap-3 px-4 py-3">
-                  <Phone className="h-4 w-4 text-foreground/30" />
-                  <span className="text-foreground/80">
-                    {profile.contact.phone}
-                  </span>
-                </div>
-              )}
-              {profile.contact.linkedin && (
-                <div className="flex items-center gap-3 px-4 py-3">
-                  <Linkedin className="h-4 w-4 text-foreground/30" />
-                  <a
-                    href={`https://${profile.contact.linkedin}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-foreground/80 hover:text-indigo-600 dark:text-indigo-400 transition-colors flex-1 truncate"
-                  >
-                    {profile.contact.linkedin}
-                  </a>
-                </div>
-              )}
-              {profile.contact.github && (
-                <div className="flex items-center gap-3 px-4 py-3">
-                  <Github className="h-4 w-4 text-foreground/30" />
-                  <a
-                    href={`https://${profile.contact.github}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-foreground/80 hover:text-indigo-600 dark:text-indigo-400 transition-colors flex-1 truncate"
-                  >
-                    {profile.contact.github}
-                  </a>
-                </div>
-              )}
-              <div className="flex items-center gap-3 px-4 py-3">
-                <MapPin className="h-4 w-4 text-foreground/30" />
-                <span className="text-foreground/80">
-                  {profile.location.city ? `${profile.location.city}, ` : ""}
-                  {US_STATES.find((s) => s.value === profile.location_state)
-                    ?.label || profile.location_state}
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Professional Section */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-purple-500/20 rounded-lg">
-              <Briefcase className="h-3.5 w-3.5 text-purple-400" />
-            </div>
-            <h4 className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
-              Professional Details
-            </h4>
-          </div>
-
-          {isEditMode ? (
-            <div className="space-y-3">
-              <div className="space-y-2">
-                <Label className="text-foreground/60 text-xs">
-                  Service Category
-                </Label>
-                <Select
-                  value={editData.service_category}
-                  onChange={(e) =>
-                    setEditData((prev) => ({
-                      ...prev,
-                      service_category: e.target.value as ServiceCategory,
-                    }))
-                  }
-                  className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
-                  options={SERVICE_CATEGORIES}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-foreground/60 text-xs">
-                  Industry Category
-                </Label>
-                <Input
-                  value={editData.industry_category}
-                  onChange={(e) =>
-                    setEditData((prev) => ({
-                      ...prev,
-                      industry_category: e.target.value,
-                    }))
-                  }
-                  className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
-                  placeholder="e.g. Healthcare, Government"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-foreground/60 text-xs">Job Title</Label>
-                <Input
-                  value={editData.job_title}
-                  onChange={(e) =>
-                    setEditData((prev) => ({
-                      ...prev,
-                      job_title: e.target.value,
-                    }))
-                  }
-                  className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
-                  placeholder="e.g. Senior Software Engineer"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label className="text-foreground/60 text-xs">
-                    Years of Experience
-                  </Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    value={editData.years_of_experience}
-                    onChange={(e) =>
-                      setEditData((prev) => ({
-                        ...prev,
-                        years_of_experience: e.target.value,
-                      }))
-                    }
-                    className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
-                    placeholder="Years"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-foreground/60 text-xs">
-                    Requested Salary ($/yr)
-                  </Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    step="1000"
-                    value={editData.requested_salary}
-                    onChange={(e) =>
-                      setEditData((prev) => ({
-                        ...prev,
-                        requested_salary: e.target.value,
-                      }))
-                    }
-                    className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
-                    placeholder="Annual salary"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-foreground/60 text-xs">
-                  Clearance Level
-                </Label>
-                <Select
-                  value={editData.clearance_level}
-                  onChange={(e) =>
-                    setEditData((prev) => ({
-                      ...prev,
-                      clearance_level: e.target.value,
-                    }))
-                  }
-                  className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
-                  options={[{ value: "", label: "None" }, ...CLEARANCE_LEVELS]}
-                />
-              </div>
-            </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4 border border-black/5 dark:border-white/5">
-                  <div className="flex items-center gap-2 text-foreground/50 text-xs mb-2">
-                    <Briefcase className="h-3.5 w-3.5" />
-                    <span>Job Title</span>
-                  </div>
-                  <p className="text-foreground font-semibold text-sm">
-                    {profile.job_title || "—"}
-                  </p>
-                  <p className="text-foreground/40 text-xs mt-1">
-                    {profile.service_category}
-                  </p>
-                </div>
-                <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4 border border-black/5 dark:border-white/5">
-                  <div className="flex items-center gap-2 text-foreground/50 text-xs mb-2">
-                    <Clock className="h-3.5 w-3.5" />
-                    <span>Experience</span>
-                  </div>
-                  <p className="text-foreground font-semibold">
-                    {profile.years_of_experience
-                      ? `${profile.years_of_experience} years`
-                      : "Not specified"}
-                  </p>
-                </div>
-              </div>
-              {profile.industry_category && (
-                <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4 border border-black/5 dark:border-white/5">
-                  <div className="flex items-center gap-2 text-foreground/50 text-xs mb-2">
-                    <Briefcase className="h-3.5 w-3.5" />
-                    <span>Industry</span>
-                  </div>
-                  <p className="text-foreground font-semibold text-sm">
-                    {profile.industry_category}
-                  </p>
-                </div>
-              )}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4 border border-black/5 dark:border-white/5">
-                  <div className="flex items-center gap-2 text-foreground/50 text-xs mb-2">
-                    <Shield className="h-3.5 w-3.5" />
-                    <span>Clearance</span>
-                  </div>
-                  {profile.clearance_level ? (
-                    <ClearanceBadge level={profile.clearance_level} />
-                  ) : (
-                    <span className="text-foreground/40 text-sm">None</span>
-                  )}
-                </div>
-                <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4 border border-black/5 dark:border-white/5">
-                  <div className="flex items-center gap-2 text-foreground/50 text-xs mb-2">
-                    <DollarSign className="h-3.5 w-3.5" />
-                    <span>Requested Salary</span>
-                  </div>
-                  {profile.requested_salary ? (
-                    <p className="text-emerald-400 font-semibold">
-                      ${profile.requested_salary.toLocaleString()}
-                      <span className="text-foreground/40 font-normal">
-                        /yr
-                      </span>
+                  {editData.companies.map((company, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <Input
+                        value={company.name}
+                        onChange={(e) => updateCompany(i, e.target.value)}
+                        className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground flex-1"
+                        placeholder="Company name"
+                      />
+                      <button
+                        onClick={() => removeCompany(i)}
+                        className="p-2 rounded-lg text-red-600 dark:text-red-400/60 hover:text-red-600 dark:text-red-400 hover:bg-red-500/10 transition-colors"
+                      >
+                        <Minus className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                  {editData.companies.length === 0 && (
+                    <p className="text-foreground/40 text-sm">
+                      No companies added
                     </p>
-                  ) : (
-                    <span className="text-foreground/40 text-sm">Not set</span>
                   )}
                 </div>
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* Companies */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-amber-500/20 rounded-lg">
-                <Building className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-              </div>
-              <h4 className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
-                Work History
-              </h4>
-            </div>
-            {isEditMode && (
-              <button
-                onClick={addCompany}
-                className="p-1.5 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 hover:bg-amber-500/30 transition-colors"
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
-
-          {isEditMode ? (
-            <div className="space-y-2">
-              {editData.companies.map((company, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <Input
-                    value={company.name}
-                    onChange={(e) => updateCompany(i, e.target.value)}
-                    className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground flex-1"
-                    placeholder="Company name"
-                  />
-                  <button
-                    onClick={() => removeCompany(i)}
-                    className="p-2 rounded-lg text-red-600 dark:text-red-400/60 hover:text-red-600 dark:text-red-400 hover:bg-red-500/10 transition-colors"
-                  >
-                    <Minus className="h-4 w-4" />
-                  </button>
+              ) : profile.companies.length > 0 ? (
+                <div className="bg-black/5 dark:bg-white/5 rounded-xl border border-black/5 dark:border-white/5 divide-y divide-black/5 dark:divide-white/5">
+                  {profile.companies.map((company, i) => (
+                    <div key={i} className="flex items-center gap-3 px-4 py-3">
+                      <Building className="h-4 w-4 text-foreground/30" />
+                      <span className="text-foreground/80">{company.name}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-              {editData.companies.length === 0 && (
-                <p className="text-foreground/40 text-sm">No companies added</p>
-              )}
-            </div>
-          ) : profile.companies.length > 0 ? (
-            <div className="bg-black/5 dark:bg-white/5 rounded-xl border border-black/5 dark:border-white/5 divide-y divide-black/5 dark:divide-white/5">
-              {profile.companies.map((company, i) => (
-                <div key={i} className="flex items-center gap-3 px-4 py-3">
-                  <Building className="h-4 w-4 text-foreground/30" />
-                  <span className="text-foreground/80">{company.name}</span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-foreground/40 text-sm">No work history listed</p>
-          )}
-        </div>
-
-        {/* Skills */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-indigo-500/20 rounded-lg">
-                <Award className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
-              </div>
-              <h4 className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
-                Skills & Expertise
-              </h4>
-            </div>
-            {isEditMode && (
-              <button
-                onClick={addSkill}
-                className="p-1.5 rounded-lg bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/30 transition-colors"
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
-
-          {isEditMode ? (
-            <div className="space-y-2">
-              {editData.skillsets.map((skill, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <Input
-                    value={skill.name}
-                    onChange={(e) => updateSkill(i, e.target.value)}
-                    className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground flex-1"
-                    placeholder="Skill name"
-                  />
-                  <button
-                    onClick={() => removeSkill(i)}
-                    className="p-2 rounded-lg text-red-600 dark:text-red-400/60 hover:text-red-600 dark:text-red-400 hover:bg-red-500/10 transition-colors"
-                  >
-                    <Minus className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
-              {editData.skillsets.length === 0 && (
-                <p className="text-foreground/40 text-sm">No skills added</p>
-              )}
-            </div>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {profile.skillsets.map((skill, i) => (
-                <Badge
-                  key={i}
-                  variant="outline"
-                  className="bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/30 hover:bg-indigo-500/20 transition-colors"
-                >
-                  {skill.name}
-                </Badge>
-              ))}
-              {profile.skillsets.length === 0 && (
-                <span className="text-foreground/40 text-sm">
-                  No skills listed
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Certifications */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-amber-500/20 rounded-lg">
-                <Award className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-              </div>
-              <h4 className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
-                Certifications
-              </h4>
-            </div>
-            {isEditMode && (
-              <button
-                onClick={addCertification}
-                className="p-1.5 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 hover:bg-amber-500/30 transition-colors"
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
-
-          {isEditMode ? (
-            <div className="space-y-2">
-              {editData.certifications.map((cert, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <Input
-                    value={cert}
-                    onChange={(e) => updateCertification(i, e.target.value)}
-                    className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground flex-1"
-                    placeholder="Certification name"
-                  />
-                  <button
-                    onClick={() => removeCertification(i)}
-                    className="p-2 rounded-lg text-red-600 dark:text-red-400/60 hover:text-red-600 dark:text-red-400 hover:bg-red-500/10 transition-colors"
-                  >
-                    <Minus className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
-              {editData.certifications.length === 0 && (
+              ) : (
                 <p className="text-foreground/40 text-sm">
-                  No certifications added
+                  No work history listed
                 </p>
               )}
             </div>
-          ) : profile.certifications.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {profile.certifications.map((cert, i) => (
-                <Badge
-                  key={i}
-                  variant="outline"
-                  className="bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30 hover:bg-amber-500/20 transition-colors"
-                >
-                  <Award className="h-3 w-3 mr-1" />
-                  {cert}
-                </Badge>
-              ))}
-            </div>
-          ) : (
-            <p className="text-foreground/40 text-sm">
-              No certifications listed
-            </p>
-          )}
-        </div>
 
-        {/* Metadata (view mode only) */}
-        {!isEditMode && (
-          <div className="pt-4 border-t border-white/10 space-y-3">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-slate-500/20 rounded-lg">
-                <Calendar className="h-3.5 w-3.5 text-slate-400" />
-              </div>
-              <h4 className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
-                Record Info
-              </h4>
-            </div>
-            <div className="bg-black/5 dark:bg-white/5 rounded-xl border border-black/5 dark:border-white/5 divide-y divide-black/5 dark:divide-white/5 text-sm">
-              <div className="flex justify-between px-4 py-2.5">
-                <span className="text-foreground/40">Date received</span>
-                <span className="text-foreground/70">
-                  {new Date(profile.date_received).toLocaleDateString()}
-                </span>
-              </div>
-              <div className="flex justify-between px-4 py-2.5">
-                <span className="text-foreground/40">Last updated</span>
-                <span className="text-foreground/70">
-                  {new Date(profile.updated_at).toLocaleDateString()}
-                </span>
-              </div>
-              <div className="flex justify-between px-4 py-2.5">
-                <span className="text-foreground/40">Profile ID</span>
-                <span className="text-foreground/50 font-mono text-xs truncate max-w-[180px]">
-                  {profile.key}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Delete Section (view mode only) */}
-        {!isEditMode && (
-          <div className="pt-4 border-t border-white/10">
-            {!showDeleteConfirm ? (
-              <button
-                onClick={() => setShowDeleteConfirm(true)}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400/80 hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-600 dark:text-red-400 transition-all"
-              >
-                <Trash2 className="h-4 w-4" />
-                Delete Profile
-              </button>
-            ) : (
-              <div className="space-y-3 p-4 bg-red-500/10 rounded-xl border border-red-500/20">
-                <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
-                  <Trash2 className="h-4 w-4" />
-                  <p className="text-sm font-medium">Delete this profile?</p>
+            {/* Skills */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-indigo-500/20 rounded-lg">
+                    <Award className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+                  </div>
+                  <h4 className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
+                    Skills & Expertise
+                  </h4>
                 </div>
-                <p className="text-red-300/70 text-sm">
-                  This action cannot be undone. The candidate record will be
-                  permanently removed.
+                {isEditMode && (
+                  <button
+                    onClick={addSkill}
+                    className="p-1.5 rounded-lg bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/30 transition-colors"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {isEditMode ? (
+                <div className="space-y-2">
+                  {editData.skillsets.map((skill, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <Input
+                        value={skill.name}
+                        onChange={(e) => updateSkill(i, e.target.value)}
+                        className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground flex-1"
+                        placeholder="Skill name"
+                      />
+                      <button
+                        onClick={() => removeSkill(i)}
+                        className="p-2 rounded-lg text-red-600 dark:text-red-400/60 hover:text-red-600 dark:text-red-400 hover:bg-red-500/10 transition-colors"
+                      >
+                        <Minus className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                  {editData.skillsets.length === 0 && (
+                    <p className="text-foreground/40 text-sm">
+                      No skills added
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {profile.skillsets.map((skill, i) => (
+                    <Badge
+                      key={i}
+                      variant="outline"
+                      className="bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/30 hover:bg-indigo-500/20 transition-colors"
+                    >
+                      {skill.name}
+                    </Badge>
+                  ))}
+                  {profile.skillsets.length === 0 && (
+                    <span className="text-foreground/40 text-sm">
+                      No skills listed
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Certifications */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-amber-500/20 rounded-lg">
+                    <Award className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <h4 className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
+                    Certifications
+                  </h4>
+                </div>
+                {isEditMode && (
+                  <button
+                    onClick={addCertification}
+                    className="p-1.5 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 hover:bg-amber-500/30 transition-colors"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {isEditMode ? (
+                <div className="space-y-2">
+                  {editData.certifications.map((cert, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <Input
+                        value={cert}
+                        onChange={(e) => updateCertification(i, e.target.value)}
+                        className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground flex-1"
+                        placeholder="Certification name"
+                      />
+                      <button
+                        onClick={() => removeCertification(i)}
+                        className="p-2 rounded-lg text-red-600 dark:text-red-400/60 hover:text-red-600 dark:text-red-400 hover:bg-red-500/10 transition-colors"
+                      >
+                        <Minus className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                  {editData.certifications.length === 0 && (
+                    <p className="text-foreground/40 text-sm">
+                      No certifications added
+                    </p>
+                  )}
+                </div>
+              ) : profile.certifications.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {profile.certifications.map((cert, i) => (
+                    <Badge
+                      key={i}
+                      variant="outline"
+                      className="bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30 hover:bg-amber-500/20 transition-colors"
+                    >
+                      <Award className="h-3 w-3 mr-1" />
+                      {cert}
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-foreground/40 text-sm">
+                  No certifications listed
                 </p>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setShowDeleteConfirm(false)}
-                    className="flex-1 px-4 py-2.5 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground/60 hover:bg-black/10 dark:hover:bg-white/10 hover:text-foreground transition-all text-sm font-medium"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleDelete}
-                    disabled={isDeleting}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-red-500/30 border border-red-500/40 text-red-300 hover:bg-red-500/40 transition-all text-sm font-medium disabled:opacity-50"
-                  >
-                    {isDeleting ? "Deleting..." : "Yes, Delete"}
-                  </button>
+              )}
+            </div>
+
+            {/* Metadata (view mode only) */}
+            {!isEditMode && (
+              <div className="pt-4 border-t border-white/10 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-slate-500/20 rounded-lg">
+                    <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                  </div>
+                  <h4 className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
+                    Record Info
+                  </h4>
+                </div>
+                <div className="bg-black/5 dark:bg-white/5 rounded-xl border border-black/5 dark:border-white/5 divide-y divide-black/5 dark:divide-white/5 text-sm">
+                  <div className="flex justify-between px-4 py-2.5">
+                    <span className="text-foreground/40">Date received</span>
+                    <span className="text-foreground/70">
+                      {new Date(profile.date_received).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between px-4 py-2.5">
+                    <span className="text-foreground/40">Last updated</span>
+                    <span className="text-foreground/70">
+                      {new Date(profile.updated_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between px-4 py-2.5">
+                    <span className="text-foreground/40">Profile ID</span>
+                    <span className="text-foreground/50 font-mono text-xs truncate max-w-[180px]">
+                      {profile.key}
+                    </span>
+                  </div>
                 </div>
               </div>
             )}
-          </div>
+
+            {/* Delete Section (view mode only) */}
+            {!isEditMode && (
+              <div className="pt-4 border-t border-white/10">
+                {!showDeleteConfirm ? (
+                  <button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400/80 hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-600 dark:text-red-400 transition-all"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete Profile
+                  </button>
+                ) : (
+                  <div className="space-y-3 p-4 bg-red-500/10 rounded-xl border border-red-500/20">
+                    <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
+                      <Trash2 className="h-4 w-4" />
+                      <p className="text-sm font-medium">
+                        Delete this profile?
+                      </p>
+                    </div>
+                    <p className="text-red-300/70 text-sm">
+                      This action cannot be undone. The candidate record will be
+                      permanently removed.
+                    </p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setShowDeleteConfirm(false)}
+                        className="flex-1 px-4 py-2.5 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground/60 hover:bg-black/10 dark:hover:bg-white/10 hover:text-foreground transition-all text-sm font-medium"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleDelete}
+                        disabled={isDeleting}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-red-500/30 border border-red-500/40 text-red-300 hover:bg-red-500/40 transition-all text-sm font-medium disabled:opacity-50"
+                      >
+                        {isDeleting ? "Deleting..." : "Yes, Delete"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

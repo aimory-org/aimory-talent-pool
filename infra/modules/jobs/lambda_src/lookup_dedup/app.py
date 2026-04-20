@@ -19,14 +19,17 @@ from datetime import datetime, timezone
 import boto3
 
 PROFILES_TABLE = os.environ["TALENT_PROFILES_TABLE"]
+AUDIT_LOG_TABLE = os.environ.get("AUDIT_LOG_TABLE", "")
 SKILLS_TABLE = os.environ.get("SKILLS_LOOKUP_TABLE", "")
 CERTS_TABLE = os.environ.get("CERTIFICATIONS_LOOKUP_TABLE", "")
 JOB_TITLES_TABLE = os.environ.get("JOB_TITLES_LOOKUP_TABLE", "")
 INDUSTRY_CAT_TABLE = os.environ.get("INDUSTRY_CATEGORIES_LOOKUP_TABLE", "")
+CITIES_TABLE = os.environ.get("CITIES_LOOKUP_TABLE", "")
 BEDROCK_MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-20250514-v1:0")
 
 dynamodb = boto3.resource("dynamodb")
 bedrock = boto3.client("bedrock-runtime")
+DEDUP_RUN_PK = "SYSTEM#LOOKUP_DEDUP_RUN"
 
 # Lookup table configuration: (type_name, table_env, key_attr)
 LOOKUP_CONFIGS = [
@@ -143,6 +146,30 @@ If nothing to rename or remove, use empty values: {{"rename": {{}}, "remove": []
 Current certifications list ({count} items):
 {items_json}"""
 
+CITIES_DEDUP_PROMPT = """You are a data quality assistant for a talent/recruiting platform.
+Given this list of city/state pairs extracted from resumes, identify groups of duplicates
+or near-duplicates that refer to the SAME city.
+
+For each group, pick ONE canonical spelling.
+
+Return ONLY a JSON object with a "rename" key where:
+- Keys are the duplicate "city, state" strings that should be RENAMED
+- Values are the canonical "city, state" string each should be renamed to
+
+If no duplicates exist, return: {{"rename": {{}}}}
+
+Rules:
+- Fix misspellings: "Washingon, DC" → "Washington, DC"
+- Normalize case: "arlington, VA" → "Arlington, VA"
+- Merge equivalent names: "DC, DC" → "Washington, DC"
+- State codes must stay as-is (two-letter abbreviations)
+- DO NOT merge genuinely different cities (e.g., "Arlington, VA" and "Arlington, TX" are DIFFERENT)
+- The canonical name itself must NOT appear as a key
+- Format: "City, ST" (city name followed by comma, space, two-letter state code)
+
+Current cities list ({count} items):
+{items_json}"""
+
 JOB_TITLES_DEDUP_PROMPT = """You are a data quality assistant for a talent/recruiting platform.
 Given this list of job titles extracted from resumes, identify groups of duplicates or near-duplicates.
 
@@ -186,6 +213,103 @@ def _scan_lookup_table(table_name, key_attr):
     return sorted(set(items))
 
 
+def _scan_cities_table(table_name):
+    """Scan the cities lookup table and return 'city, state' strings."""
+    table = dynamodb.Table(table_name)
+    items = []
+    kwargs = {}
+    while True:
+        response = table.scan(**kwargs)
+        for item in response.get("Items", []):
+            city = (item.get("city") or "").strip()
+            state = (item.get("state") or "").strip()
+            if city and state:
+                items.append(f"{city}, {state}")
+        if "LastEvaluatedKey" not in response:
+            break
+        kwargs["ExclusiveStartKey"] = response["LastEvaluatedKey"]
+    return sorted(set(items))
+
+
+def _parse_city_state(city_state_str):
+    """Parse 'City, ST' into (city, state) tuple."""
+    parts = city_state_str.rsplit(", ", 1)
+    if len(parts) == 2:
+        return parts[0].strip(), parts[1].strip()
+    return city_state_str.strip(), ""
+
+
+def _write_audit_entry(pk, timestamp, changes, candidate_name=None):
+    if not AUDIT_LOG_TABLE or not changes:
+        return
+
+    item = {
+        "pk": pk,
+        "sk": f"{timestamp}#UPDATE",
+        "action": "UPDATE",
+        "timestamp": timestamp,
+        "user_email": "dedup@system",
+        "user_name": "Dedup",
+        "changes": changes,
+    }
+    if candidate_name:
+        item["candidate_name"] = candidate_name
+
+    try:
+        dynamodb.Table(AUDIT_LOG_TABLE).put_item(Item=item)
+    except Exception as exc:
+        print(f"Warning: failed to write dedup audit entry for {pk}: {exc}")
+
+
+def _write_run_audit_entry(
+    timestamp,
+    details,
+    profiles_updated,
+    renames,
+    removals,
+    dry_run,
+    trigger,
+):
+    if not AUDIT_LOG_TABLE or dry_run:
+        return
+
+    item = {
+        "pk": DEDUP_RUN_PK,
+        "sk": f"{timestamp}#UPDATE",
+        "action": "UPDATE",
+        "timestamp": timestamp,
+        "user_email": "dedup@system",
+        "user_name": "Dedup",
+        "details": details,
+        "snapshot": {
+            "profiles_updated": profiles_updated,
+            "renames": renames,
+            "removals": removals,
+            "dry_run": dry_run,
+            "trigger": trigger,
+        },
+    }
+
+    try:
+        dynamodb.Table(AUDIT_LOG_TABLE).put_item(Item=item)
+    except Exception as exc:
+        print(f"Warning: failed to write dedup run audit entry: {exc}")
+
+
+def _detect_run_trigger(event):
+    explicit = str((event or {}).get("trigger", "")).strip().lower()
+    if explicit in {"manual", "scheduled"}:
+        return explicit
+
+    source = str((event or {}).get("source", "")).strip().lower()
+    detail_type = str((event or {}).get("detail-type", "")).strip().lower()
+
+    if source == "aws.events" or "scheduled" in detail_type:
+        return "scheduled"
+
+    return "manual"
+
+
 def _extract_json(text):
     """Extract JSON object from Claude's response, handling markdown code blocks."""
     text = text.strip()
@@ -227,6 +351,11 @@ def _get_rename_map(item_type, items):
         )
     elif item_type == "job_titles":
         prompt = JOB_TITLES_DEDUP_PROMPT.format(
+            count=len(items),
+            items_json=json.dumps(items, indent=2),
+        )
+    elif item_type == "cities":
+        prompt = CITIES_DEDUP_PROMPT.format(
             count=len(items),
             items_json=json.dumps(items, indent=2),
         )
@@ -375,6 +504,14 @@ def _update_profiles(all_renames, all_removals, dry_run):
     certs_removals = all_removals.get("certifications", [])
     titles_map = all_renames.get("job_titles", {})
     industry_map = all_renames.get("industry_categories", {})
+    cities_map = all_renames.get("cities", {})
+    # Pre-parse cities rename map into (old_city, old_state) -> (new_city, new_state)
+    cities_parsed = {}
+    for old_cs, new_cs in cities_map.items():
+        old_city, old_state = _parse_city_state(old_cs)
+        new_city, new_state = _parse_city_state(new_cs)
+        if old_city and old_state and new_city and new_state:
+            cities_parsed[(old_city, old_state)] = (new_city, new_state)
 
     table = dynamodb.Table(PROFILES_TABLE)
     updated = 0
@@ -389,6 +526,7 @@ def _update_profiles(all_renames, all_removals, dry_run):
         for item in items:
             pk = item["pk"]
             updates = {}
+            changes = {}
 
             # Skills (rename + remove)
             if (skills_map or skills_removals) and item.get("skillsets"):
@@ -396,6 +534,7 @@ def _update_profiles(all_renames, all_removals, dry_run):
                 if changed:
                     updates["skillsets"] = new_skillsets
                     updates["skill_names"] = ",".join(s["name"] for s in new_skillsets)
+                    changes["skillsets"] = {"old": item.get("skillsets"), "new": new_skillsets}
 
             # Certifications (rename + remove)
             if (certs_map or certs_removals) and item.get("certifications"):
@@ -403,14 +542,31 @@ def _update_profiles(all_renames, all_removals, dry_run):
                 if changed:
                     updates["certifications"] = new_certs
                     updates["cert_names"] = ",".join(new_certs)
+                    changes["certifications"] = {"old": item.get("certifications"), "new": new_certs}
 
             # Job title
             if titles_map and item.get("job_title") in titles_map:
                 updates["job_title"] = titles_map[item["job_title"]]
+                changes["job_title"] = {"old": item.get("job_title"), "new": updates["job_title"]}
 
             # Industry category
             if industry_map and item.get("industry_category") in industry_map:
                 updates["industry_category"] = industry_map[item["industry_category"]]
+                changes["industry_category"] = {
+                    "old": item.get("industry_category"),
+                    "new": updates["industry_category"],
+                }
+
+            # City (inside location map)
+            if cities_parsed and isinstance(item.get("location"), dict):
+                loc = item["location"]
+                loc_city = (loc.get("city") or "").strip()
+                loc_state = (loc.get("state") or "").strip()
+                if (loc_city, loc_state) in cities_parsed:
+                    new_city, new_state = cities_parsed[(loc_city, loc_state)]
+                    updates["location"] = {**loc, "city": new_city, "state": new_state}
+                    updates["location_state"] = new_state
+                    changes["location"] = {"old": item.get("location"), "new": updates["location"]}
 
             if updates:
                 updated += 1
@@ -434,6 +590,7 @@ def _update_profiles(all_renames, all_removals, dry_run):
                         ExpressionAttributeNames=expr_names,
                         ExpressionAttributeValues=expr_values,
                     )
+                    _write_audit_entry(pk, now, changes, item.get("name"))
                     print(f"  Updated {pk}: {list(updates.keys())}")
 
         if "LastEvaluatedKey" not in response:
@@ -474,6 +631,7 @@ def _cleanup_lookup_table(table_name, key_attr, rename_map, dry_run):
 
 def handler(event, context):
     dry_run = event.get("dry_run", False)
+    run_trigger = _detect_run_trigger(event)
     mode = "DRY RUN" if dry_run else "LIVE"
     print(f"=== Lookup Dedup Job ({mode}) ===")
 
@@ -507,12 +665,41 @@ def handler(event, context):
         if not rename_map and not removals:
             print("  No duplicates or useless entries found")
 
+    # Cities dedup (composite key table — handled separately)
+    if CITIES_TABLE:
+        print(f"\nScanning cities ({CITIES_TABLE})...")
+        city_items = _scan_cities_table(CITIES_TABLE)
+        print(f"  Found {len(city_items)} unique city/state pairs")
+        if len(city_items) > 1:
+            city_renames, _ = _get_rename_map("cities", city_items)
+            if city_renames:
+                print(f"  Found {len(city_renames)} city duplicates to rename:")
+                for old, canonical in sorted(city_renames.items()):
+                    print(f"    {old!r} -> {canonical!r}")
+                all_renames["cities"] = city_renames
+            else:
+                print("  No city duplicates found")
+        else:
+            print("  Nothing to dedup")
+
     if not all_renames and not all_removals:
         print("\nNo duplicates or useless entries found across any lookup tables. Done.")
+
+        _write_run_audit_entry(
+            timestamp=datetime.now(timezone.utc).isoformat(),
+            details=f"{run_trigger.title()} lookup dedup run completed with no duplicates or removals.",
+            profiles_updated=0,
+            renames=0,
+            removals=0,
+            dry_run=dry_run,
+            trigger=run_trigger,
+        )
+
         return {
             "status": "ok",
             "message": "No duplicates or useless entries found",
             "dry_run": dry_run,
+            "trigger": run_trigger,
             "renames": {},
             "removals": {},
             "profiles_updated": 0,
@@ -534,6 +721,34 @@ def handler(event, context):
         if not dry_run:
             print(f"  Created {created} canonical entries, deleted {deleted} old entries")
 
+    # Step 3b: Clean up cities lookup table (composite key)
+    if "cities" in all_renames and CITIES_TABLE:
+        print(f"Cleaning cities renames ({CITIES_TABLE})...")
+        cities_tbl = dynamodb.Table(CITIES_TABLE)
+        now = datetime.now(timezone.utc).isoformat()
+        c_created = 0
+        c_deleted = 0
+        canonical_set = set(all_renames["cities"].values())
+        for canonical_cs in canonical_set:
+            new_city, new_state = _parse_city_state(canonical_cs)
+            if new_city and new_state:
+                if dry_run:
+                    print(f"  [dry-run] Would ensure city entry: {canonical_cs}")
+                else:
+                    cities_tbl.put_item(Item={"city": new_city, "state": new_state, "updated_at": now})
+                    c_created += 1
+        for old_cs in all_renames["cities"]:
+            if old_cs not in canonical_set:
+                old_city, old_state = _parse_city_state(old_cs)
+                if old_city and old_state:
+                    if dry_run:
+                        print(f"  [dry-run] Would delete city entry: {old_cs}")
+                    else:
+                        cities_tbl.delete_item(Key={"city": old_city, "state": old_state})
+                        c_deleted += 1
+        if not dry_run:
+            print(f"  Created {c_created} canonical entries, deleted {c_deleted} old entries")
+
     # Step 4: Delete useless entries from lookup tables
     for type_name, table_name, key_attr in LOOKUP_CONFIGS:
         if type_name not in all_removals:
@@ -547,10 +762,24 @@ def handler(event, context):
                 table.delete_item(Key={key_attr: name})
                 print(f"  Deleted: {name!r}")
 
+    _write_run_audit_entry(
+        timestamp=datetime.now(timezone.utc).isoformat(),
+        details=(
+            f"{run_trigger.title()} lookup dedup run completed: {profiles_updated} profiles updated, "
+            f"{total_renames} renames, {total_removals} removals."
+        ),
+        profiles_updated=profiles_updated,
+        renames=total_renames,
+        removals=total_removals,
+        dry_run=dry_run,
+        trigger=run_trigger,
+    )
+
     print("\n=== Done ===")
     return {
         "status": "ok",
         "dry_run": dry_run,
+        "trigger": run_trigger,
         "renames": {k: len(v) for k, v in all_renames.items()},
         "removals": {k: len(v) for k, v in all_removals.items()},
         "rename_details": all_renames,

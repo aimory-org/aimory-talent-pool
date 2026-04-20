@@ -23,31 +23,31 @@ describe("StatusBadge", () => {
   it("applies correct styling for Potential Candidate", () => {
     render(<StatusBadge status="Potential Candidate" />);
     const badge = screen.getByText("Potential Candidate");
-    expect(badge).toHaveClass("bg-emerald-500/20");
+    expect(badge).toHaveClass("bg-emerald-500/12");
   });
 
   it("applies correct styling for Active Candidate", () => {
     render(<StatusBadge status="Active Candidate" />);
     const badge = screen.getByText("Active Candidate");
-    expect(badge).toHaveClass("bg-blue-500/20");
+    expect(badge).toHaveClass("bg-indigo-500/12");
   });
 
   it("applies correct styling for Placed Candidate", () => {
     render(<StatusBadge status="Placed Candidate" />);
     const badge = screen.getByText("Placed Candidate");
-    expect(badge).toHaveClass("bg-green-500/20");
+    expect(badge).toHaveClass("bg-violet-500/12");
   });
 
   it("applies correct styling for Stale Candidate", () => {
     render(<StatusBadge status="Stale Candidate" />);
     const badge = screen.getByText("Stale Candidate");
-    expect(badge).toHaveClass("bg-amber-500/20");
+    expect(badge).toHaveClass("bg-amber-500/12");
   });
 
   it("applies correct styling for Do Not Contact", () => {
     render(<StatusBadge status="Do Not Contact" />);
     const badge = screen.getByText("Do Not Contact");
-    expect(badge).toHaveClass("bg-red-500/20");
+    expect(badge).toHaveClass("bg-red-500/12");
   });
 
   it("renders as a span element", () => {

@@ -214,3 +214,80 @@ export async function deleteTag(
     method: "DELETE",
   });
 }
+
+// -----------------------------------------------------------------------------
+// Audit History
+// -----------------------------------------------------------------------------
+
+export interface AuditFieldChange {
+  old: unknown;
+  new: unknown;
+}
+
+export interface AuditEntry {
+  pk: string;
+  sk: string; // "timestamp#action"
+  action: "CREATE" | "UPDATE" | "DELETE" | "STATUS_CHANGE";
+  timestamp: string;
+  user_email: string;
+  user_name?: string;
+  candidate_name?: string;
+  details?: string;
+  changes?: Record<string, AuditFieldChange>;
+  snapshot?: Record<string, unknown>; // for DELETE
+}
+
+export interface AuditHistoryResponse {
+  items: AuditEntry[];
+}
+
+/**
+ * Get audit history for a specific talent profile.
+ */
+export async function getAuditHistory(
+  pk: string,
+): Promise<AuditHistoryResponse> {
+  return apiFetch<AuditHistoryResponse>(
+    `/audit-history?pk=${encodeURIComponent(pk)}`,
+  );
+}
+
+/**
+ * List recent audit entries across all profiles.
+ */
+export async function listAuditHistory(
+  limit = 200,
+): Promise<AuditHistoryResponse> {
+  return apiFetch<AuditHistoryResponse>(
+    `/audit-history?scope=global&limit=${encodeURIComponent(String(limit))}`,
+  );
+}
+
+// -----------------------------------------------------------------------------
+// Deployments
+// -----------------------------------------------------------------------------
+
+export interface Deployment {
+  id: number;
+  status: "completed" | "in_progress" | "queued";
+  conclusion: "success" | "failure" | "cancelled" | null;
+  branch: string;
+  commit_sha: string;
+  commit_message: string;
+  triggered_by: string;
+  started_at: string;
+  completed_at: string | null;
+  duration_seconds: number | null;
+  url: string;
+}
+
+export interface DeploymentsResponse {
+  deployments: Deployment[];
+}
+
+/**
+ * Get recent deployment history from GitHub Actions (proxied via Lambda).
+ */
+export async function getDeployments(): Promise<DeploymentsResponse> {
+  return apiFetch<DeploymentsResponse>("/deployments");
+}

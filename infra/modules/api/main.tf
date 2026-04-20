@@ -122,6 +122,18 @@ resource "aws_iam_role_policy" "api_dynamodb_read" {
           var.industry_categories_lookup_table_arn,
           var.tags_lookup_table_arn
         ]
+      },
+      {
+        Sid    = "ReadAuditLog"
+        Effect = "Allow"
+        Action = [
+          "dynamodb:Scan",
+          "dynamodb:Query"
+        ]
+        Resource = [
+          var.audit_log_table_arn,
+          "${var.audit_log_table_arn}/index/*"
+        ]
       }
     ]
   })
@@ -158,6 +170,14 @@ resource "aws_iam_role_policy" "api_dynamodb_write" {
           var.industry_categories_lookup_table_arn,
           var.tags_lookup_table_arn
         ]
+      },
+      {
+        Sid    = "WriteAuditLog"
+        Effect = "Allow"
+        Action = [
+          "dynamodb:PutItem"
+        ]
+        Resource = var.audit_log_table_arn
     }]
   })
 }
@@ -199,6 +219,21 @@ resource "aws_iam_role_policy" "api_opensearch" {
         "es:ESHttpHead"
       ]
       Resource = "${var.opensearch_domain_arn}/*"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy" "api_ssm" {
+  name = "${var.project_name}-${var.environment}-api-ssm"
+  role = aws_iam_role.api_lambda_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid      = "ReadGitHubToken"
+      Effect   = "Allow"
+      Action   = ["ssm:GetParameter"]
+      Resource = "arn:aws:ssm:*:*:parameter${var.github_pat_param}"
     }]
   })
 }

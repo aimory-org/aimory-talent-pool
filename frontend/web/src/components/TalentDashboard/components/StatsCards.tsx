@@ -14,68 +14,92 @@ interface StatsCardsProps {
   stats: Stats;
 }
 
+const cards = [
+  {
+    key: "total" as const,
+    label: "Total",
+    icon: Users,
+    color: "from-slate-500/20 to-slate-600/10",
+    border: "border-slate-500/20 hover:border-slate-400/40",
+    glow: "group-hover:shadow-slate-500/10",
+    iconColor: "text-slate-500 dark:text-slate-300",
+    textColor: "text-foreground",
+    labelColor: "text-foreground/40",
+    stagger: "stagger-1",
+  },
+  {
+    key: "potentialCount" as const,
+    label: "Potential",
+    icon: Sparkles,
+    color: "from-emerald-500/15 to-teal-500/5",
+    border: "border-emerald-500/20 hover:border-emerald-400/50",
+    glow: "group-hover:shadow-emerald-500/20",
+    iconColor: "text-emerald-500 dark:text-emerald-400",
+    textColor: "text-emerald-600 dark:text-emerald-300",
+    labelColor: "text-emerald-600/60 dark:text-emerald-400/60",
+    stagger: "stagger-2",
+  },
+  {
+    key: "activeCount" as const,
+    label: "Active",
+    icon: TrendingUp,
+    color: "from-indigo-500/15 to-violet-500/5",
+    border: "border-indigo-500/20 hover:border-indigo-400/50",
+    glow: "group-hover:shadow-indigo-500/20",
+    iconColor: "text-indigo-500 dark:text-indigo-400",
+    textColor: "text-indigo-600 dark:text-indigo-300",
+    labelColor: "text-indigo-600/60 dark:text-indigo-400/60",
+    stagger: "stagger-3",
+  },
+  {
+    key: "placedCount" as const,
+    label: "Placed",
+    icon: UserCheck,
+    color: "from-violet-500/15 to-purple-500/5",
+    border: "border-violet-500/20 hover:border-violet-400/50",
+    glow: "group-hover:shadow-violet-500/20",
+    iconColor: "text-violet-500 dark:text-violet-400",
+    textColor: "text-violet-600 dark:text-violet-300",
+    labelColor: "text-violet-600/60 dark:text-violet-400/60",
+    stagger: "stagger-4",
+  },
+];
+
 export function StatsCards({ stats }: StatsCardsProps) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      <div className="group relative bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 backdrop-blur-lg rounded-xl p-3 border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20 transition-all duration-300 cursor-default">
-        <div className="absolute inset-0 bg-linear-to-br from-slate-500/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-        <div className="relative">
-          <div className="flex items-center gap-2 mb-1">
-            <Users className="h-4 w-4 text-slate-500 dark:text-slate-400" />
-            <span className="text-xs font-medium text-foreground/40 uppercase tracking-wider">
-              Total
-            </span>
+      {cards.map((card) => {
+        const Icon = card.icon;
+        const value = stats[card.key];
+        return (
+          <div
+            key={card.key}
+            className={`group relative animate-fade-in ${card.stagger} overflow-hidden rounded-2xl border bg-gradient-to-br ${card.color} ${card.border} p-4 cursor-default transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl ${card.glow}`}
+          >
+            {/* Subtle inner shine */}
+            <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent dark:from-white/5 pointer-events-none rounded-2xl" />
+            <div className="relative">
+              <div className="flex items-center justify-between mb-3">
+                <span
+                  className={`text-[11px] font-semibold uppercase tracking-widest ${card.labelColor}`}
+                >
+                  {card.label}
+                </span>
+                <div
+                  className={`p-1.5 rounded-lg bg-white/50 dark:bg-black/20 shrink-0 ml-3 ${card.iconColor}`}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                </div>
+              </div>
+              <p
+                className={`text-3xl font-bold tabular-nums tracking-tight animate-count-up ${card.stagger} ${card.textColor}`}
+              >
+                {value}
+              </p>
+            </div>
           </div>
-          <p className="text-2xl font-bold text-foreground tabular-nums">
-            {stats.total}
-          </p>
-        </div>
-      </div>
-
-      <div className="group relative bg-emerald-500/10 hover:bg-emerald-500/20 backdrop-blur-lg rounded-xl p-3 border border-emerald-500/20 hover:border-emerald-500/40 transition-all duration-300 cursor-default">
-        <div className="absolute inset-0 bg-linear-to-br from-emerald-500/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-        <div className="relative">
-          <div className="flex items-center gap-2 mb-1">
-            <Sparkles className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-            <span className="text-xs font-medium text-emerald-600/70 dark:text-emerald-400/70 uppercase tracking-wider">
-              Potential
-            </span>
-          </div>
-          <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
-            {stats.potentialCount}
-          </p>
-        </div>
-      </div>
-
-      <div className="group relative bg-blue-500/10 hover:bg-blue-500/20 backdrop-blur-lg rounded-xl p-3 border border-blue-500/20 hover:border-blue-500/40 transition-all duration-300 cursor-default">
-        <div className="absolute inset-0 bg-linear-to-br from-blue-500/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-        <div className="relative">
-          <div className="flex items-center gap-2 mb-1">
-            <TrendingUp className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-            <span className="text-xs font-medium text-blue-600/70 dark:text-blue-400/70 uppercase tracking-wider">
-              Active
-            </span>
-          </div>
-          <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 tabular-nums">
-            {stats.activeCount}
-          </p>
-        </div>
-      </div>
-
-      <div className="group relative bg-green-500/10 hover:bg-green-500/20 backdrop-blur-lg rounded-xl p-3 border border-green-500/20 hover:border-green-500/40 transition-all duration-300 cursor-default">
-        <div className="absolute inset-0 bg-linear-to-br from-green-500/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-        <div className="relative">
-          <div className="flex items-center gap-2 mb-1">
-            <UserCheck className="h-4 w-4 text-green-600 dark:text-green-400" />
-            <span className="text-xs font-medium text-green-600/70 dark:text-green-400/70 uppercase tracking-wider">
-              Placed
-            </span>
-          </div>
-          <p className="text-2xl font-bold text-green-600 dark:text-green-400 tabular-nums">
-            {stats.placedCount}
-          </p>
-        </div>
-      </div>
+        );
+      })}
     </div>
   );
 }

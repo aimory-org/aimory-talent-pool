@@ -15,6 +15,7 @@
 #   TF_VAR_ENTRA_CLIENT_ID     – Microsoft Entra ID application client ID
 #   TF_VAR_ENTRA_CLIENT_SECRET – Microsoft Entra ID client secret
 #   TF_VAR_ENTRA_TENANT_ID     – Microsoft Entra ID tenant ID
+#   DEPLOYMENTS_PAT            – GitHub token used by /deployments API (stored in SSM)
 #
 # Required GitHub Variables (repository or environment "dev"):
 #   TF_VAR_COGNITO_CALLBACK_URLS – JSON list, e.g. '["http://localhost:5173","https://xxxxx.cloudfront.net"]'
@@ -31,8 +32,8 @@ on:
     branches: [main]
 
 permissions:
-  contents: write   # needed for rollback git revert + push
-  pull-requests: write
+  contents: read
+  actions: read
 
 # Prevent concurrent deploys — queue rather than cancel
 concurrency:
@@ -43,6 +44,7 @@ env:
   TF_DIR: infra/envs/dev
   AWS_REGION: us-east-1
   TF_IN_AUTOMATION: true
+  GITHUB_PAT_PARAM: /aimory/github-pat
 
 jobs:
   # ═══════════════════════════════════════════════════════════════════════════
@@ -62,6 +64,18 @@ jobs:
       cognito_domain: ${{ steps.outputs.outputs.cognito_domain }}
       api_endpoint: ${{ steps.outputs.outputs.api_endpoint }}
       presign_function_url: ${{ steps.outputs.outputs.presign_function_url }}
+      resume_bucket: ${{ steps.outputs.outputs.resume_bucket }}
+      raw_prefix: ${{ steps.outputs.outputs.raw_prefix }}
+      project_name: ${{ steps.outputs.outputs.project_name }}
+      environment_name: ${{ steps.outputs.outputs.environment_name }}
+      pipeline_state_machine_arn: ${{ steps.outputs.outputs.pipeline_state_machine_arn }}
+      talent_profiles_table: ${{ steps.outputs.outputs.talent_profiles_table }}
+      audit_log_table: ${{ steps.outputs.outputs.audit_log_table }}
+      skills_lookup_table: ${{ steps.outputs.outputs.skills_lookup_table }}
+      certifications_lookup_table: ${{ steps.outputs.outputs.certifications_lookup_table }}
+      cities_lookup_table: ${{ steps.outputs.outputs.cities_lookup_table }}
+      job_titles_lookup_table: ${{ steps.outputs.outputs.job_titles_lookup_table }}
+      industry_categories_lookup_table: ${{ steps.outputs.outputs.industry_categories_lookup_table }}
 
     env:
       TF_VAR_presign_api_key: ${{ secrets.TF_VAR_PRESIGN_API_KEY }}
@@ -81,6 +95,22 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
+
+      - name: Validate deployments token secret
+        run: |
+          if [ -z "${{ secrets.DEPLOYMENTS_PAT }}" ]; then
+            echo "::error::Missing required GitHub secret: DEPLOYMENTS_PAT"
+            exit 1
+          fi
+
+      - name: Sync deployments token to SSM
+        run: |
+          aws ssm put-parameter \
+            --name "${{ env.GITHUB_PAT_PARAM }}" \
+            --type SecureString \
+            --value "${{ secrets.DEPLOYMENTS_PAT }}" \
+            --overwrite \
+            --description "GitHub token for deployment history API"
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -174,6 +204,18 @@ jobs:
 
           echo "api_endpoint=$(terraform output -raw api_endpoint)" >> "$GITHUB_OUTPUT"
           echo "presign_function_url=$(terraform output -raw presign_function_url)" >> "$GITHUB_OUTPUT"
+          echo "resume_bucket=$(terraform output -raw resume_bucket_name)" >> "$GITHUB_OUTPUT"
+          echo "raw_prefix=$(terraform output -raw raw_prefix)" >> "$GITHUB_OUTPUT"
+          echo "project_name=$(terraform output -raw project_name)" >> "$GITHUB_OUTPUT"
+          echo "environment_name=$(terraform output -raw environment)" >> "$GITHUB_OUTPUT"
+          echo "pipeline_state_machine_arn=$(terraform output -raw pipeline_state_machine_arn)" >> "$GITHUB_OUTPUT"
+          echo "talent_profiles_table=$(terraform output -raw talent_profiles_table_name)" >> "$GITHUB_OUTPUT"
+          echo "audit_log_table=$(terraform output -raw audit_log_table_name)" >> "$GITHUB_OUTPUT"
+          echo "skills_lookup_table=$(terraform output -raw skills_lookup_table_name)" >> "$GITHUB_OUTPUT"
+          echo "certifications_lookup_table=$(terraform output -raw certifications_lookup_table_name)" >> "$GITHUB_OUTPUT"
+          echo "cities_lookup_table=$(terraform output -raw cities_lookup_table_name)" >> "$GITHUB_OUTPUT"
+          echo "job_titles_lookup_table=$(terraform output -raw job_titles_lookup_table_name)" >> "$GITHUB_OUTPUT"
+          echo "industry_categories_lookup_table=$(terraform output -raw industry_categories_lookup_table_name)" >> "$GITHUB_OUTPUT"
 
       # ── Upload logs for auditing ──────────────────────────────────────────
       - name: Upload Terraform Logs
@@ -303,28 +345,44 @@ jobs:
           PRESIGN_FUNCTION_URL: ${{ needs.terraform.outputs.presign_function_url }}
           PRESIGN_API_KEY: ${{ secrets.TF_VAR_PRESIGN_API_KEY }}
           AWS_REGION: ${{ env.AWS_REGION }}
-          RESUME_BUCKET: ${{ needs.terraform.outputs.frontend_bucket }}
-          TALENT_PROFILES_TABLE: ${{ vars.TALENT_PROFILES_TABLE }}
-          SKILLS_LOOKUP_TABLE: ${{ vars.SKILLS_LOOKUP_TABLE }}
-          CERTIFICATIONS_LOOKUP_TABLE: ${{ vars.CERTIFICATIONS_LOOKUP_TABLE }}
-          CITIES_LOOKUP_TABLE: ${{ vars.CITIES_LOOKUP_TABLE }}
+          PROJECT_NAME: ${{ needs.terraform.outputs.project_name }}
+          ENVIRONMENT: ${{ needs.terraform.outputs.environment_name }}
+          RESUME_BUCKET: ${{ needs.terraform.outputs.resume_bucket }}
+          RAW_PREFIX: ${{ needs.terraform.outputs.raw_prefix }}
+          PIPELINE_STATE_MACHINE_ARN: ${{ needs.terraform.outputs.pipeline_state_machine_arn }}
+          TALENT_PROFILES_TABLE: ${{ needs.terraform.outputs.talent_profiles_table }}
+          AUDIT_LOG_TABLE: ${{ needs.terraform.outputs.audit_log_table }}
+          SKILLS_LOOKUP_TABLE: ${{ needs.terraform.outputs.skills_lookup_table }}
+          CERTIFICATIONS_LOOKUP_TABLE: ${{ needs.terraform.outputs.certifications_lookup_table }}
+          CITIES_LOOKUP_TABLE: ${{ needs.terraform.outputs.cities_lookup_table }}
+          JOB_TITLES_LOOKUP_TABLE: ${{ needs.terraform.outputs.job_titles_lookup_table }}
+          INDUSTRY_CATEGORIES_LOOKUP_TABLE: ${{ needs.terraform.outputs.industry_categories_lookup_table }}
+          REQUIRE_GITHUB_DEPLOYMENTS_SUCCESS: "1"
+          RUN_TEXTRACT_INTEGRATION: "0"
+          RUN_BEDROCK_LAMBDA_TEST: "0"
+          RUN_FULL_PIPELINE_E2E: "1"
+          RUN_FULL_PIPELINE_NON_RESUME_E2E: "1"
+          RUN_STALE_CHECKER_INTEGRATION: "0"
 
   # ═══════════════════════════════════════════════════════════════════════════
   # Automatic Rollback
   #
   # Triggered only when smoke-test fails. Strategy:
   #   1. Attempt to release any stale Terraform state lock (safe no-op if not locked)
-  #   2. Create a git revert commit on main, which auto-triggers a fresh deploy
-  #      of the last known-good state.
+  #   2. Resolve rollback target SHA:
+  #      - Prefer last successful merge-deploy run on main
+  #      - Fallback to github.event.before
+  #   3. Re-apply Terraform + redeploy frontend from that known-good commit
+  #
+  # This avoids creating a revert commit, so git history stays clean and
+  # feature branches do not get forced "behind" by rollback-only commits.
   #
   # Requirements:
-  #   • Branch protection must allow GitHub Actions to push to main, OR
-  #     store a PAT with repo write access as secret DEPLOY_PAT and replace
-  #     GITHUB_TOKEN below with that secret.
   #   • GitHub Environment "dev" must exist (used by the terraform job above).
+  #   • actions:read permission is required to query prior workflow runs.
   # ═══════════════════════════════════════════════════════════════════════════
   rollback:
-    name: Auto Rollback
+    name: Auto Rollback (No Revert Commit)
     needs: [smoke-test]
     if: failure()
     runs-on: ubuntu-latest
@@ -339,12 +397,52 @@ jobs:
       TF_VAR_cognito_logout_urls: ${{ vars.TF_VAR_COGNITO_LOGOUT_URLS }}
 
     steps:
-      - name: Checkout (full history needed for revert)
+      - name: Resolve rollback target SHA
+        id: rollback_target
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          CURRENT_RUN_ID: ${{ github.run_id }}
+          FALLBACK_SHA: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+
+          candidate_sha=""
+          api_url="https://api.github.com/repos/${REPO}/actions/workflows/merge-deploy.yml/runs?branch=main&status=completed&per_page=50"
+          response_file="$(mktemp)"
+
+          if curl -fsSL \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "${api_url}" \
+            -o "${response_file}" 2>/dev/null; then
+            candidate_sha="$(python3 -c 'import json, sys; current = int(sys.argv[1]); data = json.load(open(sys.argv[2], encoding="utf-8")); print(next(((run.get("head_sha") or "").strip() for run in data.get("workflow_runs", []) if run.get("conclusion") == "success" and run.get("event") == "push" and run.get("head_branch") == "main" and int(run.get("id") or 0) < current and (run.get("head_sha") or "").strip()), ""))' "${CURRENT_RUN_ID}" "${response_file}")"
+          else
+            echo "::warning::Unable to query previous successful workflow runs; using fallback SHA logic."
+          fi
+
+          rm -f "${response_file}"
+
+          if [ -n "${candidate_sha}" ]; then
+            target_sha="${candidate_sha}"
+            source="last-successful-deploy-run"
+          elif [ -n "${FALLBACK_SHA}" ] && [ "${FALLBACK_SHA}" != "0000000000000000000000000000000000000000" ]; then
+            target_sha="${FALLBACK_SHA}"
+            source="github.event.before"
+          else
+            echo "::error::Could not determine rollback target SHA from workflow history or github.event.before"
+            exit 1
+          fi
+
+          echo "sha=${target_sha}" >> "$GITHUB_OUTPUT"
+          echo "source=${source}" >> "$GITHUB_OUTPUT"
+          echo "::notice::Rollback target SHA: ${target_sha} (source: ${source})"
+
+      - name: Checkout last known good commit
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          # Use DEPLOY_PAT if your branch protection blocks GITHUB_TOKEN pushes.
-          # token: ${{ secrets.DEPLOY_PAT }}
+          ref: ${{ steps.rollback_target.outputs.sha }}
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -362,6 +460,13 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/web/package-lock.json
 
       - name: Build Lambda layers
         run: |
@@ -404,19 +509,62 @@ jobs:
           fi
           echo "State is not locked — proceeding with rollback."
 
-      # ── Revert the failing commit ──────────────────────────────────────────
-      - name: Create revert commit and push to main
+      - name: Terraform Plan (rollback target)
+        working-directory: ${{ env.TF_DIR }}
+        run: terraform plan -input=false -no-color -out=tfplan
+
+      - name: Terraform Apply (rollback target)
+        working-directory: ${{ env.TF_DIR }}
+        run: terraform apply -input=false -no-color tfplan
+
+      - name: Capture rollback Terraform outputs
+        id: rollback_outputs
+        working-directory: ${{ env.TF_DIR }}
         run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          echo "frontend_bucket=$(terraform output -raw frontend_site_bucket_name)" >> "$GITHUB_OUTPUT"
+          echo "distribution_id=$(terraform output -raw frontend_distribution_id)" >> "$GITHUB_OUTPUT"
+          echo "distribution_domain=$(terraform output -raw frontend_distribution_domain)" >> "$GITHUB_OUTPUT"
+          echo "cognito_user_pool_id=$(terraform output -raw cognito_user_pool_id)" >> "$GITHUB_OUTPUT"
+          echo "cognito_web_client_id=$(terraform output -raw cognito_web_client_id)" >> "$GITHUB_OUTPUT"
+          RAW_DOMAIN=$(terraform output -raw cognito_domain_url)
+          echo "cognito_domain=${RAW_DOMAIN#https://}" >> "$GITHUB_OUTPUT"
+          echo "api_endpoint=$(terraform output -raw api_endpoint)" >> "$GITHUB_OUTPUT"
 
-          # Revert the merge commit that triggered this deploy.
-          # --mainline 1 handles merge commits (pick the first parent = main branch).
-          git revert --no-edit --mainline 1 ${{ github.sha }} || \
-            git revert --no-edit ${{ github.sha }}
+      - name: Generate frontend .env from rollback outputs
+        working-directory: frontend/web
+        run: |
+          cat > .env <<ENVEOF
+          VITE_COGNITO_USER_POOL_ID=${{ steps.rollback_outputs.outputs.cognito_user_pool_id }}
+          VITE_COGNITO_CLIENT_ID=${{ steps.rollback_outputs.outputs.cognito_web_client_id }}
+          VITE_COGNITO_DOMAIN=${{ steps.rollback_outputs.outputs.cognito_domain }}
+          VITE_AWS_REGION=us-east-1
+          VITE_COGNITO_REDIRECT_URI=https://${{ steps.rollback_outputs.outputs.distribution_domain }}
+          VITE_API_ENDPOINT=${{ steps.rollback_outputs.outputs.api_endpoint }}
+          VITE_ALLOWED_EMAIL_SUFFIXES=${{ vars.VITE_ALLOWED_EMAIL_SUFFIXES }}
+          ENVEOF
 
-          git push origin main
+      - name: Install frontend dependencies
+        working-directory: frontend/web
+        run: npm ci
 
-          echo "::notice::Revert commit pushed to main."
-          echo "::notice::A fresh deploy of the last stable version is now in progress."
-          echo "::notice::Monitor it at: ${{ github.server_url }}/${{ github.repository }}/actions"
+      - name: Build frontend (rollback target)
+        working-directory: frontend/web
+        run: npm run build
+
+      - name: Deploy rollback frontend to S3
+        run: |
+          aws s3 sync frontend/web/dist \
+            "s3://${{ steps.rollback_outputs.outputs.frontend_bucket }}" \
+            --delete
+
+      - name: Invalidate CloudFront cache after rollback
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "${{ steps.rollback_outputs.outputs.distribution_id }}" \
+            --paths "/index.html"
+
+      - name: Report rollback completion
+        run: |
+          echo "::notice::Rollback completed by redeploying commit ${{ steps.rollback_target.outputs.sha }}."
+          echo "::notice::Rollback target source: ${{ steps.rollback_target.outputs.source }}."
+          echo "::notice::No git revert commit was created on main."

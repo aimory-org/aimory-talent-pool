@@ -4,6 +4,7 @@ from decimal import Decimal
 
 import pytest
 from _lambda_loader import load as _load_lambda
+from boto3.dynamodb.conditions import Key
 
 
 def _reload_app():
@@ -203,7 +204,7 @@ class TestPersistNormalization:
         table = boto3.resource("dynamodb", region_name="us-east-1").Table("talent-profiles")
         item = table.get_item(Key={"pk": result["pk"]})["Item"]
         names = [s["name"] for s in item["skillsets"]]
-        assert "AWS" in names
+        assert "Amazon Web Services" in names
         assert "CI/CD" in names
         assert "Python" in names
 
@@ -291,7 +292,7 @@ class TestPersistDynamoDB:
         table = boto3.resource("dynamodb", region_name="us-east-1").Table("talent-profiles")
         item = table.get_item(Key={"pk": result["pk"]})["Item"]
         assert "Python" in item["skill_names"]
-        assert "AWS" in item["skill_names"]
+        assert "Amazon Web Services" in item["skill_names"]
 
     def test_denormalized_cert_names(self, all_tables, sample_profile):
         app = _reload_app()
@@ -336,7 +337,7 @@ class TestPersistLookupTables:
         items = table.scan()["Items"]
         skill_names = {i["skill"] for i in items}
         assert "Python" in skill_names
-        assert "AWS" in skill_names
+        assert "Amazon Web Services" in skill_names
 
     def test_populates_certifications_lookup(self, all_tables, sample_profile):
         app = _reload_app()
@@ -387,3 +388,25 @@ class TestPersistLookupTables:
 
         table = boto3.resource("dynamodb", region_name="us-east-1").Table("skills-lookup")
         assert table.scan()["Items"] == []
+
+
+class TestPersistAuditLogging:
+    def test_initial_ingest_writes_create_audit_entry(self, all_tables, sample_profile):
+        app = _reload_app()
+        result = app.handler(_make_event(sample_profile), None)
+
+        items = all_tables["audit_log"].query(KeyConditionExpression=Key("pk").eq(result["pk"]))["Items"]
+        assert len(items) == 1
+        assert items[0]["action"] == "CREATE"
+        assert items[0]["user_email"] == "pipeline@system"
+
+    def test_reprocess_writes_update_audit_entry(self, all_tables, sample_profile):
+        app = _reload_app()
+        result = app.handler(_make_event(sample_profile), None)
+
+        app = _reload_app()
+        app.handler(_make_event(sample_profile), None)
+
+        items = all_tables["audit_log"].query(KeyConditionExpression=Key("pk").eq(result["pk"]))["Items"]
+        actions = sorted(item["action"] for item in items)
+        assert actions == ["CREATE", "UPDATE"]

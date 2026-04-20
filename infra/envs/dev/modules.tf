@@ -42,6 +42,8 @@ module "pipeline" {
 
   talent_profiles_table_name = module.storage.talent_profiles_table_name
   talent_profiles_table_arn  = module.storage.talent_profiles_table_arn
+  audit_log_table_name       = module.storage.audit_log_table_name
+  audit_log_table_arn        = module.storage.audit_log_table_arn
 
   skills_lookup_table_name              = module.storage.skills_lookup_table_name
   skills_lookup_table_arn               = module.storage.skills_lookup_table_arn
@@ -71,6 +73,8 @@ module "api" {
 
   talent_profiles_table_name = module.storage.talent_profiles_table_name
   talent_profiles_table_arn  = module.storage.talent_profiles_table_arn
+  audit_log_table_name       = module.storage.audit_log_table_name
+  audit_log_table_arn        = module.storage.audit_log_table_arn
 
   opensearch_endpoint   = module.storage.opensearch_endpoint
   opensearch_domain_arn = module.storage.opensearch_domain_arn
@@ -93,6 +97,10 @@ module "api" {
   resume_bucket_name = module.storage.resume_bucket_name
   resume_bucket_arn  = module.storage.resume_bucket_arn
 
+  github_pat_param     = var.github_pat_param
+  github_repo          = var.github_repo
+  github_workflow_file = var.github_workflow_file
+
   cors_allowed_origins = concat(
     ["http://localhost:5173"],
     [for url in var.cognito_callback_urls : url if url != "http://localhost:5173"],
@@ -111,6 +119,8 @@ module "jobs" {
 
   talent_profiles_table_name = module.storage.talent_profiles_table_name
   talent_profiles_table_arn  = module.storage.talent_profiles_table_arn
+  audit_log_table_name       = module.storage.audit_log_table_name
+  audit_log_table_arn        = module.storage.audit_log_table_arn
 
   skills_lookup_table_name              = module.storage.skills_lookup_table_name
   skills_lookup_table_arn               = module.storage.skills_lookup_table_arn
@@ -120,6 +130,8 @@ module "jobs" {
   job_titles_lookup_table_arn           = module.storage.job_titles_lookup_table_arn
   industry_categories_lookup_table_name = module.storage.industry_categories_lookup_table_name
   industry_categories_lookup_table_arn  = module.storage.industry_categories_lookup_table_arn
+  cities_lookup_table_name              = module.storage.cities_lookup_table_name
+  cities_lookup_table_arn               = module.storage.cities_lookup_table_arn
 
   bedrock_model_id = var.bedrock_model_id
 }
