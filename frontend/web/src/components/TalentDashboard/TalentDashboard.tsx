@@ -11,10 +11,13 @@ import { useState, useMemo, useCallback } from "react";
 import { Users, Search, Filter, X } from "lucide-react";
 import { useTalents } from "@/hooks/useTalents";
 import { useLookups } from "@/hooks/useLookups";
+import { uploadResume } from "@/lib/api";
 import type { TalentProfile } from "@/types/talent";
 import type { Filters, SortField, SortDirection } from "./types";
 import { DEFAULT_FILTERS } from "./types";
 import { StatsCards } from "./components/StatsCards";
+import { ManualUploadButton } from "./components/ManualUploadButton";
+import { UploadModal } from "./components/UploadModal";
 import { FiltersPanel } from "./components/FiltersPanel";
 import { TalentTable } from "./components/TalentTable";
 import { ProfileDetailPanel } from "./ProfileDetailPanel";
@@ -33,6 +36,7 @@ export function TalentDashboard() {
     null,
   );
   const [showFilters, setShowFilters] = useState(true);
+  const [showUploadModal, setShowUploadModal] = useState(false);
   const [showDuplicatesOnly, setShowDuplicatesOnly] = useState(false);
 
   // Fetch data from API
@@ -125,6 +129,24 @@ export function TalentDashboard() {
     setSearchInput("");
   }, []);
 
+  const handleManualUpload = useCallback(() => {
+    setShowUploadModal(true);
+  }, []);
+
+  const handleUploadSubmit = useCallback(
+    async (file: File | null) => {
+      if (!file) return;
+      try {
+        await uploadResume(file);
+        // Refresh the list to show the newly uploaded resume
+        refreshTalents();
+      } catch (error) {
+        console.error("Upload failed:", error);
+        throw error; // Re-throw so the modal can handle the error state
+      }
+    },
+    [refreshTalents],
+  );
   const commitSearch = useCallback(() => {
     setFilters((prev) => ({ ...prev, search: searchInput }));
   }, [searchInput]);
@@ -235,7 +257,7 @@ export function TalentDashboard() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="border-b border-black/[0.06] dark:border-white/[0.06] bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl sticky top-16 z-40">
+      <div className="border-b border-black/6 dark:border-white/[0.06] bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl sticky top-16 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             {/* Title Section */}
@@ -371,6 +393,7 @@ export function TalentDashboard() {
                     {activeFilterCount === 1 ? "filter" : "filters"} active
                   </span>
                 )}
+                <ManualUploadButton onManualUpload={handleManualUpload} />
               </>
             )}
           </div>
@@ -419,6 +442,13 @@ export function TalentDashboard() {
           />
         </>
       )}
+
+      {/* Upload Modal */}
+      <UploadModal
+        isOpen={showUploadModal}
+        onClose={() => setShowUploadModal(false)}
+        onUpload={handleUploadSubmit}
+      />
     </div>
   );
 }

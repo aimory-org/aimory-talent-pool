@@ -693,6 +693,13 @@ const API_ENDPOINTS = [
     methodColor:
       "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/25",
   },
+  {
+    method: "GET",
+    path: "/resume-upload-url?filename={name}&contentType={type}",
+    desc: "Generate a presigned S3 PUT URL for uploading a resume file (PDF/DOC/DOCX). Returns { uploadUrl, key, expiresIn }. Default expiry: 15 minutes.",
+    methodColor:
+      "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/25",
+  },
 ];
 
 // ---------------------------------------------------------------------------

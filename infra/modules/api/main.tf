@@ -200,7 +200,7 @@ resource "aws_iam_role_policy" "api_dynamodb_write" {
   })
 }
 
-# S3 read and delete access for resumes
+# S3 read, delete, and upload access for resumes
 resource "aws_iam_role_policy" "api_s3_read" {
   name = "${var.project_name}-${var.environment}-api-s3-read"
   role = aws_iam_role.api_lambda_role.id
@@ -225,6 +225,14 @@ resource "aws_iam_role_policy" "api_s3_read" {
           "s3:PutObject"
         ]
         Resource = "${var.resume_bucket_arn}/job-descriptions/raw/*"
+      },
+      {
+        Sid    = "UploadResumes"
+        Effect = "Allow"
+        Action = [
+          "s3:PutObject"
+        ]
+        Resource = "${var.resume_bucket_arn}/resumes/raw/*"
       }
     ]
   })

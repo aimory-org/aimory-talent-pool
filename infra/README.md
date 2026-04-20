@@ -299,7 +299,7 @@ environment  = "dev"
 
 # Pipeline
 presign_api_key    = "your-secure-api-key-min-16-chars"  # Generate a secure key
-raw_prefix         = "raw/onedrive"
+raw_prefix         = "resumes/raw"
 extracted_prefix   = "extracted"
 sfn_arn_param_name = "/aimory-talent-pool/dev/resume-pipeline-arn"
 

@@ -98,6 +98,12 @@ API_SMOKE_CASES = [
         {"queryStringParameters": {}},
         {400},
     ),
+    (
+        "get_resume_upload_url",
+        "API_GET_RESUME_UPLOAD_URL_FUNCTION_NAME",
+        {"queryStringParameters": {}},
+        {400},
+    ),
 ]
 
 

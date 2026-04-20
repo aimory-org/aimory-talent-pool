@@ -162,6 +162,16 @@ locals {
         JD_RAW_PREFIX = "job-descriptions/raw"
       }
     }
+    get_resume_upload_url = {
+      route   = "GET /resume-upload-url"
+      timeout = 10
+      memory  = 256
+      layers  = []
+      env = {
+        RESUME_BUCKET     = var.resume_bucket_name
+        RESUME_RAW_PREFIX = "resumes/raw"
+      }
+    }
   }
 }
 

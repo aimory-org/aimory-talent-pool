@@ -541,4 +541,20 @@ export const handlers = [
       expiresIn: 900,
     });
   }),
+
+  // Get Resume upload URL
+  http.get(`${API_BASE}/resume-upload-url`, ({ request }) => {
+    const url = new URL(request.url);
+    const filename = url.searchParams.get("filename");
+    if (!filename)
+      return HttpResponse.json(
+        { error: "Missing filename parameter" },
+        { status: 400 },
+      );
+    return HttpResponse.json({
+      uploadUrl: `https://s3.amazonaws.com/test-bucket/resumes/raw/${filename}?X-Amz-Signature=abc`,
+      key: `resumes/raw/2026-04-19_${filename}`,
+      expiresIn: 900,
+    });
+  }),
 ];

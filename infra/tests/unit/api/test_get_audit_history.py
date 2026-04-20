@@ -144,7 +144,7 @@ class TestGetAuditHistorySuccess:
 
     def test_pk_with_special_chars(self, audit_log_table):
         """pk contains # and slashes — must be handled correctly."""
-        pk = "raw/onedrive#resume with spaces.pdf"
+        pk = "resumes/raw#resume with spaces.pdf"
         _put_entry(audit_log_table, pk, "2026-04-14T10:00:00Z#CREATE", "CREATE", "pipeline@system")
 
         app = _reload_app()

@@ -43,7 +43,7 @@ variable "document_bucket_arn" {
 
 variable "raw_prefix" {
   type        = string
-  description = "S3 prefix for raw uploaded documents (e.g. 'raw/onedrive' or 'job-descriptions/raw')"
+  description = "S3 prefix for raw uploaded documents (e.g. 'resumes/raw' or 'job-descriptions/raw')"
 }
 
 variable "extracted_prefix" {

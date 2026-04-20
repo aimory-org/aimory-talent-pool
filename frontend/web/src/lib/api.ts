@@ -430,3 +430,42 @@ export async function uploadJobDescription(file: File): Promise<string> {
   }
   return key;
 }
+
+// -----------------------------------------------------------------------------
+// Resume Upload
+// -----------------------------------------------------------------------------
+
+export interface ResumeUploadUrlResponse {
+  uploadUrl: string;
+  key: string;
+  expiresIn: number;
+}
+
+/**
+ * Get a presigned URL for uploading a resume file.
+ */
+export async function getResumeUploadUrl(
+  filename: string,
+  contentType: string,
+): Promise<ResumeUploadUrlResponse> {
+  return apiFetch<ResumeUploadUrlResponse>(
+    `/resume-upload-url?filename=${encodeURIComponent(filename)}&contentType=${encodeURIComponent(contentType)}`,
+  );
+}
+
+/**
+ * Upload a resume file via presigned URL, then return the S3 key.
+ */
+export async function uploadResume(file: File): Promise<string> {
+  const { uploadUrl, key } = await getResumeUploadUrl(file.name, file.type);
+  const resp = await fetch(uploadUrl, {
+    method: "PUT",
+    headers: { "Content-Type": file.type },
+    body: file,
+  });
+  if (!resp.ok) {
+    throw new Error(`Upload failed: ${resp.status} ${resp.statusText}`);
+  }
+  return key;
+}
+

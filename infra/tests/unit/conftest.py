@@ -95,12 +95,12 @@ def _aws_env(monkeypatch):
         "OPENSEARCH_ENDPOINT": "search-test.us-east-1.es.amazonaws.com",
         "SFN_ARN_PARAM": "/test/sfn-arn",
         "RAW_PREFIX": "raw/",
-        "DOCUMENT_PREFIX": "raw/onedrive",
+        "DOCUMENT_PREFIX": "resumes/raw",
         "OUT_BUCKET": "test-output-bucket",
         "OUT_PREFIX": "extracted/",
         "MODEL_ID": "anthropic.claude-3-sonnet-20240229-v1:0",
         "PRESIGN_API_KEY": "test-api-key-1234567890abcdef",
-        "RESUME_PREFIX": "raw/onedrive",
+        "RESUME_PREFIX": "resumes/raw",
         "MIN_PDF_TEXT_CHARS": "1000",
         "STALE_DAYS": "90",
         "JOB_TITLES_LOOKUP_TABLE": "job-titles-lookup",
@@ -445,9 +445,9 @@ def sample_profile():
 def sample_dynamodb_item():
     """A talent profile as stored in DynamoDB (with pk, Decimal values, etc.)."""
     return {
-        "pk": "test-resume-bucket#raw/onedrive/jane_doe.pdf",
+        "pk": "test-resume-bucket#resumes/raw/jane_doe.pdf",
         "bucket": "test-resume-bucket",
-        "key": "raw/onedrive/jane_doe.pdf",
+        "key": "resumes/raw/jane_doe.pdf",
         "name": "Jane Doe",
         "name_lower": "jane doe",
         "contact": {

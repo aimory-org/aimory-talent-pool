@@ -11,7 +11,7 @@ def _reload_app():
     return _load_lambda("pipeline_configs/resume/persist")
 
 
-def _make_event(profile, bucket="test-bucket", key="raw/onedrive/resume.pdf"):
+def _make_event(profile, bucket="test-bucket", key="resumes/raw/resume.pdf"):
     return {"extracted": profile, "bucket": bucket, "key": key}
 
 
