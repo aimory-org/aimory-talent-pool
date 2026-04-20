@@ -14,6 +14,12 @@ import {
   getAuditHistory,
   listAuditHistory,
   getDeployments,
+  listJobDescriptions,
+  getJobDescription,
+  deleteJobDescription,
+  matchCandidates,
+  getJdUploadUrl,
+  getResumeUploadUrl,
 } from "@/lib/api";
 
 // Mock the aws-amplify auth module
@@ -91,8 +97,9 @@ describe("API Client", () => {
     it("handles URL encoding for special characters in pk", async () => {
       let capturedPk = "";
       server.use(
-        http.get(`${API_BASE}/talents/:pk`, ({ params }) => {
-          capturedPk = params.pk as string;
+        http.get(`${API_BASE}/talent`, ({ request }) => {
+          const url = new URL(request.url);
+          capturedPk = url.searchParams.get("pk") || "";
           return HttpResponse.json({
             pk: "bucket#with spaces/file.pdf",
             name: "Test",
@@ -103,7 +110,7 @@ describe("API Client", () => {
 
       await getTalent("bucket#with spaces/file.pdf");
 
-      // MSW auto-decodes the pk param
+      // URLSearchParams returns decoded values
       expect(capturedPk).toBe("bucket#with spaces/file.pdf");
     });
 
@@ -405,6 +412,159 @@ describe("API Client", () => {
         }),
       );
       await expect(getDeployments()).rejects.toThrow("GitHub API rate limited");
+    });
+  });
+
+  describe("listJobDescriptions", () => {
+    it("fetches all job descriptions", async () => {
+      const result = await listJobDescriptions();
+      expect(result).toHaveLength(2);
+    });
+
+    it("applies clearance filter", async () => {
+      const result = await listJobDescriptions({
+        required_clearance: "TS/SCI",
+      });
+      expect(result).toHaveLength(1);
+      expect(result[0].title).toBe("Data Analyst");
+    });
+  });
+
+  describe("getJobDescription", () => {
+    it("fetches a single JD by pk", async () => {
+      const result = await getJobDescription("jd-001");
+      expect(result.title).toBe("Senior Python Engineer");
+    });
+
+    it("throws on not found", async () => {
+      await expect(getJobDescription("nonexistent")).rejects.toThrow();
+    });
+  });
+
+  describe("deleteJobDescription", () => {
+    it("deletes a JD", async () => {
+      await expect(deleteJobDescription("jd-001")).resolves.toBeUndefined();
+    });
+  });
+
+  describe("matchCandidates", () => {
+    it("returns scored matches", async () => {
+      const result = await matchCandidates("jd-001");
+      expect(result.matches).toHaveLength(2);
+      expect(result.job_description.pk).toBe("jd-001");
+      expect(result.matches[0].score).toBe(85);
+    });
+
+    it("throws on not found", async () => {
+      await expect(matchCandidates("nonexistent")).rejects.toThrow();
+    });
+  });
+
+  describe("getJdUploadUrl", () => {
+    it("returns presigned URL for JD upload", async () => {
+      const result = await getJdUploadUrl(
+        "job-description.pdf",
+        "application/pdf",
+      );
+
+      expect(result.uploadUrl).toContain("s3.amazonaws.com");
+      expect(result.uploadUrl).toContain("job-description.pdf");
+      expect(result.key).toContain("job-descriptions/raw/");
+      expect(result.expiresIn).toBe(900);
+    });
+
+    it("encodes filename and content type in query params", async () => {
+      let capturedUrl = "";
+      server.use(
+        http.get(`${API_BASE}/jd-upload-url`, ({ request }) => {
+          capturedUrl = request.url;
+          return HttpResponse.json({
+            uploadUrl: "https://s3.amazonaws.com/test/key",
+            key: "key",
+            expiresIn: 900,
+          });
+        }),
+      );
+
+      await getJdUploadUrl("my file.pdf", "application/pdf");
+
+      expect(capturedUrl).toContain("filename=my%20file.pdf");
+      expect(capturedUrl).toContain("contentType=application%2Fpdf");
+    });
+
+    it("throws on missing filename", async () => {
+      server.use(
+        http.get(`${API_BASE}/jd-upload-url`, () => {
+          return HttpResponse.json(
+            { error: "Missing filename parameter" },
+            { status: 400 },
+          );
+        }),
+      );
+
+      await expect(getJdUploadUrl("", "application/pdf")).rejects.toThrow(
+        "Missing filename parameter",
+      );
+    });
+  });
+
+  describe("getResumeUploadUrl", () => {
+    it("returns presigned URL for resume upload", async () => {
+      const result = await getResumeUploadUrl("resume.pdf", "application/pdf");
+
+      expect(result.uploadUrl).toContain("s3.amazonaws.com");
+      expect(result.uploadUrl).toContain("resume.pdf");
+      expect(result.key).toContain("resumes/raw/");
+      expect(result.expiresIn).toBe(900);
+    });
+
+    it("encodes filename and content type in query params", async () => {
+      let capturedUrl = "";
+      server.use(
+        http.get(`${API_BASE}/resume-upload-url`, ({ request }) => {
+          capturedUrl = request.url;
+          return HttpResponse.json({
+            uploadUrl: "https://s3.amazonaws.com/test/key",
+            key: "key",
+            expiresIn: 900,
+          });
+        }),
+      );
+
+      await getResumeUploadUrl(
+        "my resume.docx",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      );
+
+      expect(capturedUrl).toContain("filename=my%20resume.docx");
+      expect(capturedUrl).toContain(
+        "contentType=application%2Fvnd.openxmlformats-officedocument.wordprocessingml.document",
+      );
+    });
+
+    it("throws on missing filename", async () => {
+      server.use(
+        http.get(`${API_BASE}/resume-upload-url`, () => {
+          return HttpResponse.json(
+            { error: "Missing filename parameter" },
+            { status: 400 },
+          );
+        }),
+      );
+
+      await expect(getResumeUploadUrl("", "application/pdf")).rejects.toThrow(
+        "Missing filename parameter",
+      );
+    });
+
+    it("accepts doc content type", async () => {
+      const result = await getResumeUploadUrl(
+        "resume.doc",
+        "application/msword",
+      );
+
+      expect(result.uploadUrl).toContain("resume.doc");
+      expect(result.key).toContain("resumes/raw/");
     });
   });
 });

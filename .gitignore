@@ -11,6 +11,7 @@
 
 # Lambda build artifacts
 **/lambda_build/
+**/.build/
 **/*.zip
 **/layers/**/python/
 

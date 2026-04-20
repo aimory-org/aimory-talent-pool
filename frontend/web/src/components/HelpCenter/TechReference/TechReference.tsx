@@ -16,6 +16,7 @@ import {
   Zap,
   RefreshCw,
   FileText,
+  Upload,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -31,8 +32,12 @@ function Section({
   icon: React.ReactNode;
   children: React.ReactNode;
 }) {
+  const sectionId = title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
   return (
-    <section className="mb-14">
+    <section id={sectionId} className="mb-14 scroll-mt-6">
       <div className="flex items-center gap-3 mb-6">
         <div className="p-2.5 bg-violet-500/15 rounded-xl text-violet-600 dark:text-violet-400 ring-1 ring-violet-500/20">
           {icon}
@@ -196,12 +201,12 @@ function ArchitectureDiagram() {
       </div>
 
       <div className="p-6 space-y-6 overflow-x-auto">
-        {/* Ingestion row */}
+        {/* Resume Pipeline row */}
         <div>
           <p className="text-[10px] font-bold text-foreground/35 uppercase tracking-widest mb-3">
-            Ingestion
+            Resume Pipeline
           </p>
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2 min-w-max">
             <ArchNode
               label="OneDrive"
               sub="Resume folder"
@@ -211,63 +216,67 @@ function ArchitectureDiagram() {
             <FlowArrow label="Power Automate" />
             <ArchNode
               label="S3 Bucket"
-              sub="raw/ prefix"
+              sub="resumes/raw/"
               icon={<Cloud className="w-4 h-4" />}
               color="blue"
             />
             <FlowArrow label="S3 Event" />
             <ArchNode
-              label="starter"
-              sub="Lambda"
-              icon={<Zap className="w-4 h-4" />}
-              color="violet"
-            />
-            <FlowArrow label="StartExecution" />
-            <ArchNode
-              label="Step Functions"
-              sub="Express Workflow"
+              label="Document Pipeline"
+              sub="detect → extract → analyze → normalize → persist"
               icon={<RefreshCw className="w-4 h-4" />}
               color="violet"
               wide
             />
+            <FlowArrow />
+            <ArchNode
+              label="DynamoDB"
+              sub="talent_profiles"
+              icon={<Database className="w-4 h-4" />}
+              color="emerald"
+            />
           </div>
         </div>
 
-        {/* Pipeline row */}
+        {/* JD Pipeline row */}
         <div>
           <p className="text-[10px] font-bold text-foreground/35 uppercase tracking-widest mb-3">
-            Pipeline States
+            JD Pipeline
           </p>
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {[
-              { label: "detect_type", sub: "pdfminer" },
-              null,
-              { label: "extract_text", sub: "Textract (OCR)" },
-              null,
-              { label: "analyze", sub: "Bedrock / Claude" },
-              null,
-              { label: "normalize" },
-              null,
-              { label: "persist", sub: "DynamoDB" },
-            ].map((item, i) =>
-              item === null ? (
-                <ArrowRight
-                  key={i}
-                  className="w-3 h-3 text-foreground/25 shrink-0"
-                />
-              ) : (
-                <ArchNode
-                  key={item.label}
-                  label={item.label}
-                  sub={item.sub}
-                  color="violet"
-                />
-              ),
-            )}
+          <div className="flex items-center gap-2 min-w-max">
+            <ArchNode
+              label="Frontend"
+              sub="Drag & drop"
+              icon={<Upload className="w-4 h-4" />}
+              color="slate"
+            />
+            <FlowArrow label="Presigned PUT" />
+            <ArchNode
+              label="S3 Bucket"
+              sub="job-descriptions/raw/"
+              icon={<Cloud className="w-4 h-4" />}
+              color="blue"
+            />
+            <FlowArrow label="S3 Event" />
+            <ArchNode
+              label="Document Pipeline"
+              sub="detect → extract → analyze → normalize → persist"
+              icon={<RefreshCw className="w-4 h-4" />}
+              color="violet"
+              wide
+            />
+            <FlowArrow />
+            <ArchNode
+              label="DynamoDB"
+              sub="job_descriptions"
+              icon={<Database className="w-4 h-4" />}
+              color="emerald"
+            />
           </div>
           <p className="text-[10px] text-foreground/40 mt-2 ml-1">
-            detect_type routes to extract_text only when native PDF text
-            extraction fails (scanned images)
+            Both pipelines share the same reusable Step Functions workflow
+            (detect_type → extract_text → analyze → normalize → persist) with
+            pipeline-specific prompts and persist logic
           </p>
         </div>
 
@@ -276,7 +285,7 @@ function ArchitectureDiagram() {
           <p className="text-[10px] font-bold text-foreground/35 uppercase tracking-widest mb-3">
             Storage & Search
           </p>
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2 min-w-max">
             <ArchNode
               label="DynamoDB"
               sub="talent_profiles"
@@ -305,7 +314,7 @@ function ArchitectureDiagram() {
           <p className="text-[10px] font-bold text-foreground/35 uppercase tracking-widest mb-3">
             API & Frontend
           </p>
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2 min-w-max">
             <ArchNode
               label="React SPA"
               sub="CloudFront + S3"
@@ -322,7 +331,7 @@ function ArchitectureDiagram() {
             <FlowArrow label="JWT Authorizer" />
             <ArchNode
               label="Lambda APIs"
-              sub="CRUD + Search"
+              sub="CRUD + Search + Match"
               icon={<Zap className="w-4 h-4" />}
               color="violet"
             />
@@ -370,7 +379,7 @@ const PIPELINE_STEPS = [
     step: "analyze",
     trigger: "Step Functions",
     action:
-      "Calls Amazon Bedrock (Claude 3). Structured extraction prompt returns JSON: name, contact, skills, clearance, companies, certifications, location, years_of_experience, summary.",
+      "Calls Amazon Bedrock (Claude Sonnet) with a pipeline-specific prompt and JSON schema. Resume extraction: name, contact, skills, clearance, companies, certifications, location, experience, summary. JD extraction: title, summary, required/desired skills, certifications, clearance, experience, location, salary range.",
     color: "violet" as const,
   },
   {
@@ -384,7 +393,7 @@ const PIPELINE_STEPS = [
     step: "persist",
     trigger: "Step Functions",
     action:
-      "Upserts the profile to talent_profiles DynamoDB. Atomically updates all 7 lookup tables. DynamoDB Streams then triggers opensearch_sync.",
+      "Upserts the profile to DynamoDB. For resumes: updates talent_profiles and all 6 lookup tables; checks for name-based duplicates and flags matches. For JDs: updates job_descriptions with title-based duplicate detection. DynamoDB Streams then triggers opensearch_sync.",
     color: "emerald" as const,
   },
 ];
@@ -541,7 +550,7 @@ const MODULES = [
     name: "api/",
     color: "amber" as const,
     icon: <Network className="w-4 h-4" />,
-    desc: "API Gateway HTTP API + Lambda handlers. Endpoints: list, get, update, delete, lookups, resume-url, tag deletion. JWT Authorizer validates Cognito tokens on every request.",
+    desc: "API Gateway HTTP API + Lambda handlers. Talent endpoints: list, get, update, delete, lookups, resume-url, tag deletion. JD endpoints: list, get, update, delete, match_candidates, jd-upload-url. JWT Authorizer validates Cognito tokens on every request.",
   },
   {
     name: "auth/",
@@ -550,16 +559,16 @@ const MODULES = [
     desc: "Cognito User Pool + Microsoft Entra ID federation. App client configured for PKCE OAuth. Hosted UI handles the sign-in redirect.",
   },
   {
-    name: "pipeline/",
+    name: "document_pipeline/",
     color: "violet" as const,
     icon: <Cpu className="w-4 h-4" />,
-    desc: "Step Functions Express Workflow + 6 Lambda functions + pdfminer Lambda layer. Triggered by S3 PutObject events on the raw/ prefix.",
+    desc: "Reusable Step Functions Express Workflow + Lambda functions + pdfminer layer. Instantiated twice: once for resumes (raw/ prefix → talent_profiles) and once for job descriptions (job-descriptions/raw/ → job_descriptions). Each instance has its own persist Lambda with pipeline-specific logic.",
   },
   {
     name: "storage/",
     color: "emerald" as const,
     icon: <Database className="w-4 h-4" />,
-    desc: "DynamoDB talent_profiles table + 7 lookup tables, S3 resume bucket, OpenSearch 2.11 domain, DynamoDB Streams sync Lambda.",
+    desc: "DynamoDB talent_profiles + job_descriptions tables, 6 lookup tables, S3 resume/JD bucket (with CORS for presigned uploads), OpenSearch 2.11 domain, DynamoDB Streams sync Lambda, audit_log table.",
   },
   {
     name: "frontend/",
@@ -631,7 +640,7 @@ const API_ENDPOINTS = [
   {
     method: "GET",
     path: "/resume-url?key={s3_key}",
-    desc: "Generate a short-lived presigned S3 URL for viewing the original resume PDF. Default expiry: 15 minutes.",
+    desc: "Generate a short-lived presigned S3 URL for viewing the original document (resume or JD). Default expiry: 15 minutes.",
     methodColor:
       "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/25",
   },
@@ -641,6 +650,55 @@ const API_ENDPOINTS = [
     desc: "Permanently delete a tag from the lookup table and remove it from all matching profiles in DynamoDB and OpenSearch.",
     methodColor:
       "bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/25",
+  },
+  {
+    method: "GET",
+    path: "/job-descriptions",
+    desc: "List all job descriptions. Supports filters: required_clearance, location_state, industry_category, job_title. Sorted newest-first by created_at.",
+    methodColor:
+      "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/25",
+  },
+  {
+    method: "GET",
+    path: "/job-descriptions/{pk}",
+    desc: "Fetch a single job description by primary key (URL-encoded).",
+    methodColor:
+      "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/25",
+  },
+  {
+    method: "DELETE",
+    path: "/job-descriptions?pk={pk}",
+    desc: "Permanently delete a job description from DynamoDB.",
+    methodColor:
+      "bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/25",
+  },
+  {
+    method: "PATCH",
+    path: "/job-descriptions",
+    desc: "Update a job description's editable fields (title, skills, clearance, etc.). Also supports dismiss_duplicate: true to clear the possible duplicate flag.",
+    methodColor:
+      "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/25",
+  },
+  {
+    method: "POST",
+    path: "/job-descriptions/{pk}/match",
+    desc: "AI-powered candidate matching. Compares JD requirements against all talent profiles using Bedrock/Claude and returns ranked matches with scores and rationale. Optional: ?limit=N.",
+    methodColor:
+      "bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-500/25",
+  },
+  {
+    method: "GET",
+    path: "/jd-upload-url?filename={name}&contentType={type}",
+    desc: "Generate a presigned S3 PUT URL for uploading a job description file (PDF/DOC/DOCX). Returns { uploadUrl, key, expiresIn }. Default expiry: 15 minutes.",
+    methodColor:
+      "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/25",
+  },
+  {
+    method: "GET",
+    path: "/resume-upload-url?filename={name}&contentType={type}",
+    desc: "Generate a presigned S3 PUT URL for uploading a resume file (PDF/DOC/DOCX). Returns { uploadUrl, key, expiresIn }. Default expiry: 15 minutes.",
+    methodColor:
+      "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/25",
   },
 ];
 
@@ -759,14 +817,17 @@ aimory-talent-pool-dev-frontend-{acct-id}   # S3`}</CodeBlock>
 
       {/* Pipeline */}
       <Section
-        title="Resume Processing Pipeline"
+        title="Document Processing Pipeline"
         icon={<Cpu className="w-6 h-6" />}
       >
         <p>
-          Step Functions Express Workflow. Each state invokes a Lambda from{" "}
-          <Mono>infra/modules/pipeline/lambda_src/</Mono>. The workflow handles
-          both native-text PDFs and scanned image PDFs via a conditional OCR
-          branch.
+          Reusable Step Functions Express Workflow defined in{" "}
+          <Mono>infra/modules/document_pipeline/</Mono>. Instantiated twice:
+          once for resumes (<Mono>resumes/raw/</Mono> →{" "}
+          <Mono>talent_profiles</Mono>) and once for job descriptions (
+          <Mono>job-descriptions/raw/</Mono> → <Mono>job_descriptions</Mono>).
+          Each instance shares the same core steps but uses a pipeline-specific
+          persist Lambda with its own extraction prompt and target table.
         </p>
         <PipelineDiagram />
         <SubSection title="Error Handling">
@@ -817,11 +878,40 @@ aimory-talent-pool-dev-frontend-{acct-id}   # S3`}</CodeBlock>
 }`}</CodeBlock>
         </SubSection>
 
+        <SubSection title="DynamoDB — job_descriptions">
+          <p className="text-sm mb-3">
+            Job description profiles. Partition key: <Mono>pk</Mono> ={" "}
+            <Mono>{"{uuid}"}</Mono>. No sort key. Populated by the JD processing
+            pipeline.
+          </p>
+          <CodeBlock>{`{
+  pk:                        string    // "{uuid}"
+  title:                     string
+  required_skills:           string[]
+  desired_skills:            string[]
+  required_certifications:   string[]
+  desired_certifications:    string[]
+  required_clearance:        string | null
+  min_experience_years:      number | null
+  location:                  { city: string | null; state: string | null; remote: string | null }
+  location_state:            string
+  industry_category:         string
+  job_title:                 string
+  salary_range:              { min: number | null; max: number | null } | null
+  skill_names:               string    // comma-separated
+  cert_names:                string    // comma-separated
+  bucket:                    string
+  key:                       string
+  possible_duplicate_of?:    string    // pk of duplicate JD
+  created_at:                string    // ISO 8601
+  updated_at:                string    // ISO 8601
+}`}</CodeBlock>
+        </SubSection>
+
         <SubSection title="Lookup Tables">
           <p className="text-sm mb-3">
-            Seven separate DynamoDB tables, each a simple set of values used to
-            populate filter dropdowns. All are upserted atomically at persist
-            time.
+            Six DynamoDB tables, each a simple set of values used to populate
+            filter dropdowns. Upserted atomically at persist time.
           </p>
           <div className="grid sm:grid-cols-2 gap-2">
             {[

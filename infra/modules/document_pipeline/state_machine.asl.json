@@ -1,5 +1,5 @@
 {
-  "Comment": "Aimory pipeline: S3 -> Textract -> Normalize -> LLM -> Persist",
+  "Comment": "Document processing pipeline: S3 -> Textract -> Normalize -> LLM -> Persist",
   "TimeoutSeconds": 600,
   "StartAt": "ClassifyAndPrep",
   "States": {
@@ -69,22 +69,22 @@
       "Type": "Task",
       "Resource": "${lambda_llm_extract_arn}",
       "ResultPath": "$.extracted",
-      "Next": "CheckIsResume"
+      "Next": "CheckIsValid"
     },
-    "CheckIsResume": {
+    "CheckIsValid": {
       "Type": "Choice",
       "Choices": [
         {
-          "Variable": "$.extracted.is_resume",
+          "Variable": "$.extracted.is_valid",
           "BooleanEquals": false,
-          "Next": "NotResume"
+          "Next": "InvalidDocument"
         }
       ],
       "Default": "Persist"
     },
-    "NotResume": {
+    "InvalidDocument": {
       "Type": "Succeed",
-      "Comment": "Document was not a resume - deleted from S3"
+      "Comment": "Document was not valid for this pipeline - deleted from S3"
     },
     "Persist": {
       "Type": "Task",

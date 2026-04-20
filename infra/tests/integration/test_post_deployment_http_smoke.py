@@ -64,7 +64,7 @@ class TestAPIGatewayAuth:
 
     def test_get_talent_requires_auth(self):
         _skip_if_no_api()
-        resp = _api("GET", "/talents/some-pk")
+        resp = _api("GET", "/talent", params={"pk": "some-pk"})
         assert resp.status_code == 401
 
     def test_patch_talent_requires_auth(self):
@@ -85,6 +85,31 @@ class TestAPIGatewayAuth:
     def test_get_resume_url_requires_auth(self):
         _skip_if_no_api()
         resp = _api("GET", "/resume-url", params={"key": "raw/test.pdf"})
+        assert resp.status_code == 401
+
+    def test_get_job_descriptions_requires_auth(self):
+        _skip_if_no_api()
+        resp = _api("GET", "/job-descriptions")
+        assert resp.status_code == 401
+
+    def test_get_job_description_requires_auth(self):
+        _skip_if_no_api()
+        resp = _api("GET", "/job-descriptions/some-pk")
+        assert resp.status_code == 401
+
+    def test_patch_job_description_requires_auth(self):
+        _skip_if_no_api()
+        resp = _api("PATCH", "/job-descriptions", params={"pk": "x"}, json={"title": "Test"})
+        assert resp.status_code == 401
+
+    def test_delete_job_description_requires_auth(self):
+        _skip_if_no_api()
+        resp = _api("DELETE", "/job-descriptions", params={"pk": "x"})
+        assert resp.status_code == 401
+
+    def test_match_candidates_requires_auth(self):
+        _skip_if_no_api()
+        resp = _api("POST", "/job-descriptions/some-pk/match")
         assert resp.status_code == 401
 
 

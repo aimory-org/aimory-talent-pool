@@ -124,124 +124,6 @@ def _normalize_phone(phone: str) -> str:
     return phone.strip()
 
 
-def _normalize_skill(skill: str) -> str:
-    """Normalize skill names to canonical forms to prevent duplicates."""
-    if not skill:
-        return skill
-    skill = skill.strip()
-    # Check the canonical map (case-insensitive)
-    return _SKILL_CANONICAL_MAP.get(skill.lower(), skill)
-
-
-# Map of common skill variations -> canonical name.
-# Keys must be lowercase; values are the desired output.
-_SKILL_CANONICAL_MAP = {
-    # Agile variations
-    "agile methodologies": "Agile",
-    "agile methodology": "Agile",
-    "agile development": "Agile",
-    "agile project management": "Agile",
-    "agile/scrum": "Agile",
-    # Scrum variations
-    "scrum framework": "Scrum",
-    "scrum methodology": "Scrum",
-    "scrum master": "Scrum",
-    # Project Management variations
-    "project management skills": "Project Management",
-    "program management": "Program Management",
-    "pm": "Project Management",
-    # Data Analysis variations
-    "data analytics": "Data Analysis",
-    "data analytical skills": "Data Analysis",
-    # Microsoft Office variations
-    "ms office": "Microsoft Office",
-    "microsoft office suite": "Microsoft Office",
-    "office 365": "Microsoft 365",
-    "ms office suite": "Microsoft Office",
-    "microsoft office 365": "Microsoft 365",
-    # Excel variations
-    "ms excel": "Microsoft Excel",
-    "excel": "Microsoft Excel",
-    # Word variations
-    "ms word": "Microsoft Word",
-    "word": "Microsoft Word",
-    # PowerPoint variations
-    "ms powerpoint": "Microsoft PowerPoint",
-    "powerpoint": "Microsoft PowerPoint",
-    # Communication variations
-    "communication skills": "Communication",
-    "verbal communication": "Communication",
-    "written communication": "Communication",
-    "oral communication": "Communication",
-    # Leadership variations
-    "leadership skills": "Leadership",
-    "team leadership": "Leadership",
-    # Problem Solving variations
-    "problem solving skills": "Problem Solving",
-    "problem-solving": "Problem Solving",
-    "problem-solving skills": "Problem Solving",
-    # AWS variations — canonical is full name per full-name standard
-    "aws": "Amazon Web Services",
-    "amazon web services (aws)": "Amazon Web Services",
-    # GCP variations
-    "gcp": "Google Cloud Platform",
-    "google cloud": "Google Cloud Platform",
-    # Azure variations
-    "azure": "Microsoft Azure",
-    "ms azure": "Microsoft Azure",
-    # JavaScript variations
-    "js": "JavaScript",
-    "javascript (js)": "JavaScript",
-    # TypeScript variations
-    "ts": "TypeScript",
-    # Python variations
-    "python 3": "Python",
-    "python3": "Python",
-    # SQL variations
-    "sql server": "SQL Server",
-    "ms sql server": "SQL Server",
-    "microsoft sql server": "SQL Server",
-    "mysql": "MySQL",
-    "postgres": "PostgreSQL",
-    "postgresql": "PostgreSQL",
-    # React variations
-    "reactjs": "React",
-    "react.js": "React",
-    # Node variations
-    "nodejs": "Node.js",
-    "node": "Node.js",
-    # CI/CD variations
-    "cicd": "CI/CD",
-    "ci / cd": "CI/CD",
-    "continuous integration/continuous deployment": "CI/CD",
-    # Kubernetes variations
-    "k8s": "Kubernetes",
-    # Docker variations
-    "docker containers": "Docker",
-    # .NET variations
-    "dotnet": ".NET",
-    ".net framework": ".NET",
-    ".net core": ".NET",
-    # Power BI variations
-    "powerbi": "Power BI",
-    "microsoft power bi": "Power BI",
-}
-
-
-def _normalize_certification(cert: str) -> str:
-    """Light normalization — Claude handles canonicalization via prompt."""
-    if not cert:
-        return cert
-    return cert.strip()
-
-
-def _normalize_job_title(job_title: str) -> str:
-    """Light normalization — Claude handles canonicalization via prompt."""
-    if not job_title:
-        return job_title
-    return job_title.strip()
-
-
 def _normalize_company(company: str) -> str:
     """Normalize company name to title case, preserving common suffixes."""
     if not company:
@@ -269,30 +151,30 @@ def _normalize_profile(profile: dict) -> dict:
         if profile["location"].get("state"):
             profile["location"]["state"] = _normalize_state(profile["location"]["state"])
 
-    # Deduplicate skills by normalized name
+    # Deduplicate skills (LLM canonicalizes via prompt; persist just deduplicates)
     if profile.get("skillsets"):
         seen = {}
         deduped = []
         for skill in profile["skillsets"]:
             if skill.get("name"):
-                skill["name"] = _normalize_skill(skill["name"])
+                skill["name"] = skill["name"].strip()
                 key = skill["name"].lower()
                 if key not in seen:
                     seen[key] = True
                     deduped.append(skill)
         profile["skillsets"] = deduped
 
-    # Deduplicate certifications by normalized name
+    # Deduplicate certifications
     if profile.get("certifications"):
         seen = {}
         deduped = []
         for cert in profile["certifications"]:
-            normalized = _normalize_certification(cert)
-            if normalized:
-                key = normalized.lower()
+            stripped = cert.strip() if cert else ""
+            if stripped:
+                key = stripped.lower()
                 if key not in seen:
                     seen[key] = True
-                    deduped.append(normalized)
+                    deduped.append(stripped)
         profile["certifications"] = deduped
 
     # Normalize companies
@@ -301,11 +183,9 @@ def _normalize_profile(profile: dict) -> dict:
             if company.get("name"):
                 company["name"] = _normalize_company(company["name"])
 
-    # Normalize job title
+    # Strip job title and industry category
     if profile.get("job_title"):
-        profile["job_title"] = _normalize_job_title(profile["job_title"])
-
-    # Normalize industry category
+        profile["job_title"] = profile["job_title"].strip()
     if profile.get("industry_category"):
         profile["industry_category"] = profile["industry_category"].strip()
 
@@ -425,8 +305,8 @@ def _validate_profile(profile):
         "location",
         "requested_salary",
     }
-    # Allow is_resume field from llm_extract (used by Step Function choice)
-    allowed = required | {"is_resume"}
+    # Allow is_valid field from llm_extract (used by Step Function choice)
+    allowed = required | {"is_valid"}
     _require_keys(profile, required, allowed, "extracted")
 
     _validate_string(profile["name"], "name", min_len=1)
@@ -543,19 +423,25 @@ def _write_audit_entry(pk, action, timestamp, candidate_name=None):
         print(f"Warning: failed to write pipeline audit entry for {pk}: {exc}")
 
 
-def _check_duplicate(name_lower, email, current_pk):
-    """Check if a candidate with the same name+email already exists. Returns existing pk or None."""
-    if not name_lower or not email:
+def _check_duplicate(name_lower, current_pk):
+    """Check if a candidate with the same name already exists. Returns existing pk or None."""
+    if not name_lower or name_lower == "unknown":
         return None
     try:
-        response = table.scan(
-            FilterExpression="name_lower = :name AND contact.email = :email AND pk <> :self",
-            ExpressionAttributeValues={":name": name_lower, ":email": email, ":self": current_pk},
-            ProjectionExpression="pk",
-            Limit=1,
-        )
-        items = response.get("Items", [])
-        return items[0]["pk"] if items else None
+        kwargs = {
+            "FilterExpression": "name_lower = :name AND pk <> :self",
+            "ExpressionAttributeValues": {":name": name_lower, ":self": current_pk},
+            "ProjectionExpression": "pk",
+            "Limit": 1,
+        }
+        while True:
+            response = table.scan(**kwargs)
+            items = response.get("Items", [])
+            if items:
+                return items[0]["pk"]
+            if "LastEvaluatedKey" not in response:
+                return None
+            kwargs["ExclusiveStartKey"] = response["LastEvaluatedKey"]
     except Exception:
         # Don't fail the pipeline over duplicate detection
         return None
@@ -599,9 +485,8 @@ def handler(event, context):
     industry_category = profile["industry_category"] if profile["industry_category"] else "Unknown"
     job_title = profile["job_title"] if profile["job_title"] else "Unknown"
 
-    # Check for duplicate candidates (same name + email)
-    email = profile["contact"].get("email") if profile.get("contact") else None
-    existing_pk = _check_duplicate(name_lower, email, pk)
+    # Check for duplicate candidates (same name)
+    existing_pk = _check_duplicate(name_lower, pk)
 
     # Preserve recruiter-curated fields if the record already exists
     existing = None

@@ -4,6 +4,10 @@
  */
 import { fetchAuthSession } from "aws-amplify/auth";
 import type { TalentProfile, CandidateStatus } from "@/types/talent";
+import type {
+  JobDescription,
+  MatchCandidatesResponse,
+} from "@/types/jobDescription";
 
 const API_BASE_URL = import.meta.env.VITE_API_ENDPOINT;
 
@@ -127,7 +131,7 @@ export async function listTalents(
  * Get a single talent profile by primary key.
  */
 export async function getTalent(pk: string): Promise<TalentProfile> {
-  return apiFetch<TalentProfile>(`/talents/${encodeURIComponent(pk)}`);
+  return apiFetch<TalentProfile>(`/talent?pk=${encodeURIComponent(pk)}`);
 }
 
 /**
@@ -179,6 +183,7 @@ export interface UpdateTalentParams {
   years_of_experience?: number | null;
   notes?: string;
   tags?: string[];
+  dismiss_duplicate?: boolean;
 }
 
 export async function updateTalent(
@@ -291,3 +296,176 @@ export interface DeploymentsResponse {
 export async function getDeployments(): Promise<DeploymentsResponse> {
   return apiFetch<DeploymentsResponse>("/deployments");
 }
+
+// -----------------------------------------------------------------------------
+// Job Descriptions
+// -----------------------------------------------------------------------------
+
+export interface ListJobDescriptionsParams {
+  job_title?: string;
+  industry_category?: string;
+  required_clearance?: string;
+  location_state?: string;
+}
+
+/**
+ * List job descriptions with optional filters.
+ */
+export async function listJobDescriptions(
+  params: ListJobDescriptionsParams = {},
+): Promise<JobDescription[]> {
+  const searchParams = new URLSearchParams();
+  if (params.job_title) searchParams.set("job_title", params.job_title);
+  if (params.industry_category)
+    searchParams.set("industry_category", params.industry_category);
+  if (params.required_clearance)
+    searchParams.set("required_clearance", params.required_clearance);
+  if (params.location_state)
+    searchParams.set("location_state", params.location_state);
+
+  const query = searchParams.toString();
+  return apiFetch<JobDescription[]>(
+    `/job-descriptions${query ? `?${query}` : ""}`,
+  );
+}
+
+/**
+ * Get a single job description by primary key.
+ */
+export async function getJobDescription(pk: string): Promise<JobDescription> {
+  return apiFetch<JobDescription>(
+    `/job-descriptions/${encodeURIComponent(pk)}`,
+  );
+}
+
+/**
+ * Update a job description's editable fields.
+ */
+export interface UpdateJobDescriptionParams {
+  title?: string;
+  required_skills?: string[];
+  desired_skills?: string[];
+  required_certifications?: string[];
+  desired_certifications?: string[];
+  required_clearance?: string | null;
+  min_experience_years?: number | null;
+  location?: {
+    city?: string | null;
+    state?: string | null;
+    remote?: string | null;
+  };
+  industry_category?: string;
+  job_title?: string;
+  salary_range?: { min: number | null; max: number | null };
+  dismiss_duplicate?: boolean;
+}
+
+export async function updateJobDescription(
+  pk: string,
+  updates: UpdateJobDescriptionParams,
+): Promise<{ status: string; pk: string; updated_at: string }> {
+  return apiFetch(`/job-descriptions`, {
+    method: "PATCH",
+    body: JSON.stringify({ pk, ...updates }),
+  });
+}
+
+/**
+ * Delete a job description.
+ */
+export async function deleteJobDescription(pk: string): Promise<void> {
+  await apiFetch(`/job-descriptions?pk=${encodeURIComponent(pk)}`, {
+    method: "DELETE",
+  });
+}
+
+/**
+ * Match candidates against a job description using Bedrock scoring.
+ */
+export async function matchCandidates(
+  pk: string,
+  limit?: number,
+): Promise<MatchCandidatesResponse> {
+  const params = limit ? `?limit=${limit}` : "";
+  return apiFetch<MatchCandidatesResponse>(
+    `/job-descriptions/${encodeURIComponent(pk)}/match${params}`,
+    { method: "POST" },
+  );
+}
+
+// -----------------------------------------------------------------------------
+// JD Upload
+// -----------------------------------------------------------------------------
+
+export interface JdUploadUrlResponse {
+  uploadUrl: string;
+  key: string;
+  expiresIn: number;
+}
+
+/**
+ * Get a presigned URL for uploading a job description file.
+ */
+export async function getJdUploadUrl(
+  filename: string,
+  contentType: string,
+): Promise<JdUploadUrlResponse> {
+  return apiFetch<JdUploadUrlResponse>(
+    `/jd-upload-url?filename=${encodeURIComponent(filename)}&contentType=${encodeURIComponent(contentType)}`,
+  );
+}
+
+/**
+ * Upload a job description file via presigned URL, then return the S3 key.
+ */
+export async function uploadJobDescription(file: File): Promise<string> {
+  const { uploadUrl, key } = await getJdUploadUrl(file.name, file.type);
+  const resp = await fetch(uploadUrl, {
+    method: "PUT",
+    headers: { "Content-Type": file.type },
+    body: file,
+  });
+  if (!resp.ok) {
+    throw new Error(`Upload failed: ${resp.status} ${resp.statusText}`);
+  }
+  return key;
+}
+
+// -----------------------------------------------------------------------------
+// Resume Upload
+// -----------------------------------------------------------------------------
+
+export interface ResumeUploadUrlResponse {
+  uploadUrl: string;
+  key: string;
+  expiresIn: number;
+}
+
+/**
+ * Get a presigned URL for uploading a resume file.
+ */
+export async function getResumeUploadUrl(
+  filename: string,
+  contentType: string,
+): Promise<ResumeUploadUrlResponse> {
+  return apiFetch<ResumeUploadUrlResponse>(
+    `/resume-upload-url?filename=${encodeURIComponent(filename)}&contentType=${encodeURIComponent(contentType)}`,
+  );
+}
+
+/**
+ * Upload a resume file via presigned URL, then return the S3 key.
+ */
+export async function uploadResume(file: File): Promise<string> {
+  const { uploadUrl, key } = await getResumeUploadUrl(file.name, file.type);
+  const resp = await fetch(uploadUrl, {
+    method: "PUT",
+    headers: { "Content-Type": file.type },
+    body: file,
+  });
+  if (!resp.ok) {
+    throw new Error(`Upload failed: ${resp.status} ${resp.statusText}`);
+  }
+  return key;
+}
+

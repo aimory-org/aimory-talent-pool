@@ -11,6 +11,7 @@ import { useState, useMemo, useCallback } from "react";
 import { Users, Search, Filter, X } from "lucide-react";
 import { useTalents } from "@/hooks/useTalents";
 import { useLookups } from "@/hooks/useLookups";
+import { uploadResume } from "@/lib/api";
 import type { TalentProfile } from "@/types/talent";
 import type { Filters, SortField, SortDirection } from "./types";
 import { DEFAULT_FILTERS } from "./types";
@@ -36,6 +37,7 @@ export function TalentDashboard() {
   );
   const [showFilters, setShowFilters] = useState(true);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showDuplicatesOnly, setShowDuplicatesOnly] = useState(false);
 
   // Fetch data from API
   const {
@@ -133,13 +135,14 @@ export function TalentDashboard() {
 
   const handleUploadSubmit = useCallback(
     async (file: File | null) => {
+      if (!file) return;
       try {
-        // TODO: Call API to upload file and create candidate
-        console.log("Uploading file:", file);
-        // For now, just refresh the list
+        await uploadResume(file);
+        // Refresh the list to show the newly uploaded resume
         refreshTalents();
       } catch (error) {
         console.error("Upload failed:", error);
+        throw error; // Re-throw so the modal can handle the error state
       }
     },
     [refreshTalents],
@@ -214,6 +217,17 @@ export function TalentDashboard() {
     return result;
   }, [talents, sortField, sortDirection]);
 
+  // Client-side duplicate filter
+  const displayedProfiles = useMemo(() => {
+    if (!showDuplicatesOnly) return sortedProfiles;
+    return sortedProfiles.filter((p) => p.possible_duplicate_of);
+  }, [sortedProfiles, showDuplicatesOnly]);
+
+  const duplicateCount = useMemo(
+    () => talents.filter((p) => p.possible_duplicate_of).length,
+    [talents],
+  );
+
   // Calculate active filter count
   const activeFilterCount = useMemo(() => {
     return Object.entries(filters).filter(([key, v]) =>
@@ -226,22 +240,24 @@ export function TalentDashboard() {
   // Calculate stats from filtered data
   const stats = useMemo(
     () => ({
-      total: sortedProfiles.length,
-      potentialCount: sortedProfiles.filter(
+      total: displayedProfiles.length,
+      potentialCount: displayedProfiles.filter(
         (p) => p.status === "Potential Candidate",
       ).length,
-      activeCount: sortedProfiles.filter((p) => p.status === "Active Candidate")
-        .length,
-      placedCount: sortedProfiles.filter((p) => p.status === "Placed Candidate")
-        .length,
+      activeCount: displayedProfiles.filter(
+        (p) => p.status === "Active Candidate",
+      ).length,
+      placedCount: displayedProfiles.filter(
+        (p) => p.status === "Placed Candidate",
+      ).length,
     }),
-    [sortedProfiles],
+    [displayedProfiles],
   );
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="border-b border-black/[0.06] dark:border-white/[0.06] bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl sticky top-16 z-40">
+      <div className="border-b border-black/6 dark:border-white/[0.06] bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl sticky top-16 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             {/* Title Section */}
@@ -346,6 +362,11 @@ export function TalentDashboard() {
             lookupIndustryCategories={lookupIndustryCategories}
             lookupCities={lookupCities}
             lookupTags={lookupTags}
+            duplicateCount={duplicateCount}
+            showDuplicatesOnly={showDuplicatesOnly}
+            onToggleDuplicates={() =>
+              setShowDuplicatesOnly(!showDuplicatesOnly)
+            }
           />
         )}
 
@@ -362,9 +383,9 @@ export function TalentDashboard() {
                 <p className="text-sm text-foreground/60">
                   Showing{" "}
                   <span className="text-foreground font-semibold">
-                    {sortedProfiles.length}
+                    {displayedProfiles.length}
                   </span>{" "}
-                  {sortedProfiles.length === 1 ? "candidate" : "candidates"}
+                  {displayedProfiles.length === 1 ? "candidate" : "candidates"}
                 </p>
                 {activeFilterCount > 0 && (
                   <span className="text-xs bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/30">
@@ -392,7 +413,7 @@ export function TalentDashboard() {
 
         {/* Results Table */}
         <TalentTable
-          profiles={sortedProfiles}
+          profiles={displayedProfiles}
           isLoading={talentsLoading}
           sortField={sortField}
           sortDirection={sortDirection}

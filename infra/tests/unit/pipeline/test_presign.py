@@ -7,7 +7,7 @@ from _lambda_loader import load as _load_lambda
 
 
 def _reload_app():
-    return _load_lambda("modules/pipeline/lambda_src/presign")
+    return _load_lambda("modules/document_pipeline/lambda_src/presign")
 
 
 def _make_event(body=None, api_key="test-api-key-1234567890abcdef"):
@@ -60,7 +60,7 @@ class TestPresignUrl:
         resp = app.handler(_make_event({"filename": "resume.pdf"}), None)
         body = json.loads(resp["body"])
         assert "url" in body
-        assert body["key"] == "raw/onedrive/resume.pdf"
+        assert body["key"] == "resumes/raw/resume.pdf"
         assert body["bucket"] == "test-resume-bucket"
 
     def test_metadata_in_response(self, aws_mocks):

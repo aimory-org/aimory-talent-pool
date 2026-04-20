@@ -10,7 +10,7 @@ from _lambda_loader import load as _load_lambda
 
 
 def _reload_app():
-    return _load_lambda("modules/pipeline/lambda_src/classify")
+    return _load_lambda("modules/document_pipeline/lambda_src/classify")
 
 
 def _make_docx_bytes(text="Jane Doe Senior Developer Python AWS"):

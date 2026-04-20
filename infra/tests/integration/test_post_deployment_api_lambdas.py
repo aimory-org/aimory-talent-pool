@@ -62,6 +62,48 @@ API_SMOKE_CASES = [
         {"queryStringParameters": {}},
         {400},
     ),
+    (
+        "list_job_descriptions",
+        "API_LIST_JOB_DESCRIPTIONS_FUNCTION_NAME",
+        {"queryStringParameters": None},
+        {200},
+    ),
+    (
+        "get_job_description",
+        "API_GET_JOB_DESCRIPTION_FUNCTION_NAME",
+        {"pathParameters": {}},
+        {400},
+    ),
+    (
+        "update_job_description",
+        "API_UPDATE_JOB_DESCRIPTION_FUNCTION_NAME",
+        {"queryStringParameters": {}, "body": "{}"},
+        {400},
+    ),
+    (
+        "delete_job_description",
+        "API_DELETE_JOB_DESCRIPTION_FUNCTION_NAME",
+        {"queryStringParameters": {}},
+        {400},
+    ),
+    (
+        "match_candidates",
+        "API_MATCH_CANDIDATES_FUNCTION_NAME",
+        {"pathParameters": {}},
+        {400},
+    ),
+    (
+        "get_jd_upload_url",
+        "API_GET_JD_UPLOAD_URL_FUNCTION_NAME",
+        {"queryStringParameters": {}},
+        {400},
+    ),
+    (
+        "get_resume_upload_url",
+        "API_GET_RESUME_UPLOAD_URL_FUNCTION_NAME",
+        {"queryStringParameters": {}},
+        {400},
+    ),
 ]
 
 

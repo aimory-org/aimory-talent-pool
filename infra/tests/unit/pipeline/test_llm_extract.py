@@ -9,7 +9,7 @@ from _lambda_loader import load as _load_lambda
 
 
 def _reload_app():
-    return _load_lambda("modules/pipeline/lambda_src/llm_extract")
+    return _load_lambda("modules/document_pipeline/lambda_src/llm_extract")
 
 
 def _make_event(text="Resume text here", bucket="test-resume-bucket", key="raw/file.pdf"):
@@ -36,14 +36,14 @@ class TestLLMExtractText:
 
 class TestLLMExtractResume:
     def setup_method(self):
-        _load_lambda("modules/pipeline/lambda_src/llm_extract")
+        _load_lambda("modules/document_pipeline/lambda_src/llm_extract")
 
     @patch("app.bedrock_client")
     def test_valid_resume_returns_profile(self, mock_bedrock, aws_mocks):
         import app
 
         profile = {
-            "is_resume": True,
+            "is_valid": True,
             "name": "Jane",
             "contact": {"email": "j@x.com", "phone": "555", "linkedin": None, "github": None},
             "summary": "Dev",
@@ -60,7 +60,7 @@ class TestLLMExtractResume:
         mock_bedrock.converse.return_value = _bedrock_response(profile)
 
         result = app.handler(_make_event(), None)
-        assert result["is_resume"] is True
+        assert result["is_valid"] is True
         assert result["name"] == "Jane"
         assert "rejection_reason" not in result
 
@@ -74,7 +74,7 @@ class TestLLMExtractResume:
 
         mock_bedrock.converse.return_value = _bedrock_response(
             {
-                "is_resume": False,
+                "is_valid": False,
                 "rejection_reason": "This is an invoice",
                 "name": None,
                 "contact": None,
@@ -92,7 +92,7 @@ class TestLLMExtractResume:
         )
 
         result = app.handler(_make_event(bucket="test-resume-bucket", key="raw/invoice.pdf"), None)
-        assert result["is_resume"] is False
+        assert result["is_valid"] is False
         assert result["deleted"] is True
 
         # Verify file was deleted from S3
@@ -102,14 +102,14 @@ class TestLLMExtractResume:
 
 class TestLLMExtractJSONRepair:
     def setup_method(self):
-        _load_lambda("modules/pipeline/lambda_src/llm_extract")
+        _load_lambda("modules/document_pipeline/lambda_src/llm_extract")
 
     @patch("app.bedrock_client")
     def test_strips_code_fences(self, mock_bedrock, aws_mocks):
         import app
 
         payload = (
-            '{"is_resume": true, "name": "X", "contact": {"email": null, "phone": null,'
+            '{"is_valid": true, "name": "X", "contact": {"email": null, "phone": null,'
             ' "linkedin": null, "github": null}, "summary": "Y", "talent_bucket": null,'
             ' "talent_category": null, "skillsets": [], "years_of_experience": null,'
             ' "clearance_level": null, "certifications": [], "companies": [],'
@@ -118,14 +118,14 @@ class TestLLMExtractJSONRepair:
         fenced = f"```json\n{payload}\n```"
         mock_bedrock.converse.return_value = {"output": {"message": {"content": [{"text": fenced}]}}}
         result = app.handler(_make_event(), None)
-        assert result["is_resume"] is True
+        assert result["is_valid"] is True
 
     @patch("app.bedrock_client")
     def test_fixes_trailing_commas(self, mock_bedrock, aws_mocks):
         import app
 
         bad_json = (
-            '{"is_resume": true, "name": "X", "contact": {"email": null, "phone": null,'
+            '{"is_valid": true, "name": "X", "contact": {"email": null, "phone": null,'
             ' "linkedin": null, "github": null,}, "summary": "Y", "talent_bucket": null,'
             ' "talent_category": null, "skillsets": [], "years_of_experience": null,'
             ' "clearance_level": null, "certifications": [], "companies": [],'
@@ -154,7 +154,7 @@ class TestLLMExtractJSONRepair:
 
 class TestLLMExtractThrottling:
     def setup_method(self):
-        _load_lambda("modules/pipeline/lambda_src/llm_extract")
+        _load_lambda("modules/document_pipeline/lambda_src/llm_extract")
 
     @patch("app.time.sleep")  # Don't actually wait during tests
     @patch("app.bedrock_client")
@@ -168,7 +168,7 @@ class TestLLMExtractThrottling:
         )
         profile_json = json.dumps(
             {
-                "is_resume": True,
+                "is_valid": True,
                 "name": "X",
                 "contact": {"email": None, "phone": None, "linkedin": None, "github": None},
                 "summary": "Y",
@@ -188,7 +188,7 @@ class TestLLMExtractThrottling:
         mock_bedrock.converse.side_effect = [throttle_err, throttle_err, success_resp]
 
         result = app.handler(_make_event(), None)
-        assert result["is_resume"] is True
+        assert result["is_valid"] is True
         assert mock_bedrock.converse.call_count == 3
 
     @patch("app.time.sleep")

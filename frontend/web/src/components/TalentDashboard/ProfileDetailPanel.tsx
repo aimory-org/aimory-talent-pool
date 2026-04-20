@@ -30,7 +30,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { getResumeUrl, updateTalent, deleteTalent } from "@/lib/api";
+import { getResumeUrl, updateTalent, deleteTalent, getTalent } from "@/lib/api";
+import type { JobDescription, CandidateMatch } from "@/types/jobDescription";
 import type {
   TalentProfile,
   CandidateStatus,
@@ -53,6 +54,10 @@ interface ProfileDetailPanelProps {
   onRefresh: () => Promise<void>;
   onProfileUpdated?: (updated: TalentProfile) => void;
   lookupTags?: string[];
+  matchContext?: {
+    jd: JobDescription;
+    match: CandidateMatch | null;
+  };
 }
 
 interface EditableProfile {
@@ -82,26 +87,268 @@ interface EditableProfile {
   status: CandidateStatus;
 }
 
+interface MatchInsights {
+  score: number | null;
+  rationale: string | null;
+  matchedRequiredSkills: string[];
+  missingRequiredSkills: string[];
+  matchedDesiredSkills: string[];
+  missingDesiredSkills: string[];
+  matchedRequiredCertifications: string[];
+  missingRequiredCertifications: string[];
+  matchedDesiredCertifications: string[];
+  missingDesiredCertifications: string[];
+  matchedChecks: string[];
+  missingChecks: string[];
+}
+
+const CLEARANCE_RANK: Record<string, number> = {
+  Secret: 1,
+  TS: 2,
+  "TS/SCI": 3,
+  "TS/SCI/CI": 4,
+  "TS/SCI/FSP": 5,
+  "Yankee White": 6,
+};
+
+const TITLE_STOPWORDS = new Set([
+  "sr",
+  "senior",
+  "jr",
+  "junior",
+  "ii",
+  "iii",
+  "iv",
+  "lead",
+  "principal",
+  "staff",
+]);
+
+function normalizeText(value: string | null | undefined): string {
+  return (value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9+/.\s-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function uniqueTerms(values: string[] | null | undefined): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const value of values || []) {
+    const trimmed = value?.trim();
+    if (!trimmed) continue;
+    const key = normalizeText(trimmed);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    result.push(trimmed);
+  }
+  return result;
+}
+
+function toNormalizedSet(values: string[]): Set<string> {
+  return new Set(values.map((value) => normalizeText(value)).filter(Boolean));
+}
+
+function tokenizeTitle(value: string | null | undefined): string[] {
+  return normalizeText(value)
+    .split(" ")
+    .map((token) => token.trim())
+    .filter((token) => token && !TITLE_STOPWORDS.has(token));
+}
+
+function titleMatches(
+  required: string | null | undefined,
+  actual: string | null | undefined,
+): boolean {
+  const req = normalizeText(required);
+  const act = normalizeText(actual);
+  if (!req) return true;
+  if (!act) return false;
+  if (req === act || req.includes(act) || act.includes(req)) return true;
+
+  const reqTokens = tokenizeTitle(required);
+  if (reqTokens.length === 0) return true;
+  const actTokenSet = new Set(tokenizeTitle(actual));
+  const overlap = reqTokens.filter((token) => actTokenSet.has(token)).length;
+  return overlap / reqTokens.length >= 0.5;
+}
+
+function clearanceMeets(
+  required: string | null | undefined,
+  actual: string | null | undefined,
+): boolean {
+  if (!required) return true;
+  if (!actual) return false;
+  const requiredRank = CLEARANCE_RANK[required] ?? -1;
+  const actualRank = CLEARANCE_RANK[actual] ?? -1;
+  if (requiredRank < 0 || actualRank < 0) {
+    return normalizeText(required) === normalizeText(actual);
+  }
+  return actualRank >= requiredRank;
+}
+
+function computeMatchInsights(
+  profile: TalentProfile,
+  matchContext?: { jd: JobDescription; match: CandidateMatch | null },
+): MatchInsights | null {
+  if (!matchContext) {
+    return null;
+  }
+
+  const { jd, match } = matchContext;
+  const candidateSkills = toNormalizedSet(
+    (profile.skillsets || []).map((skill) => skill.name || ""),
+  );
+  const candidateCerts = toNormalizedSet(profile.certifications || []);
+
+  const requiredSkills = uniqueTerms(jd.required_skills);
+  const desiredSkills = uniqueTerms(jd.desired_skills);
+  const requiredCerts = uniqueTerms(jd.required_certifications);
+  const desiredCerts = uniqueTerms(jd.desired_certifications);
+
+  const matchedRequiredSkills = requiredSkills.filter((skill) =>
+    candidateSkills.has(normalizeText(skill)),
+  );
+  const missingRequiredSkills = requiredSkills.filter(
+    (skill) => !candidateSkills.has(normalizeText(skill)),
+  );
+  const matchedDesiredSkills = desiredSkills.filter((skill) =>
+    candidateSkills.has(normalizeText(skill)),
+  );
+  const missingDesiredSkills = desiredSkills.filter(
+    (skill) => !candidateSkills.has(normalizeText(skill)),
+  );
+
+  const matchedRequiredCertifications = requiredCerts.filter((cert) =>
+    candidateCerts.has(normalizeText(cert)),
+  );
+  const missingRequiredCertifications = requiredCerts.filter(
+    (cert) => !candidateCerts.has(normalizeText(cert)),
+  );
+  const matchedDesiredCertifications = desiredCerts.filter((cert) =>
+    candidateCerts.has(normalizeText(cert)),
+  );
+  const missingDesiredCertifications = desiredCerts.filter(
+    (cert) => !candidateCerts.has(normalizeText(cert)),
+  );
+
+  const matchedChecks: string[] = [];
+  const missingChecks: string[] = [];
+
+  if (jd.required_clearance) {
+    if (clearanceMeets(jd.required_clearance, profile.clearance_level)) {
+      matchedChecks.push(
+        `Clearance meets requirement (${profile.clearance_level || "None"} vs ${jd.required_clearance})`,
+      );
+    } else {
+      missingChecks.push(
+        `Clearance below requirement (needs ${jd.required_clearance}, has ${profile.clearance_level || "None"})`,
+      );
+    }
+  }
+
+  if (jd.min_experience_years != null) {
+    const years = profile.years_of_experience;
+    if (years != null && years >= jd.min_experience_years) {
+      matchedChecks.push(
+        `Experience meets minimum (${years}y vs ${jd.min_experience_years}y)`,
+      );
+    } else {
+      missingChecks.push(
+        `Experience below minimum (${years != null ? `${years}y` : "unknown"} vs ${jd.min_experience_years}y)`,
+      );
+    }
+  }
+
+  const requiredState = normalizeText(
+    jd.location?.state || jd.location_state || null,
+  );
+  const remoteMode = normalizeText(jd.location?.remote || null);
+  const candidateState = normalizeText(
+    profile.location?.state || profile.location_state || null,
+  );
+  if (requiredState && remoteMode !== "remote") {
+    if (candidateState && candidateState === requiredState) {
+      matchedChecks.push(
+        `Location aligned (${(jd.location?.state || jd.location_state || "").toUpperCase()})`,
+      );
+    } else {
+      missingChecks.push(
+        `Location mismatch (needs ${(jd.location?.state || jd.location_state || "").toUpperCase()}, has ${(profile.location?.state || profile.location_state || "unknown").toUpperCase()})`,
+      );
+    }
+  }
+
+  if (jd.job_title) {
+    if (titleMatches(jd.job_title, profile.job_title)) {
+      matchedChecks.push(
+        `Job title aligned (${profile.job_title || "Unknown"})`,
+      );
+    } else {
+      missingChecks.push(
+        `Job title differs (needs ${jd.job_title}, has ${profile.job_title || "Unknown"})`,
+      );
+    }
+  }
+
+  const requiredIndustry = normalizeText(jd.industry_category || null);
+  const candidateIndustry = normalizeText(profile.industry_category || null);
+  if (requiredIndustry) {
+    if (
+      candidateIndustry &&
+      (candidateIndustry === requiredIndustry ||
+        candidateIndustry.includes(requiredIndustry) ||
+        requiredIndustry.includes(candidateIndustry))
+    ) {
+      matchedChecks.push(
+        `Industry aligned (${profile.industry_category || "Unknown"})`,
+      );
+    } else {
+      missingChecks.push(
+        `Industry differs (needs ${jd.industry_category || "Unknown"}, has ${profile.industry_category || "Unknown"})`,
+      );
+    }
+  }
+
+  return {
+    score: match?.score ?? null,
+    rationale: match?.rationale ?? null,
+    matchedRequiredSkills,
+    missingRequiredSkills,
+    matchedDesiredSkills,
+    missingDesiredSkills,
+    matchedRequiredCertifications,
+    missingRequiredCertifications,
+    matchedDesiredCertifications,
+    missingDesiredCertifications,
+    matchedChecks,
+    missingChecks,
+  };
+}
+
 function profileToEditable(profile: TalentProfile): EditableProfile {
+  const contact = profile.contact || {};
+  const location = profile.location || {};
   return {
     name: profile.name || "",
     contact: {
-      email: profile.contact.email || "",
-      phone: profile.contact.phone || "",
-      linkedin: profile.contact.linkedin || "",
-      github: profile.contact.github || "",
+      email: contact.email || "",
+      phone: contact.phone || "",
+      linkedin: contact.linkedin || "",
+      github: contact.github || "",
     },
     summary: profile.summary || "",
     service_category: profile.service_category as ServiceCategory,
     industry_category: profile.industry_category || "",
     job_title: profile.job_title || "",
     clearance_level: profile.clearance_level || "",
-    skillsets: profile.skillsets.map((s) => ({ name: s.name })),
-    certifications: [...profile.certifications],
-    companies: profile.companies.map((c) => ({ name: c.name })),
+    skillsets: (profile.skillsets || []).map((s) => ({ name: s.name })),
+    certifications: [...(profile.certifications || [])],
+    companies: (profile.companies || []).map((c) => ({ name: c.name })),
     location: {
-      city: profile.location.city || "",
-      state: profile.location.state || profile.location_state || "",
+      city: location.city || "",
+      state: location.state || profile.location_state || "",
     },
     years_of_experience: profile.years_of_experience?.toString() || "",
     requested_salary: profile.requested_salary?.toString() || "",
@@ -117,6 +364,7 @@ export function ProfileDetailPanel({
   onRefresh,
   onProfileUpdated,
   lookupTags = [],
+  matchContext,
 }: ProfileDetailPanelProps) {
   const [resumeLoading, setResumeLoading] = useState(false);
   const [resumeUrl, setResumeUrl] = useState<string | null>(null);
@@ -137,6 +385,8 @@ export function ProfileDetailPanel({
     setEditData(profileToEditable(profile));
     setActiveTab("profile");
   }, [profile]);
+
+  const matchInsights = computeMatchInsights(profile, matchContext);
 
   const handleCancelEdit = () => {
     setEditData(profileToEditable(profile));
@@ -1232,6 +1482,168 @@ export function ProfileDetailPanel({
                 </>
               )}
 
+              {!isEditMode && matchInsights && (
+                <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/[0.06] dark:bg-indigo-500/[0.08] p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h4 className="text-sm font-semibold text-foreground">
+                        Match Breakdown
+                      </h4>
+                      <p className="text-xs text-foreground/60 mt-0.5">
+                        What aligns and what is missing against this job
+                        description.
+                      </p>
+                    </div>
+                    {matchInsights.score != null && (
+                      <span className="inline-flex items-center rounded-md border border-indigo-500/30 bg-indigo-500/15 px-2 py-0.5 text-xs font-semibold text-indigo-700 dark:text-indigo-300">
+                        Score {matchInsights.score}
+                      </span>
+                    )}
+                  </div>
+
+                  {matchInsights.rationale && (
+                    <p className="text-xs text-foreground/70 bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-lg p-2.5">
+                      {matchInsights.rationale}
+                    </p>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                        Matching
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {matchInsights.matchedRequiredSkills.map((skill) => (
+                          <span
+                            key={`matched-required-skill-${skill}`}
+                            className="px-2 py-0.5 rounded text-[11px] border bg-emerald-500/15 border-emerald-500/25 text-emerald-700 dark:text-emerald-300"
+                          >
+                            Skill: {skill}
+                          </span>
+                        ))}
+                        {matchInsights.matchedRequiredCertifications.map(
+                          (cert) => (
+                            <span
+                              key={`matched-required-cert-${cert}`}
+                              className="px-2 py-0.5 rounded text-[11px] border bg-emerald-500/15 border-emerald-500/25 text-emerald-700 dark:text-emerald-300"
+                            >
+                              Cert: {cert}
+                            </span>
+                          ),
+                        )}
+                        {matchInsights.matchedChecks.map((check) => (
+                          <span
+                            key={`matched-check-${check}`}
+                            className="px-2 py-0.5 rounded text-[11px] border bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-300"
+                          >
+                            {check}
+                          </span>
+                        ))}
+                        {matchInsights.matchedRequiredSkills.length === 0 &&
+                          matchInsights.matchedRequiredCertifications.length ===
+                            0 &&
+                          matchInsights.matchedChecks.length === 0 && (
+                            <p className="text-xs text-foreground/40 italic">
+                              No strong matches found yet.
+                            </p>
+                          )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-red-600 dark:text-red-400">
+                        Not Matching
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {matchInsights.missingRequiredSkills.map((skill) => (
+                          <span
+                            key={`missing-required-skill-${skill}`}
+                            className="px-2 py-0.5 rounded text-[11px] border bg-red-500/15 border-red-500/25 text-red-700 dark:text-red-300"
+                          >
+                            Missing skill: {skill}
+                          </span>
+                        ))}
+                        {matchInsights.missingRequiredCertifications.map(
+                          (cert) => (
+                            <span
+                              key={`missing-required-cert-${cert}`}
+                              className="px-2 py-0.5 rounded text-[11px] border bg-red-500/15 border-red-500/25 text-red-700 dark:text-red-300"
+                            >
+                              Missing cert: {cert}
+                            </span>
+                          ),
+                        )}
+                        {matchInsights.missingChecks.map((check) => (
+                          <span
+                            key={`missing-check-${check}`}
+                            className="px-2 py-0.5 rounded text-[11px] border bg-red-500/10 border-red-500/20 text-red-700 dark:text-red-300"
+                          >
+                            {check}
+                          </span>
+                        ))}
+                        {matchInsights.missingRequiredSkills.length === 0 &&
+                          matchInsights.missingRequiredCertifications.length ===
+                            0 &&
+                          matchInsights.missingChecks.length === 0 && (
+                            <p className="text-xs text-foreground/40 italic">
+                              No required mismatches.
+                            </p>
+                          )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {(matchInsights.matchedDesiredSkills.length > 0 ||
+                    matchInsights.missingDesiredSkills.length > 0 ||
+                    matchInsights.matchedDesiredCertifications.length > 0 ||
+                    matchInsights.missingDesiredCertifications.length > 0) && (
+                    <div className="pt-1 border-t border-indigo-500/20 space-y-2">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                        Desired Criteria
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {matchInsights.matchedDesiredSkills.map((skill) => (
+                          <span
+                            key={`matched-desired-skill-${skill}`}
+                            className="px-2 py-0.5 rounded text-[11px] border bg-indigo-500/15 border-indigo-500/25 text-indigo-700 dark:text-indigo-300"
+                          >
+                            Desired skill met: {skill}
+                          </span>
+                        ))}
+                        {matchInsights.matchedDesiredCertifications.map(
+                          (cert) => (
+                            <span
+                              key={`matched-desired-cert-${cert}`}
+                              className="px-2 py-0.5 rounded text-[11px] border bg-indigo-500/15 border-indigo-500/25 text-indigo-700 dark:text-indigo-300"
+                            >
+                              Desired cert met: {cert}
+                            </span>
+                          ),
+                        )}
+                        {matchInsights.missingDesiredSkills.map((skill) => (
+                          <span
+                            key={`missing-desired-skill-${skill}`}
+                            className="px-2 py-0.5 rounded text-[11px] border bg-amber-500/15 border-amber-500/25 text-amber-700 dark:text-amber-300"
+                          >
+                            Desired skill missing: {skill}
+                          </span>
+                        ))}
+                        {matchInsights.missingDesiredCertifications.map(
+                          (cert) => (
+                            <span
+                              key={`missing-desired-cert-${cert}`}
+                              className="px-2 py-0.5 rounded text-[11px] border bg-amber-500/15 border-amber-500/25 text-amber-700 dark:text-amber-300"
+                            >
+                              Desired cert missing: {cert}
+                            </span>
+                          ),
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* View Resume Button */}
               {profile.key && !isEditMode && (
                 <button
@@ -1385,12 +1797,64 @@ export function ProfileDetailPanel({
             {/* Possible Duplicate Warning */}
             {!isEditMode && profile.possible_duplicate_of && (
               <div className="bg-amber-500/10 rounded-xl p-4 border border-amber-500/30">
-                <p className="text-amber-700 dark:text-amber-300 text-sm font-medium">
-                  ⚠ Possible duplicate of another candidate record
+                <p className="text-amber-700 dark:text-amber-300 text-sm font-medium mb-1">
+                  ⚠ Possible duplicate of another candidate
                 </p>
-                <p className="text-amber-600/70 dark:text-amber-400/70 text-xs mt-1">
-                  ID: {profile.possible_duplicate_of}
+                <p className="text-amber-600/70 dark:text-amber-400/70 text-xs mb-3 break-all">
+                  {profile.possible_duplicate_of}
                 </p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={async () => {
+                      try {
+                        const original = await getTalent(
+                          profile.possible_duplicate_of!,
+                        );
+                        onProfileUpdated?.(original);
+                      } catch {
+                        alert("Could not load the original profile.");
+                      }
+                    }}
+                    className="px-2.5 py-1 rounded-lg text-xs font-medium border border-indigo-500/30 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-500/10 transition-colors"
+                  >
+                    View Original
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (
+                        !confirm(
+                          "Delete this profile and keep the original? This cannot be undone.",
+                        )
+                      )
+                        return;
+                      try {
+                        await deleteTalent(profile.pk);
+                        onClose();
+                        await onRefresh();
+                      } catch {
+                        alert("Failed to delete this profile.");
+                      }
+                    }}
+                    className="px-2.5 py-1 rounded-lg text-xs font-medium border border-red-500/30 text-red-600 dark:text-red-300 hover:bg-red-500/10 transition-colors"
+                  >
+                    Delete This
+                  </button>
+                  <button
+                    onClick={async () => {
+                      try {
+                        const updated = await updateTalent(profile.pk, {
+                          dismiss_duplicate: true,
+                        });
+                        onProfileUpdated?.(updated);
+                      } catch {
+                        alert("Failed to dismiss duplicate flag.");
+                      }
+                    }}
+                    className="px-2.5 py-1 rounded-lg text-xs font-medium border border-amber-500/30 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 transition-colors"
+                  >
+                    Not a Duplicate
+                  </button>
+                </div>
               </div>
             )}
 

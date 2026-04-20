@@ -7,9 +7,9 @@ from botocore.config import Config
 
 s3 = boto3.client("s3", config=Config(signature_version="s3v4"))
 
-BUCKET = os.environ["RESUME_BUCKET"]
+BUCKET = os.environ["DOCUMENT_BUCKET"]
 API_KEY = os.environ["PRESIGN_API_KEY"]
-PREFIX = os.environ.get("RESUME_PREFIX", "raw/onedrive")
+PREFIX = os.environ["DOCUMENT_PREFIX"]
 
 
 def _sanitize_filename(name: str) -> str:

@@ -189,7 +189,7 @@ project_name = "aimory-talent-pool"
 environment  = "dev"
 
 presign_api_key    = "$(openssl rand -hex 16)"   # generate a secure key
-raw_prefix         = "raw/onedrive"
+raw_prefix         = "resumes/raw"
 extracted_prefix   = "extracted"
 sfn_arn_param_name = "/aimory-talent-pool/dev/resume-pipeline-arn"
 

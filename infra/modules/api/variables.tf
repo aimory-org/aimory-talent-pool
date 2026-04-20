@@ -38,64 +38,26 @@ variable "audit_log_table_arn" {
   description = "DynamoDB table ARN for audit history"
 }
 
-variable "skills_lookup_table_name" {
+variable "job_descriptions_table_name" {
   type        = string
-  description = "DynamoDB table name for skills lookup"
+  description = "DynamoDB table name for job descriptions"
 }
 
-variable "skills_lookup_table_arn" {
+variable "job_descriptions_table_arn" {
   type        = string
-  description = "DynamoDB table ARN for skills lookup"
+  description = "DynamoDB table ARN for job descriptions"
 }
 
-variable "certifications_lookup_table_name" {
-  type        = string
-  description = "DynamoDB table name for certifications lookup"
-}
-
-variable "certifications_lookup_table_arn" {
-  type        = string
-  description = "DynamoDB table ARN for certifications lookup"
-}
-
-variable "cities_lookup_table_name" {
-  type        = string
-  description = "DynamoDB table name for cities lookup"
-}
-
-variable "cities_lookup_table_arn" {
-  type        = string
-  description = "DynamoDB table ARN for cities lookup"
-}
-
-variable "job_titles_lookup_table_name" {
-  type        = string
-  description = "DynamoDB table name for job titles lookup"
-}
-
-variable "job_titles_lookup_table_arn" {
-  type        = string
-  description = "DynamoDB table ARN for job titles lookup"
-}
-
-variable "industry_categories_lookup_table_name" {
-  type        = string
-  description = "DynamoDB table name for industry categories lookup"
-}
-
-variable "industry_categories_lookup_table_arn" {
-  type        = string
-  description = "DynamoDB table ARN for industry categories lookup"
-}
-
-variable "tags_lookup_table_name" {
-  type        = string
-  description = "DynamoDB table name for tags lookup"
-}
-
-variable "tags_lookup_table_arn" {
-  type        = string
-  description = "DynamoDB table ARN for tags lookup"
+variable "lookup_tables" {
+  description = "Shared lookup tables (skills, certifications, cities, job_titles, industry_categories, tags)"
+  type = object({
+    skills              = object({ name = string, arn = string })
+    certifications      = object({ name = string, arn = string })
+    cities              = object({ name = string, arn = string })
+    job_titles          = object({ name = string, arn = string })
+    industry_categories = object({ name = string, arn = string })
+    tags                = object({ name = string, arn = string })
+  })
 }
 
 variable "resume_bucket_name" {
@@ -145,4 +107,10 @@ variable "github_workflow_file" {
   type        = string
   description = "GitHub Actions workflow filename used for deployments"
   default     = "merge-deploy.yml"
+}
+
+variable "bedrock_model_id" {
+  type        = string
+  description = "Bedrock model ID for candidate matching scoring"
+  default     = "us.anthropic.claude-sonnet-4-20250514-v1:0"
 }

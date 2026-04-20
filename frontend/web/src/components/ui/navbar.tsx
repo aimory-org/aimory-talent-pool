@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import {
   Users,
+  FileText,
   HelpCircle,
   LogOut,
   Moon,
@@ -22,6 +23,7 @@ interface NavBarProps {
 
 const navItems = [
   { path: "/", label: "Talent Pool", icon: Users },
+  { path: "/job-descriptions", label: "Job Descriptions", icon: FileText },
   { path: "/audit", label: "Activity", icon: ClipboardList },
   { path: "/help", label: "Help Center", icon: HelpCircle },
 ];

@@ -24,6 +24,12 @@ def _default_function_name(kind: str, key: str) -> str:
     if kind == "api":
         return f"{PROJECT_NAME}-{ENVIRONMENT}-api-{key.replace('_', '-')}"
 
+    if kind == "resume_pipeline":
+        return f"{PROJECT_NAME}-{ENVIRONMENT}-{key.replace('_', '-')}"
+
+    if kind == "jd_pipeline":
+        return f"{PROJECT_NAME}-{ENVIRONMENT}-jd-{key.replace('_', '-')}"
+
     if kind in {"pipeline", "jobs"}:
         return f"{PROJECT_NAME}-{ENVIRONMENT}-{key.replace('_', '-')}"
 

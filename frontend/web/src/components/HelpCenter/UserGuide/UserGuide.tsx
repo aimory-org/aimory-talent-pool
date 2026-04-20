@@ -7,6 +7,8 @@ import {
   Shield,
   Zap,
   HelpCircle,
+  FileText,
+  UserCheck,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -22,8 +24,12 @@ function Section({
   icon: React.ReactNode;
   children: React.ReactNode;
 }) {
+  const sectionId = title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
   return (
-    <section className="mb-12">
+    <section id={sectionId} className="mb-12 scroll-mt-6">
       <div className="flex items-center gap-3 mb-4">
         <div className="p-2 bg-indigo-500/20 rounded-lg text-indigo-600 dark:text-indigo-400">
           {icon}
@@ -268,7 +274,7 @@ export function UserGuide() {
       >
         <p>Resumes can enter the system in several ways:</p>
 
-        <SubSection title="OneDrive / Power Automate (Current)">
+        <SubSection title="OneDrive / Power Automate">
           <p>
             When a resume is saved to a specific OneDrive folder, Microsoft
             Power Automate automatically detects it and uploads it to cloud
@@ -277,7 +283,7 @@ export function UserGuide() {
           </p>
         </SubSection>
 
-        <SubSection title="Direct Upload (Coming Soon)">
+        <SubSection title="Future Upload Options">
           <p>We're planning to add more ways to get resumes into the system:</p>
           <ul className="list-disc list-inside text-foreground/70 space-y-1 ml-4">
             <li>Drag-and-drop upload directly from this website</li>
@@ -286,12 +292,6 @@ export function UserGuide() {
             <li>Bulk import from existing folders</li>
           </ul>
         </SubSection>
-
-        <Callout>
-          <strong>Why multiple options?</strong> Different recruiters work
-          differently. We're building flexibility so everyone can use what works
-          best for them.
-        </Callout>
       </Section>
 
       <Section
@@ -377,9 +377,87 @@ export function UserGuide() {
       </Section>
 
       <Section
-        title="Security &amp; Privacy"
-        icon={<Shield className="w-6 h-6" />}
+        title="Job Descriptions & Candidate Matching"
+        icon={<FileText className="w-6 h-6" />}
       >
+        <p>
+          The Job Descriptions tab lets you upload job requirements and
+          automatically find the best-matching candidates in your talent pool.
+        </p>
+
+        <SubSection title="Uploading a Job Description">
+          <p>
+            Click the <strong>Upload</strong> button on the Job Descriptions
+            page. You can drag-and-drop or browse for a PDF, DOC, or DOCX file
+            (up to 10 MB). The system processes the document through the same AI
+            pipeline as resumes — extracting required skills, certifications,
+            clearance level, experience requirements, salary range, and
+            location.
+          </p>
+        </SubSection>
+
+        <SubSection title="Matching Candidates">
+          <p>
+            Open any job description and click <strong>Find Matches</strong>.
+            The AI compares the job requirements against every candidate in the
+            talent pool and returns a ranked list with match scores and a brief
+            rationale explaining why each candidate is (or isn't) a strong fit.
+          </p>
+        </SubSection>
+
+        <SubSection title="Filtering &amp; Sorting">
+          <p>
+            The Job Descriptions table supports the same filter and sort
+            controls as the Talent Dashboard — filter by clearance, location,
+            industry, or required skills, and click column headers to sort.
+          </p>
+        </SubSection>
+
+        <Callout>
+          <strong>Processing time:</strong> Uploaded job descriptions are
+          typically processed in 1–2 minutes, just like resumes.
+        </Callout>
+      </Section>
+
+      <Section
+        title="Duplicate Detection"
+        icon={<UserCheck className="w-6 h-6" />}
+      >
+        <p>
+          When the same person submits multiple resumes (different file names,
+          updated versions, etc.), the system flags potential duplicates
+          automatically.
+        </p>
+
+        <SubSection title="How It Works">
+          <p>
+            During processing, the system compares the candidate's name against
+            existing profiles. If a match is found, the new profile gets an
+            amber notification dot on its avatar in the talent table.
+          </p>
+        </SubSection>
+
+        <SubSection title="Reviewing Duplicates">
+          <p>
+            Click on a flagged candidate to open their profile. A yellow warning
+            banner shows which existing profile they may be a duplicate of. You
+            can:
+          </p>
+          <ul className="list-disc list-inside text-foreground/70 space-y-1 ml-4">
+            <li>
+              <strong>Dismiss</strong> — Click the Dismiss button if it's a
+              false positive (different person with the same name). The warning
+              is removed permanently.
+            </li>
+            <li>
+              <strong>Review manually</strong> — Compare both profiles and
+              decide which to keep or update.
+            </li>
+          </ul>
+        </SubSection>
+      </Section>
+
+      <Section title="Security & Privacy" icon={<Shield className="w-6 h-6" />}>
         <p>Candidate information is sensitive. Here's how we keep it safe:</p>
 
         <SubSection title="Who Can Access">
@@ -444,6 +522,20 @@ export function UserGuide() {
         <FAQ question="Who built this system?">
           The AIMORY Talent Pool was developed by Ben and Kyle as an internal
           tool to streamline the recruiting process.
+        </FAQ>
+
+        <FAQ question="How does duplicate detection work?">
+          When a new resume is processed, the system checks if a candidate with
+          the same name already exists. If a match is found, the new profile is
+          flagged as a possible duplicate. You can review the flagged profile
+          and either dismiss the warning or merge the records.
+        </FAQ>
+
+        <FAQ question="How do I upload a job description?">
+          Go to the Job Descriptions tab and click the Upload button. You can
+          drag-and-drop or browse for a PDF, DOC, or DOCX file. The system will
+          process it automatically and extract requirements like skills,
+          clearance, and experience.
         </FAQ>
       </Section>
     </div>

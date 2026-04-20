@@ -523,7 +523,12 @@ def handler(event, context):
             update_parts.append("tags = :tags")
             expression_values[":tags"] = tags
 
-        if not update_parts:
+        # Handle dismiss_duplicate — removes possible_duplicate_of flag
+        remove_parts = []
+        if body.get("dismiss_duplicate"):
+            remove_parts.append("possible_duplicate_of")
+
+        if not update_parts and not remove_parts:
             return {
                 "statusCode": 400,
                 "headers": {"Content-Type": "application/json"},
@@ -533,7 +538,7 @@ def handler(event, context):
                             "No valid fields to update. Supported: status, requested_salary, name, "
                             "contact, summary, service_category, industry_category, job_title, "
                             "clearance_level, skillsets, certifications, companies, location, "
-                            "years_of_experience, notes, tags"
+                            "years_of_experience, notes, tags, dismiss_duplicate"
                         )
                     }
                 ),
@@ -545,6 +550,8 @@ def handler(event, context):
         expression_values[":updated_at"] = now
 
         update_expression = "SET " + ", ".join(update_parts)
+        if remove_parts:
+            update_expression += " REMOVE " + ", ".join(remove_parts)
 
         update_kwargs = {
             "Key": {"pk": pk},

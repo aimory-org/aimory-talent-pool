@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "JobDescription",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "is_valid",
+    "title",
+    "required_skills",
+    "desired_skills",
+    "required_certifications",
+    "desired_certifications",
+    "required_clearance",
+    "min_experience_years",
+    "location",
+    "industry_category",
+    "job_title"
+  ],
+  "properties": {
+    "is_valid": {
+      "type": "boolean",
+      "description": "True if the document is a job description/posting, false otherwise"
+    },
+    "rejection_reason": {
+      "type": ["string", "null"],
+      "description": "If is_valid is false, explain why (e.g. 'document is a resume', 'document is an invoice')"
+    },
+    "title": {
+      "type": ["string", "null"],
+      "description": "The job posting title exactly as it appears in the document"
+    },
+    "required_skills": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Skills explicitly listed as required or mandatory"
+    },
+    "desired_skills": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Skills listed as preferred, desired, or nice-to-have"
+    },
+    "required_certifications": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Certifications explicitly required"
+    },
+    "desired_certifications": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Certifications preferred or nice-to-have"
+    },
+    "required_clearance": {
+      "type": ["string", "null"],
+      "enum": [
+        "Secret",
+        "TS",
+        "TS/SCI",
+        "TS/SCI/FSP",
+        "TS/SCI/CI",
+        "Yankee White",
+        null
+      ],
+      "description": "Required security clearance level, or null if none specified"
+    },
+    "min_experience_years": {
+      "type": ["number", "null"],
+      "description": "Minimum years of experience required, or null if not specified"
+    },
+    "location": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["city", "state", "remote"],
+      "properties": {
+        "city": { "type": ["string", "null"] },
+        "state": { "type": ["string", "null"] },
+        "remote": {
+          "type": ["string", "null"],
+          "enum": ["Remote", "Hybrid", "On-site", null],
+          "description": "Work arrangement if specified"
+        }
+      }
+    },
+    "industry_category": {
+      "type": ["string", "null"],
+      "description": "The industry or organizational function this role belongs to"
+    },
+    "job_title": {
+      "type": ["string", "null"],
+      "description": "Normalized standard job title for matching (e.g. 'Data Analyst' not 'Data & Excel Analyst II')"
+    },
+    "salary_range": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["min", "max"],
+      "properties": {
+        "min": { "type": ["number", "null"] },
+        "max": { "type": ["number", "null"] }
+      },
+      "description": "Annual salary range in USD, or null values if not specified"
+    },
+    "description_summary": {
+      "type": ["string", "null"],
+      "maxLength": 500,
+      "description": "Concise summary of the role's responsibilities, team, and mission for matching purposes"
+    }
+  }
+}
