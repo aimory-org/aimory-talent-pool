@@ -41,7 +41,9 @@ describe("UploadModal", () => {
 
   it("upload button is disabled when no file selected", () => {
     render(<UploadModal isOpen={true} onClose={onClose} onUpload={onUpload} />);
-    const uploadBtn = screen.getByRole("button", { name: /upload resume/i });
+    // Use getAllByRole and filter for the actual button (not the heading)
+    const buttons = screen.getAllByRole("button", { name: /upload resume/i });
+    const uploadBtn = buttons.find((btn) => !btn.closest("h2"));
     expect(uploadBtn).toBeDisabled();
   });
 
@@ -75,7 +77,9 @@ describe("UploadModal", () => {
     fireEvent.change(input, { target: { files: [file] } });
     // The modal doesn't show an error for invalid types on selection,
     // it just doesn't set the file - so the upload button remains disabled
-    const uploadBtn = screen.getByRole("button", { name: /upload resume/i });
+    // Use getAllByRole and filter for the actual button (not the heading)
+    const buttons = screen.getAllByRole("button", { name: /upload resume/i });
+    const uploadBtn = buttons.find((btn) => !btn.closest("h2"));
     expect(uploadBtn).toBeDisabled();
   });
 
@@ -89,7 +93,9 @@ describe("UploadModal", () => {
       'input[type="file"]',
     ) as HTMLInputElement;
     await user.upload(input, file);
-    const uploadBtn = screen.getByRole("button", { name: /upload resume/i });
+    // Use getAllByRole and filter for the actual button (not the heading)
+    const buttons = screen.getAllByRole("button", { name: /upload resume/i });
+    const uploadBtn = buttons.find((btn) => !btn.closest("h2"));
     expect(uploadBtn).not.toBeDisabled();
   });
 
@@ -103,7 +109,10 @@ describe("UploadModal", () => {
       'input[type="file"]',
     ) as HTMLInputElement;
     await user.upload(input, file);
-    await user.click(screen.getByRole("button", { name: /upload resume/i }));
+    // Use getAllByRole and filter for the actual button (not the heading)
+    const buttons = screen.getAllByRole("button", { name: /upload resume/i });
+    const uploadBtn = buttons.find((btn) => !btn.closest("h2"));
+    await user.click(uploadBtn!);
     expect(onUpload).toHaveBeenCalledWith(file);
   });
 
@@ -130,7 +139,10 @@ describe("UploadModal", () => {
       'input[type="file"]',
     ) as HTMLInputElement;
     await user.upload(input, file);
-    await user.click(screen.getByRole("button", { name: /upload resume/i }));
+    // Use getAllByRole and filter for the actual button (not the heading)
+    const buttons = screen.getAllByRole("button", { name: /upload resume/i });
+    const uploadBtn = buttons.find((btn) => !btn.closest("h2"));
+    await user.click(uploadBtn!);
 
     expect(
       screen.getByRole("button", { name: /uploading/i }),
@@ -163,7 +175,10 @@ describe("UploadModal", () => {
       'input[type="file"]',
     ) as HTMLInputElement;
     await user.upload(input, file);
-    await user.click(screen.getByRole("button", { name: /upload resume/i }));
+    // Use getAllByRole and filter for the actual button (not the heading)
+    const buttons = screen.getAllByRole("button", { name: /upload resume/i });
+    const uploadBtn = buttons.find((btn) => !btn.closest("h2"));
+    await user.click(uploadBtn!);
 
     expect(screen.getByText(/upload failed/i)).toBeInTheDocument();
   });
@@ -178,7 +193,9 @@ describe("UploadModal", () => {
       'input[type="file"]',
     ) as HTMLInputElement;
     await user.upload(input, file);
-    const uploadBtn = screen.getByRole("button", { name: /upload resume/i });
+    // Use getAllByRole and filter for the actual button (not the heading)
+    const buttons = screen.getAllByRole("button", { name: /upload resume/i });
+    const uploadBtn = buttons.find((btn) => !btn.closest("h2"));
     expect(uploadBtn).not.toBeDisabled();
   });
 
@@ -192,7 +209,9 @@ describe("UploadModal", () => {
       'input[type="file"]',
     ) as HTMLInputElement;
     await user.upload(input, file);
-    const uploadBtn = screen.getByRole("button", { name: /upload resume/i });
+    // Use getAllByRole and filter for the actual button (not the heading)
+    const buttons = screen.getAllByRole("button", { name: /upload resume/i });
+    const uploadBtn = buttons.find((btn) => !btn.closest("h2"));
     expect(uploadBtn).not.toBeDisabled();
   });
 });
