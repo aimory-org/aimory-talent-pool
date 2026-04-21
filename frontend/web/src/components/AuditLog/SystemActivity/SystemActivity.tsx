@@ -25,6 +25,7 @@ import {
 import { listAuditHistory, type AuditEntry, type Deployment } from "@/lib/api";
 import { useDeployments } from "@/hooks/useDeployments";
 import { Pagination } from "@/components/ui/pagination";
+import { fallbackCandidateName } from "../utils";
 
 const PAGE_SIZE = 25;
 
@@ -155,8 +156,6 @@ function formatDuration(seconds: number) {
   const secs = seconds % 60;
   return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
 }
-
-import { fallbackCandidateName } from "../utils";
 
 function getSnapshotValue(entry: AuditEntry, key: string): unknown {
   if (!entry.snapshot || typeof entry.snapshot !== "object") {
@@ -569,18 +568,19 @@ export function SystemActivity() {
   );
   const isLoading = isLoadingDeployments || isLoadingAudit;
 
-  // Reset to first page when type filter or search changes (derived-state pattern avoids effect)
-  const filterResetKey = `${typeFilter}|${search}`;
-  const [lastFilterResetKey, setLastFilterResetKey] = useState(filterResetKey);
-  if (lastFilterResetKey !== filterResetKey) {
-    setLastFilterResetKey(filterResetKey);
+  // Reset to first page when type filter or search changes
+  useEffect(() => {
     setPage(1);
-  }
+  }, [typeFilter, search]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+
   // Clamp page when data changes without filter change (refresh / delete)
+  useEffect(() => {
+    setPage((currentPage) => Math.min(currentPage, totalPages));
+  }, [totalPages]);
+
   const safePage = Math.min(page, totalPages);
-  if (page !== safePage) setPage(safePage);
 
   const paginatedEvents = useMemo(() => {
     const start = (safePage - 1) * PAGE_SIZE;
