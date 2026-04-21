@@ -1,7 +1,7 @@
 /**
  * React hooks for fetching and managing talent data.
  */
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { listTalents, updateTalent, type ListTalentsParams } from "@/lib/api";
 import type { TalentProfile, CandidateStatus } from "@/types/talent";
 
@@ -33,11 +33,6 @@ export function useTalents(options: UseTalentsOptions = {}): UseTalentsResult {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  // Track filter changes
-  const filtersRef = useRef(filters);
-  const isInitialMount = useRef(true);
-
-  // Serialize filters for comparison
   const filtersKey = JSON.stringify(filters);
 
   const fetchTalents = useCallback(async () => {
@@ -59,21 +54,9 @@ export function useTalents(options: UseTalentsOptions = {}): UseTalentsResult {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, filtersKey]);
 
-  // Refetch when filters change
   useEffect(() => {
-    const filtersChanged = JSON.stringify(filtersRef.current) !== filtersKey;
-
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      if (enabled) {
-        fetchTalents();
-      }
-    } else if (filtersChanged) {
-      filtersRef.current = filters;
-      fetchTalents();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtersKey, enabled, fetchTalents]);
+    void fetchTalents();
+  }, [fetchTalents]);
 
   const refresh = useCallback(async () => {
     await fetchTalents();

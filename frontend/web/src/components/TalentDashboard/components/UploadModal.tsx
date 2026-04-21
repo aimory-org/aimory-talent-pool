@@ -1,6 +1,4 @@
 import { useState, useRef } from "react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Upload, FileText, Loader2, CheckCircle2 } from "lucide-react";
 
 interface UploadModalProps {
@@ -102,7 +100,7 @@ export function UploadModal({ isOpen, onClose, onUpload }: UploadModalProps) {
 
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md p-6 bg-background border border-border">
+        <div className="w-full max-w-md rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-slate-800 p-6 shadow-2xl">
           <div className="space-y-4">
             <div>
               <h2 className="text-xl font-semibold text-foreground">
@@ -181,20 +179,19 @@ export function UploadModal({ isOpen, onClose, onUpload }: UploadModalProps) {
             )}
 
             <div className="flex gap-3 pt-4">
-              <Button
+              <button
                 type="button"
-                variant="outline"
                 onClick={onClose}
                 disabled={isUploading}
-                className="flex-1"
+                className="flex-1 h-9 px-4 rounded-lg border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 text-sm font-medium text-foreground/60 hover:text-foreground hover:bg-black/10 dark:hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 Cancel
-              </Button>
-              <Button
+              </button>
+              <button
                 type="button"
                 onClick={handleSubmit}
                 disabled={!selectedFile || isUploading || uploadSuccess}
-                className="flex-1"
+                className="flex-1 h-9 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
               >
                 {isUploading ? (
                   <>
@@ -209,10 +206,10 @@ export function UploadModal({ isOpen, onClose, onUpload }: UploadModalProps) {
                 ) : (
                   "Upload Resume"
                 )}
-              </Button>
+              </button>
             </div>
           </div>
-        </Card>
+        </div>
       </div>
     </>
   );

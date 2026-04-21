@@ -74,10 +74,10 @@ export function StatsCards({ stats }: StatsCardsProps) {
         return (
           <div
             key={card.key}
-            className={`group relative animate-fade-in ${card.stagger} overflow-hidden rounded-2xl border bg-gradient-to-br ${card.color} ${card.border} p-4 cursor-default transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl ${card.glow}`}
+            className={`group relative animate-fade-in ${card.stagger} overflow-hidden rounded-2xl border bg-linear-to-br ${card.color} ${card.border} p-4 cursor-default transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl ${card.glow}`}
           >
             {/* Subtle inner shine */}
-            <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent dark:from-white/5 pointer-events-none rounded-2xl" />
+            <div className="absolute inset-0 bg-linear-to-br from-white/40 to-transparent dark:from-white/5 pointer-events-none rounded-2xl" />
             <div className="relative">
               <div className="flex items-center justify-between mb-3">
                 <span

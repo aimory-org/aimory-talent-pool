@@ -80,8 +80,8 @@ export function JdTable({
   onClearFilters,
 }: JdTableProps) {
   return (
-    <div className="relative z-10 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-black/[0.07] dark:border-white/[0.07] overflow-hidden shadow-xl shadow-black/5 animate-slide-in-up">
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-500/60 to-transparent" />
+    <div className="relative z-10 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-black/7 dark:border-white/7 overflow-hidden shadow-xl shadow-black/5 animate-slide-in-up">
+      <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-indigo-500/60 to-transparent" />
       <div className="overflow-x-auto">
         <Table className="table-fixed w-full">
           <TableHeader>
@@ -206,13 +206,13 @@ export function JdTable({
               jobDescriptions.map((jd) => (
                 <TableRow
                   key={jd.pk}
-                  className="border-black/[0.04] dark:border-white/[0.04] cursor-pointer hover:bg-indigo-500/[0.04] dark:hover:bg-indigo-400/[0.04] transition-all duration-150 group"
+                  className="border-black/4 dark:border-white/4 cursor-pointer hover:bg-indigo-500/4 dark:hover:bg-indigo-400/4 transition-all duration-150 group"
                   onClick={() => onSelectJd(jd)}
                 >
                   <TableCell>
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="relative shrink-0">
-                        <div className="h-9 w-9 rounded-full bg-gradient-to-br from-violet-500/40 to-purple-600/40 flex items-center justify-center border border-violet-500/20 dark:border-violet-400/20 text-violet-600 dark:text-violet-300 shadow-sm">
+                        <div className="h-9 w-9 rounded-full bg-linear-to-br from-violet-500/40 to-purple-600/40 flex items-center justify-center border border-violet-500/20 dark:border-violet-400/20 text-violet-600 dark:text-violet-300 shadow-sm">
                           <FileText className="h-4 w-4" />
                         </div>
                         {jd.possible_duplicate_of && (

@@ -21,6 +21,9 @@ import { UploadModal } from "./components/UploadModal";
 import { FiltersPanel } from "./components/FiltersPanel";
 import { TalentTable } from "./components/TalentTable";
 import { ProfileDetailPanel } from "./ProfileDetailPanel";
+import { Pagination } from "@/components/ui/pagination";
+
+const PAGE_SIZE = 25;
 
 export function TalentDashboard() {
   // Filter state
@@ -40,6 +43,7 @@ export function TalentDashboard() {
   const [showDuplicatesOnly, setShowDuplicatesOnly] = useState(false);
   const [showProcessingBanner, setShowProcessingBanner] = useState(false);
   const processingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [page, setPage] = useState(1);
 
   // Fetch data from API
   const {
@@ -244,6 +248,29 @@ export function TalentDashboard() {
     [talents],
   );
 
+  // Reset to first page when filters / sort change (derived-state avoids effect)
+  const resetKey = `${JSON.stringify(filters)}|${sortField}|${sortDirection}|${String(showDuplicatesOnly)}`;
+  const [lastResetKey, setLastResetKey] = useState(resetKey);
+  if (lastResetKey !== resetKey) {
+    setLastResetKey(resetKey);
+    setPage(1);
+  }
+
+  const totalPages = Math.max(1, Math.ceil(displayedProfiles.length / PAGE_SIZE));
+
+  // Clamp page when data changes without filter change (delete / upload / refresh)
+  const safePage = Math.min(page, totalPages);
+  if (page !== safePage) setPage(safePage);
+
+  // Paginate after sorting + duplicate filter
+  const paginatedProfiles = useMemo(() => {
+    const start = (safePage - 1) * PAGE_SIZE;
+    return displayedProfiles.slice(start, start + PAGE_SIZE);
+  }, [displayedProfiles, safePage]);
+
+  const pageStart = displayedProfiles.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+  const pageEnd = Math.min(safePage * PAGE_SIZE, displayedProfiles.length);
+
   // Calculate active filter count
   const activeFilterCount = useMemo(() => {
     return Object.entries(filters).filter(([key, v]) =>
@@ -273,14 +300,14 @@ export function TalentDashboard() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="border-b border-black/6 dark:border-white/[0.06] bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl sticky top-16 z-40">
+      <div className="border-b border-black/6 dark:border-white/6 bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl sticky top-16 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             {/* Title Section */}
             <div className="flex items-center gap-3 animate-fade-in">
               <div className="relative">
-                <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 blur-md opacity-40" />
-                <div className="relative p-2.5 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-xl shadow-lg shadow-indigo-500/30">
+                <div className="absolute inset-0 rounded-xl bg-linear-to-br from-indigo-500 to-violet-600 blur-md opacity-40" />
+                <div className="relative p-2.5 bg-linear-to-br from-indigo-500 to-violet-600 rounded-xl shadow-lg shadow-indigo-500/30">
                   <Users className="h-5 w-5 text-white" />
                 </div>
               </div>
@@ -419,6 +446,10 @@ export function TalentDashboard() {
                 <p className="text-sm text-foreground/60">
                   Showing{" "}
                   <span className="text-foreground font-semibold">
+                    {pageStart}–{pageEnd}
+                  </span>{" "}
+                  of{" "}
+                  <span className="text-foreground font-semibold">
                     {displayedProfiles.length}
                   </span>{" "}
                   {displayedProfiles.length === 1 ? "candidate" : "candidates"}
@@ -448,7 +479,7 @@ export function TalentDashboard() {
 
         {/* Results Table */}
         <TalentTable
-          profiles={displayedProfiles}
+          profiles={paginatedProfiles}
           isLoading={talentsLoading}
           sortField={sortField}
           sortDirection={sortDirection}
@@ -458,6 +489,12 @@ export function TalentDashboard() {
           onClearFilters={clearFilters}
           searchActive={!!filters.search}
           searchTerm={filters.search || ""}
+        />
+        <Pagination
+          currentPage={safePage}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          className="mt-6"
         />
       </div>
 

@@ -17,8 +17,12 @@ import { DEFAULT_JD_FILTERS } from "./types";
 import { JdTable } from "./components/JdTable";
 import { JdDetailPanel } from "./JdDetailPanel";
 import { JdUploadDialog } from "./components/JdUploadDialog";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { CLEARANCE_LEVELS, US_STATES } from "@/types/talent";
 import { UploadActionButton } from "@/components/ui/upload-action-button";
+import { Pagination } from "@/components/ui/pagination";
+
+const PAGE_SIZE = 25;
 
 export function JobDescriptionsDashboard() {
   const [filters, setFilters] = useState<JdFilters>(DEFAULT_JD_FILTERS);
@@ -28,6 +32,7 @@ export function JobDescriptionsDashboard() {
   const [showFilters, setShowFilters] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
   const [showDuplicatesOnly, setShowDuplicatesOnly] = useState(false);
+  const [page, setPage] = useState(1);
 
   const { jobDescriptions, isLoading, error, refresh, removeJobDescription } =
     useJobDescriptions({
@@ -92,6 +97,25 @@ export function JobDescriptionsDashboard() {
     setFilters(DEFAULT_JD_FILTERS);
   }, []);
 
+  // Reset to first page when filters / sort / duplicate toggle change (derived-state avoids effect)
+  const resetKey = `${JSON.stringify(filters)}|${sortField}|${sortDirection}|${String(showDuplicatesOnly)}`;
+  const [lastResetKey, setLastResetKey] = useState(resetKey);
+  if (lastResetKey !== resetKey) {
+    setLastResetKey(resetKey);
+    setPage(1);
+  }
+
+  const totalPages = Math.max(1, Math.ceil(displayedJds.length / PAGE_SIZE));
+
+  // Clamp page when data changes without filter change (delete / refresh)
+  const safePage = Math.min(page, totalPages);
+  if (page !== safePage) setPage(safePage);
+
+  const paginatedJds = useMemo(() => {
+    const start = (safePage - 1) * PAGE_SIZE;
+    return displayedJds.slice(start, start + PAGE_SIZE);
+  }, [displayedJds, safePage]);
+
   const activeFilterCount = Object.values(filters).filter(Boolean).length;
 
   const handleDeleted = useCallback(() => {
@@ -107,8 +131,8 @@ export function JobDescriptionsDashboard() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 blur-md opacity-40" />
-            <div className="relative p-2.5 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl shadow-lg shadow-violet-500/30">
+            <div className="absolute inset-0 rounded-xl bg-linear-to-br from-violet-500 to-purple-600 blur-md opacity-40" />
+            <div className="relative p-2.5 bg-linear-to-br from-violet-500 to-purple-600 rounded-xl shadow-lg shadow-violet-500/30">
               <FileText className="h-5 w-5 text-white" />
             </div>
           </div>
@@ -162,83 +186,51 @@ export function JobDescriptionsDashboard() {
 
       {/* Filters */}
       {showFilters && (
-        <div className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-black/[0.07] dark:border-white/[0.07] p-4">
+        <div className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-black/7 dark:border-white/7 p-4">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div>
-              <label className="block text-[11px] font-semibold uppercase tracking-wider text-foreground/40 mb-1">
+            <div className="space-y-1.5">
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-foreground/40">
                 Job Title
               </label>
-              <select
+              <SearchableSelect
                 value={filters.job_title}
-                onChange={(e) =>
-                  handleFilterChange("job_title", e.target.value)
-                }
-                className="w-full rounded-lg border border-black/10 dark:border-white/10 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-foreground"
-              >
-                <option value="">All</option>
-                {lookupJobTitles.map((jt) => (
-                  <option key={jt} value={jt}>
-                    {jt}
-                  </option>
-                ))}
-              </select>
+                onValueChange={(v) => handleFilterChange("job_title", v)}
+                options={lookupJobTitles.map((jt) => ({ value: jt, label: jt }))}
+                placeholder="All titles"
+              />
             </div>
-            <div>
-              <label className="block text-[11px] font-semibold uppercase tracking-wider text-foreground/40 mb-1">
+            <div className="space-y-1.5">
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-foreground/40">
                 Industry
               </label>
-              <select
+              <SearchableSelect
                 value={filters.industry_category}
-                onChange={(e) =>
-                  handleFilterChange("industry_category", e.target.value)
-                }
-                className="w-full rounded-lg border border-black/10 dark:border-white/10 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-foreground"
-              >
-                <option value="">All</option>
-                {lookupIndustryCategories.map((ic) => (
-                  <option key={ic} value={ic}>
-                    {ic}
-                  </option>
-                ))}
-              </select>
+                onValueChange={(v) => handleFilterChange("industry_category", v)}
+                options={lookupIndustryCategories.map((ic) => ({ value: ic, label: ic }))}
+                placeholder="All industries"
+              />
             </div>
-            <div>
-              <label className="block text-[11px] font-semibold uppercase tracking-wider text-foreground/40 mb-1">
+            <div className="space-y-1.5">
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-foreground/40">
                 Clearance
               </label>
-              <select
+              <SearchableSelect
                 value={filters.required_clearance}
-                onChange={(e) =>
-                  handleFilterChange("required_clearance", e.target.value)
-                }
-                className="w-full rounded-lg border border-black/10 dark:border-white/10 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-foreground"
-              >
-                <option value="">All</option>
-                {CLEARANCE_LEVELS.map((cl) => (
-                  <option key={cl.value} value={cl.value}>
-                    {cl.label}
-                  </option>
-                ))}
-              </select>
+                onValueChange={(v) => handleFilterChange("required_clearance", v)}
+                options={CLEARANCE_LEVELS}
+                placeholder="Any clearance"
+              />
             </div>
-            <div>
-              <label className="block text-[11px] font-semibold uppercase tracking-wider text-foreground/40 mb-1">
+            <div className="space-y-1.5">
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-foreground/40">
                 State
               </label>
-              <select
+              <SearchableSelect
                 value={filters.location_state}
-                onChange={(e) =>
-                  handleFilterChange("location_state", e.target.value)
-                }
-                className="w-full rounded-lg border border-black/10 dark:border-white/10 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-foreground"
-              >
-                <option value="">All</option>
-                {US_STATES.map((s) => (
-                  <option key={s.value} value={s.value}>
-                    {s.label}
-                  </option>
-                ))}
-              </select>
+                onValueChange={(v) => handleFilterChange("location_state", v)}
+                options={US_STATES}
+                placeholder="Any state"
+              />
             </div>
           </div>
           <div className="mt-3 flex items-center justify-between">
@@ -248,7 +240,7 @@ export function JobDescriptionsDashboard() {
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
                   showDuplicatesOnly
                     ? "bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300"
-                    : "border border-black/[0.06] dark:border-white/[0.06] text-foreground/40 hover:text-amber-600 dark:hover:text-amber-400 hover:border-amber-500/20"
+                    : "border border-black/6 dark:border-white/6 text-foreground/40 hover:text-amber-600 dark:hover:text-amber-400 hover:border-amber-500/20"
                 }`}
               >
                 <AlertTriangle className="h-3.5 w-3.5" />
@@ -279,7 +271,7 @@ export function JobDescriptionsDashboard() {
 
       {/* Table */}
       <JdTable
-        jobDescriptions={displayedJds}
+        jobDescriptions={paginatedJds}
         isLoading={isLoading}
         sortField={sortField}
         sortDirection={sortDirection}
@@ -287,6 +279,12 @@ export function JobDescriptionsDashboard() {
         onSelectJd={setSelectedJd}
         activeFilterCount={activeFilterCount}
         onClearFilters={clearFilters}
+      />
+      <Pagination
+        currentPage={safePage}
+        totalPages={totalPages}
+        onPageChange={setPage}
+        className="mt-4"
       />
 
       {/* Detail panel */}

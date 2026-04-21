@@ -226,7 +226,7 @@ export function JdDetailPanel({
         {/* Top bar */}
         <div className="flex-none bg-white/95 dark:bg-slate-800/95 backdrop-blur-lg border-b border-black/10 dark:border-white/10 px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-violet-500/30 to-purple-500/30 flex items-center justify-center border border-black/10 dark:border-white/10 text-violet-600 dark:text-violet-300">
+            <div className="h-8 w-8 rounded-full bg-linear-to-br from-violet-500/30 to-purple-500/30 flex items-center justify-center border border-black/10 dark:border-white/10 text-violet-600 dark:text-violet-300">
               <FileText className="h-4 w-4" />
             </div>
             <div>
@@ -330,9 +330,9 @@ export function JdDetailPanel({
   return (
     <div className="fixed inset-y-0 right-0 w-full max-w-lg z-50 flex flex-col bg-white dark:bg-slate-900 border-l border-black/10 dark:border-white/10 shadow-2xl animate-slide-in-right">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-black/10 dark:border-white/10 bg-gradient-to-r from-violet-500/5 to-purple-500/5">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-black/10 dark:border-white/10 bg-linear-to-r from-violet-500/5 to-purple-500/5">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="shrink-0 h-10 w-10 rounded-full bg-gradient-to-br from-violet-500/40 to-purple-600/40 flex items-center justify-center border border-violet-500/20 text-violet-600 dark:text-violet-300">
+          <div className="shrink-0 h-10 w-10 rounded-full bg-linear-to-br from-violet-500/40 to-purple-600/40 flex items-center justify-center border border-violet-500/20 text-violet-600 dark:text-violet-300">
             <FileText className="h-5 w-5" />
           </div>
           <div className="min-w-0">
@@ -548,7 +548,7 @@ export function JdDetailPanel({
                   key={m.pk}
                   onClick={() => handleProfileClick(m)}
                   disabled={profileLoading === m.pk}
-                  className="w-full text-left rounded-xl border border-black/[0.06] dark:border-white/[0.06] p-3 bg-white/40 dark:bg-slate-800/40 hover:bg-indigo-500/[0.05] hover:border-indigo-500/20 transition-all group cursor-pointer"
+                  className="w-full text-left rounded-xl border border-black/6 dark:border-white/6 p-3 bg-white/40 dark:bg-slate-800/40 hover:bg-indigo-500/5 hover:border-indigo-500/20 transition-all group cursor-pointer"
                 >
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2 min-w-0">
@@ -557,7 +557,7 @@ export function JdDetailPanel({
                           <Loader2 className="h-3.5 w-3.5 animate-spin text-indigo-500" />
                         </div>
                       ) : (
-                        <div className="shrink-0 h-7 w-7 rounded-full bg-gradient-to-br from-indigo-500/40 to-violet-600/40 flex items-center justify-center text-indigo-600 dark:text-indigo-300 text-xs font-semibold border border-indigo-500/20">
+                        <div className="shrink-0 h-7 w-7 rounded-full bg-linear-to-br from-indigo-500/40 to-violet-600/40 flex items-center justify-center text-indigo-600 dark:text-indigo-300 text-xs font-semibold border border-indigo-500/20">
                           {(m.name || "?").charAt(0).toUpperCase()}
                         </div>
                       )}
@@ -579,7 +579,7 @@ export function JdDetailPanel({
                     {m.location_state && <span>• {m.location_state}</span>}
                   </div>
                   {m.rationale && (
-                    <p className="text-xs text-foreground/50 mt-2 ml-9 leading-relaxed bg-black/[0.02] dark:bg-white/[0.02] rounded-lg px-2.5 py-2 border border-black/[0.04] dark:border-white/[0.04]">
+                    <p className="text-xs text-foreground/50 mt-2 ml-9 leading-relaxed bg-black/2 dark:bg-white/2 rounded-lg px-2.5 py-2 border border-black/4 dark:border-white/4">
                       {m.rationale}
                     </p>
                   )}

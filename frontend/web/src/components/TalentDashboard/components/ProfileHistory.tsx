@@ -175,7 +175,7 @@ function FieldDiff({
       </span>
       <div className="flex items-center gap-1.5 flex-wrap min-w-0">
         {oldVal !== "—" && (
-          <span className="px-2 py-0.5 rounded-md bg-red-500/8 text-red-700 dark:text-red-300 border border-red-500/15 line-through decoration-red-400/50 max-w-[160px] truncate">
+          <span className="px-2 py-0.5 rounded-md bg-red-500/8 text-red-700 dark:text-red-300 border border-red-500/15 line-through decoration-red-400/50 max-w-40 truncate">
             {oldVal}
           </span>
         )}
@@ -183,7 +183,7 @@ function FieldDiff({
           <ArrowRight className="w-3 h-3 text-foreground/25 shrink-0" />
         )}
         {newVal !== "—" && (
-          <span className="px-2 py-0.5 rounded-md bg-emerald-500/8 text-emerald-700 dark:text-emerald-300 border border-emerald-500/15 max-w-[160px] truncate">
+          <span className="px-2 py-0.5 rounded-md bg-emerald-500/8 text-emerald-700 dark:text-emerald-300 border border-emerald-500/15 max-w-40 truncate">
             {newVal}
           </span>
         )}
@@ -224,7 +224,7 @@ function AuditCard({ entry, isLast }: { entry: AuditEntry; isLast: boolean }) {
           <div className="flex items-center gap-2 flex-wrap min-w-0">
             {/* Avatar */}
             <div
-              className={`h-6 w-6 rounded-full bg-gradient-to-br ${grad} flex items-center justify-center shrink-0`}
+              className={`h-6 w-6 rounded-full bg-linear-to-br ${grad} flex items-center justify-center shrink-0`}
             >
               {system ? (
                 <Database className="w-3 h-3 text-white" />
@@ -288,7 +288,7 @@ function AuditCard({ entry, isLast }: { entry: AuditEntry; isLast: boolean }) {
 
         {/* Expanded diff */}
         {expanded && hasChanges && (
-          <div className="mt-2 p-3 rounded-lg bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.06] space-y-1.5">
+          <div className="mt-2 p-3 rounded-lg bg-black/3 dark:bg-white/3 border border-black/6 dark:border-white/6 space-y-1.5">
             {Object.entries(entry.changes!).map(([field, change]) => (
               <FieldDiff key={field} field={field} change={change} />
             ))}

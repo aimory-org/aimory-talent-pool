@@ -1,15 +1,13 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
-  ArrowUpDown,
   ChevronDown,
-  Edit3,
+  FileText,
   Loader2,
   RefreshCw,
   Search,
-  Tag,
-  Trash2,
   User,
+  UserPlus,
   X,
 } from "lucide-react";
 import {
@@ -17,13 +15,19 @@ import {
   type AuditEntry,
   type AuditFieldChange,
 } from "@/lib/api";
+import { Pagination } from "@/components/ui/pagination";
+import { isUUID, fallbackCandidateName } from "../utils";
+
+const PAGE_SIZE = 25;
 
 type ActionType =
   | "edit"
   | "status_change"
   | "delete"
   | "tag_add"
-  | "tag_remove";
+  | "tag_remove"
+  | "new_candidate"
+  | "new_job_description";
 
 interface RecruiterEvent {
   id: string;
@@ -38,7 +42,7 @@ interface RecruiterEvent {
   details: string;
 }
 
-const SYSTEM_EMAILS = new Set(["pipeline@system", "dedup@system"]);
+const SYSTEM_EMAILS = new Set(["dedup@system"]);
 
 const FIELD_LABELS: Record<string, string> = {
   status: "status",
@@ -55,45 +59,54 @@ const FIELD_LABELS: Record<string, string> = {
 
 const ACTION_CONFIG: Record<
   ActionType,
-  { label: string; icon: ReactNode; badge: string; dot: string }
+  { label: string; badge: string; dot: string }
 > = {
   edit: {
     label: "Edit",
-    icon: <Edit3 className="w-3 h-3" />,
     badge: "bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20",
     dot: "bg-blue-500",
   },
   status_change: {
     label: "Status Change",
-    icon: <ArrowUpDown className="w-3 h-3" />,
     badge:
       "bg-violet-500/10 text-violet-700 dark:text-violet-300 border-violet-500/20",
     dot: "bg-violet-500",
   },
   delete: {
     label: "Delete",
-    icon: <Trash2 className="w-3 h-3" />,
     badge: "bg-red-500/10 text-red-700 dark:text-red-300 border-red-500/20",
     dot: "bg-red-500",
   },
   tag_add: {
     label: "Tag Added",
-    icon: <Tag className="w-3 h-3" />,
     badge:
       "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20",
     dot: "bg-emerald-500",
   },
   tag_remove: {
     label: "Tag Removed",
-    icon: <Tag className="w-3 h-3" />,
     badge:
       "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20",
     dot: "bg-amber-500",
+  },
+  new_candidate: {
+    label: "New Candidate",
+    badge:
+      "bg-teal-500/10 text-teal-700 dark:text-teal-300 border-teal-500/20",
+    dot: "bg-teal-500",
+  },
+  new_job_description: {
+    label: "New Job Description",
+    badge:
+      "bg-violet-500/10 text-violet-700 dark:text-violet-300 border-violet-500/20",
+    dot: "bg-violet-500",
   },
 };
 
 const ACTION_FILTERS: { value: ActionType | "all"; label: string }[] = [
   { value: "all", label: "All Actions" },
+  { value: "new_candidate", label: "New Candidates" },
+  { value: "new_job_description", label: "New Job Descriptions" },
   { value: "edit", label: "Edits" },
   { value: "status_change", label: "Status Changes" },
   { value: "delete", label: "Deletes" },
@@ -170,24 +183,28 @@ function deriveTagAction(
   return null;
 }
 
-function fallbackCandidateName(entry: AuditEntry): string {
-  const snapshotName =
-    entry.snapshot &&
-    typeof entry.snapshot === "object" &&
-    "name" in entry.snapshot &&
-    typeof (entry.snapshot as { name?: unknown }).name === "string"
-      ? (entry.snapshot as { name: string }).name
-      : null;
-
-  return (
-    entry.candidate_name ||
-    snapshotName ||
-    entry.pk.split("#").at(-1)?.replace(".pdf", "") ||
-    "Candidate"
-  );
-}
-
 function mapRecruiterEvent(entry: AuditEntry): RecruiterEvent | null {
+  // Pipeline ingestion → show as "New Candidate" (resume) or "New Job Description" (JD)
+  if (entry.user_email === "pipeline@system" && entry.action !== "UPDATE") {
+    const displayName = fallbackCandidateName(entry);
+    const isJd = isUUID(entry.pk);
+    return {
+      id: entry.sk,
+      timestamp: entry.timestamp,
+      recruiter_name: "Pipeline",
+      recruiter_email: entry.user_email,
+      action: isJd ? "new_job_description" : "new_candidate",
+      candidate_name: displayName,
+      candidate_id: entry.pk,
+      details: isJd
+        ? `${displayName} was added as a new job description.`
+        : `${displayName} was added via the upload pipeline.`,
+    };
+  }
+
+  // pipeline@system UPDATE entries are reprocesses — they belong in SystemActivity
+  if (entry.user_email === "pipeline@system") return null;
+
   if (SYSTEM_EMAILS.has(entry.user_email)) return null;
 
   const candidateName = fallbackCandidateName(entry);
@@ -202,7 +219,9 @@ function mapRecruiterEvent(entry: AuditEntry): RecruiterEvent | null {
       action: "delete",
       candidate_name: candidateName,
       candidate_id: entry.pk,
-      details: `Deleted profile for ${candidateName}.`,
+      details: isUUID(entry.pk)
+        ? `Deleted job description: ${candidateName}.`
+        : `Deleted profile for ${candidateName}.`,
     };
   }
 
@@ -218,7 +237,9 @@ function mapRecruiterEvent(entry: AuditEntry): RecruiterEvent | null {
       candidate_id: entry.pk,
       old_value: statusChange ? String(statusChange.old ?? "") : undefined,
       new_value: statusChange ? String(statusChange.new ?? "") : undefined,
-      details: "Updated candidate status.",
+      details: isUUID(entry.pk)
+        ? "Updated job description status."
+        : "Updated candidate status.",
     };
   }
 
@@ -250,7 +271,8 @@ function mapRecruiterEvent(entry: AuditEntry): RecruiterEvent | null {
 
     const firstField = Object.keys(changes)[0];
     const firstChange = firstField ? changes[firstField] : null;
-    const label = FIELD_LABELS[firstField || ""] || firstField || "profile";
+    const entityFallback = isUUID(entry.pk) ? "job description" : "profile";
+    const label = FIELD_LABELS[firstField || ""] || firstField || entityFallback;
 
     return {
       id: entry.sk,
@@ -274,7 +296,9 @@ function mapRecruiterEvent(entry: AuditEntry): RecruiterEvent | null {
     action: "edit",
     candidate_name: candidateName,
     candidate_id: entry.pk,
-    details: `Created profile for ${candidateName}.`,
+    details: isUUID(entry.pk)
+      ? `Added job description: ${candidateName}.`
+      : `Created profile for ${candidateName}.`,
   };
 }
 
@@ -285,6 +309,7 @@ export function RecruiterActivity() {
   const [events, setEvents] = useState<RecruiterEvent[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [page, setPage] = useState(1);
 
   const loadEvents = async () => {
     setIsLoading(true);
@@ -327,6 +352,28 @@ export function RecruiterActivity() {
 
   const currentAction = ACTION_FILTERS.find((f) => f.value === actionFilter);
 
+  // Reset to first page when action filter or search changes
+  useEffect(() => {
+    setPage(1);
+  }, [actionFilter, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+
+  // Clamp page when data changes without filter change (refresh)
+  useEffect(() => {
+    setPage((currentPage) => Math.min(currentPage, totalPages));
+  }, [totalPages]);
+
+  const safePage = Math.min(page, totalPages);
+
+  const paginatedEvents = useMemo(() => {
+    const start = (safePage - 1) * PAGE_SIZE;
+    return filtered.slice(start, start + PAGE_SIZE);
+  }, [filtered, safePage]);
+
+  const pageStart = filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+  const pageEnd = Math.min(safePage * PAGE_SIZE, filtered.length);
+
   return (
     <div className="animate-fade-in">
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
@@ -336,7 +383,7 @@ export function RecruiterActivity() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by recruiter, candidate, or notes..."
-            className="w-full h-10 pl-10 pr-4 rounded-xl bg-black/5 dark:bg-white/5 border border-black/[0.07] dark:border-white/[0.07] text-sm text-foreground placeholder-foreground/30 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/30 transition-all"
+            className="w-full h-10 pl-10 pr-4 rounded-xl bg-black/5 dark:bg-white/5 border border-black/7 dark:border-white/7 text-sm text-foreground placeholder-foreground/30 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/30 transition-all"
           />
           {search && (
             <button
@@ -351,13 +398,13 @@ export function RecruiterActivity() {
         <div className="relative">
           <button
             onClick={() => setShowFilter((v) => !v)}
-            className="flex items-center gap-2 h-10 px-4 rounded-xl border border-black/[0.07] dark:border-white/[0.07] bg-black/5 dark:bg-white/5 text-sm font-medium text-foreground/60 hover:text-foreground hover:bg-black/10 dark:hover:bg-white/10 transition-all"
+            className="flex items-center gap-2 h-10 px-4 rounded-xl border border-black/7 dark:border-white/7 bg-black/5 dark:bg-white/5 text-sm font-medium text-foreground/60 hover:text-foreground hover:bg-black/10 dark:hover:bg-white/10 transition-all"
           >
             <span>{currentAction?.label}</span>
             <ChevronDown className="h-3.5 w-3.5" />
           </button>
           {showFilter && (
-            <div className="absolute right-0 mt-2 w-44 rounded-xl border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-slate-800 shadow-xl shadow-black/10 z-20 py-1 animate-slide-in-up">
+            <div className="absolute right-0 mt-2 w-44 rounded-xl border border-black/7 dark:border-white/7 bg-white dark:bg-slate-800 shadow-xl shadow-black/10 z-20 py-1 animate-slide-in-up">
               {ACTION_FILTERS.map((filterOption) => (
                 <button
                   key={filterOption.value}
@@ -381,7 +428,7 @@ export function RecruiterActivity() {
         <button
           onClick={() => void loadEvents()}
           title="Refresh recruiter activity"
-          className="h-10 w-10 shrink-0 rounded-xl border border-black/[0.07] dark:border-white/[0.07] bg-black/5 dark:bg-white/5 text-foreground/60 hover:text-foreground hover:bg-black/10 dark:hover:bg-white/10 transition-all flex items-center justify-center"
+          className="h-10 w-10 shrink-0 rounded-xl border border-black/7 dark:border-white/7 bg-black/5 dark:bg-white/5 text-foreground/60 hover:text-foreground hover:bg-black/10 dark:hover:bg-white/10 transition-all flex items-center justify-center"
         >
           {isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -401,6 +448,10 @@ export function RecruiterActivity() {
       <p className="text-xs text-foreground/40 mb-4">
         Showing{" "}
         <span className="font-semibold text-foreground/60">
+          {pageStart}–{pageEnd}
+        </span>{" "}
+        of{" "}
+        <span className="font-semibold text-foreground/60">
           {filtered.length}
         </span>{" "}
         {filtered.length === 1 ? "event" : "events"}
@@ -418,88 +469,97 @@ export function RecruiterActivity() {
             <p className="text-sm">No activity found</p>
           </div>
         ) : (
-          filtered.map((event, index) => {
+          paginatedEvents.map((event, index) => {
             const config = ACTION_CONFIG[event.action];
             const gradient = avatarColor(event.recruiter_name);
-            const showDetails =
-              !event.old_value &&
-              !event.new_value &&
-              !event.details.toLowerCase().startsWith("updated ") &&
-              !event.details.toLowerCase().startsWith("added tag") &&
-              !event.details.toLowerCase().startsWith("removed tag");
+            const isPipeline =
+              event.action === "new_candidate" ||
+              event.action === "new_job_description";
+            const avatarBg = isPipeline
+              ? event.action === "new_job_description"
+                ? "from-violet-500 to-purple-600"
+                : "from-teal-500 to-emerald-600"
+              : gradient;
 
             return (
               <div
                 key={event.id}
-                className="animate-fade-in flex gap-4 p-4 rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm hover:border-indigo-500/20 hover:bg-white/80 dark:hover:bg-slate-800/80 transition-all duration-200"
+                className="animate-fade-in flex gap-3 p-4 rounded-2xl border border-black/6 dark:border-white/6 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm hover:border-indigo-500/20 hover:bg-white/80 dark:hover:bg-slate-800/80 transition-all duration-200"
                 style={{ animationDelay: `${index * 30}ms` }}
               >
+                {/* Avatar */}
                 <div
-                  className={`shrink-0 h-9 w-9 rounded-full bg-gradient-to-br ${gradient} flex items-center justify-center text-white text-[11px] font-bold shadow-sm`}
+                  className={`shrink-0 h-9 w-9 rounded-xl bg-linear-to-br ${avatarBg} flex items-center justify-center text-white shadow-sm`}
                 >
-                  {getInitials(event.recruiter_name)}
+                  {event.action === "new_candidate" ? (
+                    <UserPlus className="w-4 h-4" />
+                  ) : event.action === "new_job_description" ? (
+                    <FileText className="w-4 h-4" />
+                  ) : (
+                    <span className="text-[11px] font-bold">
+                      {getInitials(event.recruiter_name)}
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex-1 min-w-0">
+                  {/* Row 1: subject + timestamp */}
                   <div className="flex items-start justify-between gap-3 mb-1.5">
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm font-semibold text-foreground">
-                          {event.recruiter_name}
-                        </span>
-                        <span
-                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border ${config.badge}`}
-                        >
-                          <span
-                            className={`w-1.5 h-1.5 rounded-full ${config.dot}`}
-                          />
-                          {config.label}
-                        </span>
-                      </div>
-                      <p className="text-xs text-foreground/50 mt-0.5 truncate">
-                        {event.candidate_name}
-                      </p>
-                    </div>
-
-                    <div className="shrink-0 text-right">
-                      <p className="text-xs font-medium text-foreground/60 leading-none">
+                    <p className="text-sm font-semibold text-foreground leading-snug truncate">
+                      {event.candidate_name}
+                    </p>
+                    <div className="shrink-0 text-right leading-none">
+                      <p className="text-xs font-medium text-foreground/50">
                         {formatTime(event.timestamp)}
                       </p>
-                      <p className="text-[11px] text-foreground/35 mt-1">
+                      <p className="text-[11px] text-foreground/30 mt-0.5">
                         {formatDate(event.timestamp)}
                       </p>
                     </div>
                   </div>
 
-                  {event.old_value && event.new_value && (
-                    <div className="flex items-center gap-2 mb-1.5 text-xs flex-wrap">
+                  {/* Row 2: badge + actor */}
+                  <div className="flex flex-wrap items-center gap-2 mb-2">
+                    <span
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border ${config.badge}`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${config.dot}`} />
+                      {config.label}
+                    </span>
+                    {!isPipeline && (
+                      <span className="text-xs text-foreground/40">
+                        by{" "}
+                        <span className="font-medium text-foreground/60">
+                          {event.recruiter_name}
+                        </span>
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Row 3: diff chips or description */}
+                  {event.old_value && event.new_value ? (
+                    <div className="flex items-center gap-2 text-xs flex-wrap">
                       <span className="px-2 py-0.5 rounded bg-red-500/8 text-red-600 dark:text-red-400 line-through font-mono max-w-[180px] truncate">
                         {event.old_value}
                       </span>
-                      <span className="text-foreground/30">-&gt;</span>
+                      <span className="text-foreground/30">&rarr;</span>
                       <span className="px-2 py-0.5 rounded bg-emerald-500/8 text-emerald-700 dark:text-emerald-400 font-mono max-w-[180px] truncate">
                         {event.new_value}
                       </span>
                     </div>
-                  )}
-
-                  {!event.old_value && event.new_value && (
-                    <div className="flex items-center gap-2 mb-1.5 text-xs">
+                  ) : event.new_value ? (
+                    <div className="flex items-center gap-2 text-xs">
                       <span className="px-2 py-0.5 rounded bg-emerald-500/8 text-emerald-700 dark:text-emerald-400 font-mono max-w-[220px] truncate">
                         {event.new_value}
                       </span>
                     </div>
-                  )}
-
-                  {event.old_value && !event.new_value && (
-                    <div className="flex items-center gap-2 mb-1.5 text-xs">
+                  ) : event.old_value ? (
+                    <div className="flex items-center gap-2 text-xs">
                       <span className="px-2 py-0.5 rounded bg-red-500/8 text-red-600 dark:text-red-400 line-through font-mono max-w-[220px] truncate">
                         {event.old_value}
                       </span>
                     </div>
-                  )}
-
-                  {showDetails && (
+                  ) : (
                     <p className="text-xs text-foreground/45 leading-relaxed">
                       {event.details}
                     </p>
@@ -510,6 +570,12 @@ export function RecruiterActivity() {
           })
         )}
       </div>
+      <Pagination
+        currentPage={safePage}
+        totalPages={totalPages}
+        onPageChange={setPage}
+        className="mt-6"
+      />
     </div>
   );
 }

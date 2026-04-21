@@ -99,32 +99,20 @@ export interface LookupsResponse {
 export async function listTalents(
   params: ListTalentsParams = {},
 ): Promise<ListTalentsResponse> {
-  const searchParams = new URLSearchParams();
+  const q = new URLSearchParams();
+  const { skills, certifications, tags, minYears, maxYears, ...simple } = params;
 
-  if (params.status) searchParams.set("status", params.status);
-  if (params.service_category)
-    searchParams.set("service_category", params.service_category);
-  if (params.industry_category)
-    searchParams.set("industry_category", params.industry_category);
-  if (params.job_title) searchParams.set("job_title", params.job_title);
-  if (params.clearance_level)
-    searchParams.set("clearance_level", params.clearance_level);
-  if (params.location_state)
-    searchParams.set("location_state", params.location_state);
-  if (params.city) searchParams.set("city", params.city);
-  if (params.skills?.length)
-    searchParams.set("skills", params.skills.join(","));
-  if (params.certifications?.length)
-    searchParams.set("certifications", params.certifications.join(","));
-  if (params.tags?.length) searchParams.set("tags", params.tags.join(","));
-  if (params.search) searchParams.set("search", params.search);
-  if (params.minYears !== undefined)
-    searchParams.set("minYears", params.minYears.toString());
-  if (params.maxYears !== undefined)
-    searchParams.set("maxYears", params.maxYears.toString());
+  for (const [key, val] of Object.entries(simple)) {
+    if (val != null && val !== "") q.set(key, String(val));
+  }
+  if (skills?.length) q.set("skills", skills.join(","));
+  if (certifications?.length) q.set("certifications", certifications.join(","));
+  if (tags?.length) q.set("tags", tags.join(","));
+  if (minYears != null) q.set("minYears", String(minYears));
+  if (maxYears != null) q.set("maxYears", String(maxYears));
 
-  const query = searchParams.toString();
-  return apiFetch<ListTalentsResponse>(`/talents${query ? `?${query}` : ""}`);
+  const qs = q.toString();
+  return apiFetch<ListTalentsResponse>(`/talents${qs ? `?${qs}` : ""}`);
 }
 
 /**
@@ -237,6 +225,9 @@ export interface AuditEntry {
   user_email: string;
   user_name?: string;
   candidate_name?: string;
+  /** Set by the JD pipeline instead of candidate_name */
+  title?: string;
+  document_type?: string;
   details?: string;
   changes?: Record<string, AuditFieldChange>;
   snapshot?: Record<string, unknown>; // for DELETE
