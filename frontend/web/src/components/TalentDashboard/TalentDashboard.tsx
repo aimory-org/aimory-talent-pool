@@ -7,7 +7,7 @@
  * - Sortable table with profile details
  * - Detail panel for viewing/editing individual profiles
  */
-import { useState, useMemo, useCallback, useRef } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { Users, Search, Filter, X, Loader2 } from "lucide-react";
 import { useTalents } from "@/hooks/useTalents";
 import { useLookups } from "@/hooks/useLookups";
