@@ -16,6 +16,7 @@ import {
   type AuditFieldChange,
 } from "@/lib/api";
 import { Pagination } from "@/components/ui/pagination";
+import { isUUID, fallbackCandidateName } from "../utils";
 
 const PAGE_SIZE = 25;
 
@@ -181,8 +182,6 @@ function deriveTagAction(
 
   return null;
 }
-
-import { isUUID, fallbackCandidateName } from "../utils";
 
 function mapRecruiterEvent(entry: AuditEntry): RecruiterEvent | null {
   // Pipeline ingestion → show as "New Candidate" (resume) or "New Job Description" (JD)
@@ -353,18 +352,19 @@ export function RecruiterActivity() {
 
   const currentAction = ACTION_FILTERS.find((f) => f.value === actionFilter);
 
-  // Reset to first page when action filter or search changes (derived-state pattern avoids effect)
-  const filterResetKey = `${actionFilter}|${search}`;
-  const [lastFilterResetKey, setLastFilterResetKey] = useState(filterResetKey);
-  if (lastFilterResetKey !== filterResetKey) {
-    setLastFilterResetKey(filterResetKey);
+  // Reset to first page when action filter or search changes
+  useEffect(() => {
     setPage(1);
-  }
+  }, [actionFilter, search]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+
   // Clamp page when data changes without filter change (refresh)
+  useEffect(() => {
+    setPage((currentPage) => Math.min(currentPage, totalPages));
+  }, [totalPages]);
+
   const safePage = Math.min(page, totalPages);
-  if (page !== safePage) setPage(safePage);
 
   const paginatedEvents = useMemo(() => {
     const start = (safePage - 1) * PAGE_SIZE;

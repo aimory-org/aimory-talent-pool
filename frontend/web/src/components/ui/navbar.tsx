@@ -106,7 +106,7 @@ export function NavBar({ user, onSignOut }: NavBarProps) {
               <div className="h-7 w-7 rounded-full bg-linear-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white font-semibold text-[11px] shadow-md shadow-indigo-500/30 shrink-0">
                 {initials}
               </div>
-              <span className="text-sm text-foreground/60 hidden md:block max-w-35 truncate">
+              <span className="text-sm text-foreground/60 hidden md:block max-w-[140px] truncate">
                 {safeName}
               </span>
             </div>

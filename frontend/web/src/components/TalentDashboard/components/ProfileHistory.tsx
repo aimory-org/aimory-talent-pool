@@ -250,7 +250,7 @@ function AuditCard({ entry, isLast }: { entry: AuditEntry; isLast: boolean }) {
 
             {/* Email (for non-system) */}
             {!system && (
-              <span className="text-[11px] text-foreground/35 truncate max-w-32.5">
+              <span className="text-[11px] text-foreground/35 truncate max-w-[130px]">
                 {entry.user_email}
               </span>
             )}
