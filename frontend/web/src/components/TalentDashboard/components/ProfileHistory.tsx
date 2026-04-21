@@ -385,7 +385,7 @@ export function ProfileHistory({ pk }: ProfileHistoryProps) {
           <p className="text-sm text-foreground/40 font-medium">
             No history yet
           </p>
-          <p className="text-xs text-foreground/25 text-center max-w-50">
+          <p className="text-xs text-foreground/25 text-center max-w-[200px]">
             Changes will appear here once the audit log is connected.
           </p>
         </div>
