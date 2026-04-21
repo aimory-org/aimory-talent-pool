@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useState, useMemo } from "react";
 import {
   AlertCircle,
   ChevronDown,
@@ -182,40 +182,7 @@ function deriveTagAction(
   return null;
 }
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-function isUUID(value: string) {
-  return UUID_RE.test(value);
-}
-
-function fallbackCandidateName(entry: AuditEntry): string {
-  // candidate_name is sometimes set to the raw pk (a UUID) by the Lambda —
-  // in that case it's not useful, so skip it.
-  const candidateName =
-    entry.candidate_name && !isUUID(entry.candidate_name)
-      ? entry.candidate_name
-      : null;
-
-  // JD pipeline stores the job title as top-level `title` (not candidate_name)
-  const topLevelTitle =
-    entry.title && !isUUID(entry.title) ? entry.title : null;
-
-  const snapshotName = (() => {
-    if (!entry.snapshot || typeof entry.snapshot !== "object") return null;
-    const s = entry.snapshot as Record<string, unknown>;
-    if (typeof s.name === "string" && s.name) return s.name;
-    if (typeof s.job_title === "string" && s.job_title) return s.job_title;
-    if (typeof s.title === "string" && s.title) return s.title;
-    return null;
-  })();
-
-  const pkFallback = entry.pk.split("#").at(-1)?.replace(".pdf", "") ?? null;
-  const pkClean =
-    pkFallback && !isUUID(pkFallback) ? pkFallback : null;
-
-  return candidateName ?? topLevelTitle ?? snapshotName ?? pkClean ?? "Unknown";
-}
+import { isUUID, fallbackCandidateName } from "../utils";
 
 function mapRecruiterEvent(entry: AuditEntry): RecruiterEvent | null {
   // Pipeline ingestion → show as "New Candidate" (resume) or "New Job Description" (JD)
@@ -386,18 +353,26 @@ export function RecruiterActivity() {
 
   const currentAction = ACTION_FILTERS.find((f) => f.value === actionFilter);
 
-  useEffect(() => {
+  // Reset to first page when action filter or search changes (derived-state pattern avoids effect)
+  const filterResetKey = `${actionFilter}|${search}`;
+  const [lastFilterResetKey, setLastFilterResetKey] = useState(filterResetKey);
+  if (lastFilterResetKey !== filterResetKey) {
+    setLastFilterResetKey(filterResetKey);
     setPage(1);
-  }, [actionFilter, search]);
+  }
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  // Clamp page when data changes without filter change (refresh)
+  const safePage = Math.min(page, totalPages);
+  if (page !== safePage) setPage(safePage);
 
   const paginatedEvents = useMemo(() => {
-    const start = (page - 1) * PAGE_SIZE;
+    const start = (safePage - 1) * PAGE_SIZE;
     return filtered.slice(start, start + PAGE_SIZE);
-  }, [filtered, page]);
+  }, [filtered, safePage]);
 
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const pageStart = filtered.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
-  const pageEnd = Math.min(page * PAGE_SIZE, filtered.length);
+  const pageStart = filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+  const pageEnd = Math.min(safePage * PAGE_SIZE, filtered.length);
 
   return (
     <div className="animate-fade-in">
@@ -596,7 +571,7 @@ export function RecruiterActivity() {
         )}
       </div>
       <Pagination
-        currentPage={page}
+        currentPage={safePage}
         totalPages={totalPages}
         onPageChange={setPage}
         className="mt-6"

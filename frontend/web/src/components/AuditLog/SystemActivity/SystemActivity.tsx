@@ -156,36 +156,7 @@ function formatDuration(seconds: number) {
   return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
 }
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-function isUUID(value: string) {
-  return UUID_RE.test(value);
-}
-
-function fallbackCandidateName(entry: AuditEntry): string {
-  const candidateName =
-    entry.candidate_name && !isUUID(entry.candidate_name)
-      ? entry.candidate_name
-      : null;
-
-  const topLevelTitle =
-    entry.title && !isUUID(entry.title) ? entry.title : null;
-
-  const snapshotName = (() => {
-    if (!entry.snapshot || typeof entry.snapshot !== "object") return null;
-    const s = entry.snapshot as Record<string, unknown>;
-    if (typeof s.name === "string" && s.name) return s.name;
-    if (typeof s.job_title === "string" && s.job_title) return s.job_title;
-    if (typeof s.title === "string" && s.title) return s.title;
-    return null;
-  })();
-
-  const pkTail = entry.pk.split("#").at(-1)?.replace(".pdf", "") ?? null;
-  const pkClean = pkTail && !isUUID(pkTail) ? pkTail : null;
-
-  return candidateName ?? topLevelTitle ?? snapshotName ?? pkClean ?? "Unknown";
-}
+import { fallbackCandidateName } from "../utils";
 
 function getSnapshotValue(entry: AuditEntry, key: string): unknown {
   if (!entry.snapshot || typeof entry.snapshot !== "object") {
@@ -598,18 +569,26 @@ export function SystemActivity() {
   );
   const isLoading = isLoadingDeployments || isLoadingAudit;
 
-  useEffect(() => {
+  // Reset to first page when type filter or search changes (derived-state pattern avoids effect)
+  const filterResetKey = `${typeFilter}|${search}`;
+  const [lastFilterResetKey, setLastFilterResetKey] = useState(filterResetKey);
+  if (lastFilterResetKey !== filterResetKey) {
+    setLastFilterResetKey(filterResetKey);
     setPage(1);
-  }, [typeFilter, search]);
+  }
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  // Clamp page when data changes without filter change (refresh / delete)
+  const safePage = Math.min(page, totalPages);
+  if (page !== safePage) setPage(safePage);
 
   const paginatedEvents = useMemo(() => {
-    const start = (page - 1) * PAGE_SIZE;
+    const start = (safePage - 1) * PAGE_SIZE;
     return filtered.slice(start, start + PAGE_SIZE);
-  }, [filtered, page]);
+  }, [filtered, safePage]);
 
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const pageStart = filtered.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
-  const pageEnd = Math.min(page * PAGE_SIZE, filtered.length);
+  const pageStart = filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+  const pageEnd = Math.min(safePage * PAGE_SIZE, filtered.length);
 
   return (
     <div className="animate-fade-in">
@@ -869,7 +848,7 @@ export function SystemActivity() {
         )}
       </div>
       <Pagination
-        currentPage={page}
+        currentPage={safePage}
         totalPages={totalPages}
         onPageChange={setPage}
         className="mt-6"

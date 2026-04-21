@@ -105,12 +105,15 @@ export function JobDescriptionsDashboard() {
     setPage(1);
   }
 
-  const paginatedJds = useMemo(() => {
-    const start = (page - 1) * PAGE_SIZE;
-    return displayedJds.slice(start, start + PAGE_SIZE);
-  }, [displayedJds, page]);
+  const totalPages = Math.max(1, Math.ceil(displayedJds.length / PAGE_SIZE));
+  // Clamp page when data changes without filter change (delete / refresh)
+  const safePage = Math.min(page, totalPages);
+  if (page !== safePage) setPage(safePage);
 
-  const totalPages = Math.ceil(displayedJds.length / PAGE_SIZE);
+  const paginatedJds = useMemo(() => {
+    const start = (safePage - 1) * PAGE_SIZE;
+    return displayedJds.slice(start, start + PAGE_SIZE);
+  }, [displayedJds, safePage]);
 
   const activeFilterCount = Object.values(filters).filter(Boolean).length;
 
@@ -277,7 +280,7 @@ export function JobDescriptionsDashboard() {
         onClearFilters={clearFilters}
       />
       <Pagination
-        currentPage={page}
+        currentPage={safePage}
         totalPages={totalPages}
         onPageChange={setPage}
         className="mt-4"

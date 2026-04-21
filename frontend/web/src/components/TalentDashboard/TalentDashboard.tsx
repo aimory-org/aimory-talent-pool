@@ -256,15 +256,19 @@ export function TalentDashboard() {
     setPage(1);
   }
 
+  const totalPages = Math.max(1, Math.ceil(displayedProfiles.length / PAGE_SIZE));
+  // Clamp page when data changes without filter change (delete / upload / refresh)
+  const safePage = Math.min(page, totalPages);
+  if (page !== safePage) setPage(safePage);
+
   // Paginate after sorting + duplicate filter
   const paginatedProfiles = useMemo(() => {
-    const start = (page - 1) * PAGE_SIZE;
+    const start = (safePage - 1) * PAGE_SIZE;
     return displayedProfiles.slice(start, start + PAGE_SIZE);
-  }, [displayedProfiles, page]);
+  }, [displayedProfiles, safePage]);
 
-  const totalPages = Math.ceil(displayedProfiles.length / PAGE_SIZE);
-  const pageStart = displayedProfiles.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
-  const pageEnd = Math.min(page * PAGE_SIZE, displayedProfiles.length);
+  const pageStart = displayedProfiles.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+  const pageEnd = Math.min(safePage * PAGE_SIZE, displayedProfiles.length);
 
   // Calculate active filter count
   const activeFilterCount = useMemo(() => {
@@ -486,7 +490,7 @@ export function TalentDashboard() {
           searchTerm={filters.search || ""}
         />
         <Pagination
-          currentPage={page}
+          currentPage={safePage}
           totalPages={totalPages}
           onPageChange={setPage}
           className="mt-6"
