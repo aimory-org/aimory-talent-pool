@@ -7,7 +7,7 @@
  * - Sortable table with profile details
  * - Detail panel for viewing/editing individual profiles
  */
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import { Users, Search, Filter, X, Loader2 } from "lucide-react";
 import { useTalents } from "@/hooks/useTalents";
 import { useLookups } from "@/hooks/useLookups";
@@ -248,19 +248,19 @@ export function TalentDashboard() {
     [talents],
   );
 
-  // Reset to first page when filters / sort change
-  useEffect(() => {
+  // Reset to first page when filters / sort change (derived-state avoids effect)
+  const resetKey = `${JSON.stringify(filters)}|${sortField}|${sortDirection}|${String(showDuplicatesOnly)}`;
+  const [lastResetKey, setLastResetKey] = useState(resetKey);
+  if (lastResetKey !== resetKey) {
+    setLastResetKey(resetKey);
     setPage(1);
-  }, [filters, sortField, sortDirection, showDuplicatesOnly]);
+  }
 
   const totalPages = Math.max(1, Math.ceil(displayedProfiles.length / PAGE_SIZE));
 
   // Clamp page when data changes without filter change (delete / upload / refresh)
-  useEffect(() => {
-    setPage((currentPage) => Math.min(currentPage, totalPages));
-  }, [totalPages]);
-
   const safePage = Math.min(page, totalPages);
+  if (page !== safePage) setPage(safePage);
 
   // Paginate after sorting + duplicate filter
   const paginatedProfiles = useMemo(() => {
