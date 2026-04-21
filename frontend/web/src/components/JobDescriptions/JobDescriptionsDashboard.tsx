@@ -100,7 +100,7 @@ export function JobDescriptionsDashboard() {
   const filterKey = JSON.stringify(filters);
   useEffect(() => {
     setPage(1);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [filterKey, sortField, sortDirection, showDuplicatesOnly]);
 
   const paginatedJds = useMemo(() => {
