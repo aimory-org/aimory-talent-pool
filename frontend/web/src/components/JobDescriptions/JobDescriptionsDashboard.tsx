@@ -1,7 +1,7 @@
 /**
  * JobDescriptionsDashboard - Main component for viewing and managing job descriptions.
  */
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import {
   FileText,
   Filter,
@@ -97,18 +97,19 @@ export function JobDescriptionsDashboard() {
     setFilters(DEFAULT_JD_FILTERS);
   }, []);
 
-  // Reset to first page when filters / sort change (derived-state pattern avoids effect)
-  const resetKey = `${JSON.stringify(filters)}|${sortField}|${sortDirection}|${String(showDuplicatesOnly)}`;
-  const [lastResetKey, setLastResetKey] = useState(resetKey);
-  if (lastResetKey !== resetKey) {
-    setLastResetKey(resetKey);
+  // Reset to first page when filters / sort / duplicate toggle change
+  useEffect(() => {
     setPage(1);
-  }
+  }, [filters, sortField, sortDirection, showDuplicatesOnly]);
 
   const totalPages = Math.max(1, Math.ceil(displayedJds.length / PAGE_SIZE));
+
   // Clamp page when data changes without filter change (delete / refresh)
+  useEffect(() => {
+    setPage((currentPage) => Math.min(currentPage, totalPages));
+  }, [totalPages]);
+
   const safePage = Math.min(page, totalPages);
-  if (page !== safePage) setPage(safePage);
 
   const paginatedJds = useMemo(() => {
     const start = (safePage - 1) * PAGE_SIZE;
