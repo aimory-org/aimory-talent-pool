@@ -2447,7 +2447,7 @@ export function ProfileDetailPanel({
                   </div>
                   <div className="flex justify-between px-4 py-2.5">
                     <span className="text-foreground/40">Profile ID</span>
-                    <span className="text-foreground/50 font-mono text-xs truncate max-w-45">
+                    <span className="text-foreground/50 font-mono text-xs truncate max-w-[180px]">
                       {profile.key}
                     </span>
                   </div>
