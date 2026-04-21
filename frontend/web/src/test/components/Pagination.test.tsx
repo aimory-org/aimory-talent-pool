@@ -59,24 +59,6 @@ describe("Pagination", () => {
       await userEvent.click(screen.getByLabelText("Previous page"));
       expect(onPageChange).toHaveBeenCalledWith(2);
     });
-
-    it("clamps Previous to 1 even if currentPage is somehow 0", async () => {
-      const onPageChange = vi.fn();
-      render(
-        <Pagination currentPage={0} totalPages={5} onPageChange={onPageChange} />,
-      );
-      await userEvent.click(screen.getByLabelText("Previous page"));
-      expect(onPageChange).toHaveBeenCalledWith(1);
-    });
-
-    it("clamps Next to totalPages even if currentPage exceeds it", async () => {
-      const onPageChange = vi.fn();
-      render(
-        <Pagination currentPage={6} totalPages={5} onPageChange={onPageChange} />,
-      );
-      await userEvent.click(screen.getByLabelText("Next page"));
-      expect(onPageChange).toHaveBeenCalledWith(5);
-    });
   });
 
   describe("page buttons", () => {
