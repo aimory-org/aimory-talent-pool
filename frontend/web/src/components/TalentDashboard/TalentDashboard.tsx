@@ -248,12 +248,13 @@ export function TalentDashboard() {
     [talents],
   );
 
-  // Reset to first page when filters / sort / data shape change
-  const filterKey = JSON.stringify(filters);
-  useEffect(() => {
+  // Reset to first page when filters / sort change (derived-state pattern avoids effect)
+  const resetKey = `${JSON.stringify(filters)}|${sortField}|${sortDirection}|${String(showDuplicatesOnly)}`;
+  const [lastResetKey, setLastResetKey] = useState(resetKey);
+  if (lastResetKey !== resetKey) {
+    setLastResetKey(resetKey);
     setPage(1);
-   
-  }, [filterKey, sortField, sortDirection, showDuplicatesOnly]);
+  }
 
   // Paginate after sorting + duplicate filter
   const paginatedProfiles = useMemo(() => {
