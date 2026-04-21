@@ -1319,7 +1319,7 @@ export function ProfileDetailPanel({
       {/* Header */}
       <div className="sticky top-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-b border-black/10 dark:border-white/10 p-4 flex items-center justify-between z-10">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-500/30 to-purple-500/30 flex items-center justify-center border border-black/10 dark:border-white/10 text-foreground font-semibold">
+          <div className="h-10 w-10 rounded-full bg-linear-to-br from-indigo-500/30 to-purple-500/30 flex items-center justify-center border border-black/10 dark:border-white/10 text-foreground font-semibold">
             {(profile.name || "?").charAt(0).toUpperCase()}
           </div>
           <div>
@@ -1395,7 +1395,7 @@ export function ProfileDetailPanel({
                 <button
                   onClick={handleSave}
                   disabled={isSaving}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 text-green-600 dark:text-green-400 hover:from-green-500/30 hover:to-emerald-500/30 transition-all disabled:opacity-50 font-medium"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-linear-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 text-green-600 dark:text-green-400 hover:from-green-500/30 hover:to-emerald-500/30 transition-all disabled:opacity-50 font-medium"
                 >
                   <Save className="h-4 w-4" />
                   {isSaving ? "Saving..." : "Save Changes"}
@@ -1649,7 +1649,7 @@ export function ProfileDetailPanel({
                 <button
                   onClick={handleViewResume}
                   disabled={resumeLoading}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 text-indigo-700 dark:text-indigo-300 hover:from-indigo-500/30 hover:to-purple-500/30 transition-all disabled:opacity-50 font-medium"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-linear-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 text-indigo-700 dark:text-indigo-300 hover:from-indigo-500/30 hover:to-purple-500/30 transition-all disabled:opacity-50 font-medium"
                 >
                   <FileText className="h-4 w-4" />
                   {resumeLoading ? "Loading Resume..." : "View Original Resume"}
@@ -2447,7 +2447,7 @@ export function ProfileDetailPanel({
                   </div>
                   <div className="flex justify-between px-4 py-2.5">
                     <span className="text-foreground/40">Profile ID</span>
-                    <span className="text-foreground/50 font-mono text-xs truncate max-w-[180px]">
+                    <span className="text-foreground/50 font-mono text-xs truncate max-w-45">
                       {profile.key}
                     </span>
                   </div>

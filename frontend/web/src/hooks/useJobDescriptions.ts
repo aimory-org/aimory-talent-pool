@@ -1,7 +1,7 @@
 /**
  * React hook for fetching and managing job descriptions.
  */
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   listJobDescriptions,
   deleteJobDescription,
@@ -38,8 +38,6 @@ export function useJobDescriptions(
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const filtersRef = useRef(filters);
-  const isInitialMount = useRef(true);
   const filtersKey = JSON.stringify(filters);
 
   const fetchJds = useCallback(async () => {
@@ -62,16 +60,8 @@ export function useJobDescriptions(
   }, [enabled, filtersKey]);
 
   useEffect(() => {
-    const filtersChanged = JSON.stringify(filtersRef.current) !== filtersKey;
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      if (enabled) fetchJds();
-    } else if (filtersChanged) {
-      filtersRef.current = filters;
-      fetchJds();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtersKey, enabled, fetchJds]);
+    void fetchJds();
+  }, [fetchJds]);
 
   const refresh = useCallback(async () => {
     await fetchJds();

@@ -24,6 +24,9 @@ import {
 } from "lucide-react";
 import { listAuditHistory, type AuditEntry, type Deployment } from "@/lib/api";
 import { useDeployments } from "@/hooks/useDeployments";
+import { Pagination } from "@/components/ui/pagination";
+
+const PAGE_SIZE = 25;
 
 type SystemEventType = "deploy" | "pipeline" | "dedup" | "reprocess";
 type DeployConclusion = "success" | "failure" | "cancelled" | "in_progress";
@@ -44,6 +47,7 @@ interface SystemEvent {
   dedup_trigger?: "scheduled" | "manual";
   dedup_merged?: number;
   details: string;
+  affected_profiles?: string[];
 }
 
 const SYSTEM_EMAILS = new Set(["pipeline@system", "dedup@system"]);
@@ -66,7 +70,7 @@ const TYPE_CONFIG: Record<
       "bg-violet-500/10 text-violet-700 dark:text-violet-300 border-violet-500/20",
     dot: "bg-violet-500",
     bgIcon:
-      "bg-gradient-to-br from-violet-500/20 to-purple-500/10 text-violet-600 dark:text-violet-400",
+      "bg-linear-to-br from-violet-500/20 to-purple-500/10 text-violet-600 dark:text-violet-400",
   },
   pipeline: {
     label: "Pipeline",
@@ -75,7 +79,7 @@ const TYPE_CONFIG: Record<
       "bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/20",
     dot: "bg-indigo-500",
     bgIcon:
-      "bg-gradient-to-br from-indigo-500/20 to-blue-500/10 text-indigo-600 dark:text-indigo-400",
+      "bg-linear-to-br from-indigo-500/20 to-blue-500/10 text-indigo-600 dark:text-indigo-400",
   },
   dedup: {
     label: "Dedup",
@@ -84,7 +88,7 @@ const TYPE_CONFIG: Record<
       "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20",
     dot: "bg-amber-500",
     bgIcon:
-      "bg-gradient-to-br from-amber-500/20 to-orange-500/10 text-amber-600 dark:text-amber-400",
+      "bg-linear-to-br from-amber-500/20 to-orange-500/10 text-amber-600 dark:text-amber-400",
   },
   reprocess: {
     label: "Reprocess",
@@ -93,7 +97,7 @@ const TYPE_CONFIG: Record<
       "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20",
     dot: "bg-emerald-500",
     bgIcon:
-      "bg-gradient-to-br from-emerald-500/20 to-teal-500/10 text-emerald-600 dark:text-emerald-400",
+      "bg-linear-to-br from-emerald-500/20 to-teal-500/10 text-emerald-600 dark:text-emerald-400",
   },
 };
 
@@ -152,21 +156,35 @@ function formatDuration(seconds: number) {
   return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
 }
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function isUUID(value: string) {
+  return UUID_RE.test(value);
+}
+
 function fallbackCandidateName(entry: AuditEntry): string {
-  const snapshotName =
-    entry.snapshot &&
-    typeof entry.snapshot === "object" &&
-    "name" in entry.snapshot &&
-    typeof (entry.snapshot as { name?: unknown }).name === "string"
-      ? (entry.snapshot as { name: string }).name
+  const candidateName =
+    entry.candidate_name && !isUUID(entry.candidate_name)
+      ? entry.candidate_name
       : null;
 
-  return (
-    entry.candidate_name ||
-    snapshotName ||
-    entry.pk.split("#").at(-1)?.replace(".pdf", "") ||
-    "Candidate"
-  );
+  const topLevelTitle =
+    entry.title && !isUUID(entry.title) ? entry.title : null;
+
+  const snapshotName = (() => {
+    if (!entry.snapshot || typeof entry.snapshot !== "object") return null;
+    const s = entry.snapshot as Record<string, unknown>;
+    if (typeof s.name === "string" && s.name) return s.name;
+    if (typeof s.job_title === "string" && s.job_title) return s.job_title;
+    if (typeof s.title === "string" && s.title) return s.title;
+    return null;
+  })();
+
+  const pkTail = entry.pk.split("#").at(-1)?.replace(".pdf", "") ?? null;
+  const pkClean = pkTail && !isUUID(pkTail) ? pkTail : null;
+
+  return candidateName ?? topLevelTitle ?? snapshotName ?? pkClean ?? "Unknown";
 }
 
 function getSnapshotValue(entry: AuditEntry, key: string): unknown {
@@ -364,34 +382,20 @@ function auditToSystemEvent(entry: AuditEntry): SystemEvent | null {
       entry.pk === DEDUP_RUN_PK ||
       entry.pk === "LOOKUP_DEDUP_RUN" ||
       entry.pk.endsWith("#LOOKUP_DEDUP_RUN");
-    const dedupRunDetails = isRunSummary ? buildDedupRunDetails(entry) : null;
-    const candidateName = isRunSummary
-      ? undefined
-      : fallbackCandidateName(entry);
-    const safeCandidateName =
-      candidateName && candidateName.toUpperCase() !== "LOOKUP_DEDUP_RUN"
-        ? candidateName
-        : undefined;
-    const changeCount = Object.keys(entry.changes || {}).length;
+
+    // Only surface the run-summary entry; suppress individual per-profile dedup events.
+    if (!isRunSummary) return null;
 
     return {
       id: entry.sk,
       type: "dedup",
       timestamp: entry.timestamp,
-      candidate_name: safeCandidateName,
       candidate_id: entry.pk,
       dedup_trigger: inferDedupTrigger(entry),
-      dedup_merged: isRunSummary ? undefined : changeCount || undefined,
       details:
-        dedupRunDetails ||
+        buildDedupRunDetails(entry) ||
         entry.details ||
-        (isRunSummary
-          ? "Lookup dedup run completed."
-          : safeCandidateName && changeCount > 0
-            ? `Lookup dedup updated ${changeCount} fields for ${safeCandidateName}.`
-            : safeCandidateName
-              ? `Lookup dedup updated ${safeCandidateName}.`
-              : "Lookup dedup updated profile fields."),
+        "Lookup dedup run completed.",
     };
   }
 
@@ -421,103 +425,6 @@ function auditToSystemEvent(entry: AuditEntry): SystemEvent | null {
 
 function getLatestDeploy(events: SystemEvent[]) {
   return events.find((event) => event.type === "deploy");
-}
-
-function DeployMeta({ event }: { event: SystemEvent }) {
-  const conclusion = event.conclusion
-    ? CONCLUSION_CONFIG[event.conclusion]
-    : null;
-
-  return (
-    <div className="flex flex-wrap items-center gap-3 mt-1.5">
-      {conclusion && (
-        <span
-          className={`flex items-center gap-1 text-xs font-medium ${conclusion.color}`}
-        >
-          {conclusion.icon}
-          <span className="capitalize">{event.conclusion}</span>
-        </span>
-      )}
-      {event.branch && (
-        <span className="flex items-center gap-1 text-xs text-foreground/50">
-          <GitBranch className="w-3 h-3" />
-          {event.branch}
-        </span>
-      )}
-      {event.commit_sha && (
-        <span className="flex items-center gap-1 text-xs font-mono text-foreground/40 bg-black/5 dark:bg-white/5 px-1.5 py-0.5 rounded">
-          <GitCommit className="w-3 h-3" />
-          {event.commit_sha}
-        </span>
-      )}
-      {event.duration_seconds != null && (
-        <span className="flex items-center gap-1 text-xs text-foreground/40">
-          <Clock className="w-3 h-3" />
-          {formatDuration(event.duration_seconds)}
-        </span>
-      )}
-      {event.triggered_by && (
-        <span className="text-xs text-foreground/40">
-          by{" "}
-          <span className="font-medium text-foreground/60">
-            {event.triggered_by}
-          </span>
-        </span>
-      )}
-      {event.run_url && (
-        <a
-          href={event.run_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-1 text-xs text-indigo-500 hover:text-indigo-600 transition-colors"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <ExternalLink className="w-3 h-3" />
-          View run
-        </a>
-      )}
-    </div>
-  );
-}
-
-function PipelineMeta({ event }: { event: SystemEvent }) {
-  return (
-    <div className="flex flex-wrap items-center gap-3 mt-1.5">
-      <span className="flex items-center gap-1 text-xs font-medium text-emerald-500">
-        <CheckCircle2 className="w-3.5 h-3.5" />
-        Processed
-      </span>
-      {event.candidate_name && (
-        <span className="text-xs text-foreground/50">
-          <span className="font-medium text-foreground/70">
-            {event.candidate_name}
-          </span>
-        </span>
-      )}
-    </div>
-  );
-}
-
-function DedupMeta({ event }: { event: SystemEvent }) {
-  return (
-    <div className="flex flex-wrap items-center gap-3 mt-1.5">
-      <span className="text-xs px-2 py-0.5 rounded-full border font-medium bg-slate-500/10 text-slate-600 dark:text-slate-300 border-slate-500/20">
-        {event.dedup_trigger === "manual" ? "Manual" : "Scheduled"}
-      </span>
-      {event.dedup_merged != null && (
-        <span
-          className={`flex items-center gap-1 text-xs font-medium ${
-            event.dedup_merged > 0
-              ? "text-amber-600 dark:text-amber-400"
-              : "text-foreground/40"
-          }`}
-        >
-          <Layers className="w-3 h-3" />
-          {event.dedup_merged} changed
-        </span>
-      )}
-    </div>
-  );
 }
 
 function LatestDeployBanner({ deploy }: { deploy: SystemEvent }) {
@@ -587,6 +494,7 @@ export function SystemActivity() {
   const [auditEvents, setAuditEvents] = useState<SystemEvent[]>([]);
   const [isLoadingAudit, setIsLoadingAudit] = useState(false);
   const [auditError, setAuditError] = useState<Error | null>(null);
+  const [page, setPage] = useState(1);
 
   const {
     deployments,
@@ -600,11 +508,47 @@ export function SystemActivity() {
     setAuditError(null);
     try {
       const response = await listAuditHistory(300);
-      setAuditEvents(
-        response.items
-          .map(auditToSystemEvent)
-          .filter((event): event is SystemEvent => Boolean(event)),
-      );
+      const items = response.items;
+
+      // Pre-pass: collect per-profile dedup names to attach to run summaries.
+      // Per-profile entries are filtered to null in auditToSystemEvent, so we
+      // extract their names here before mapping.
+      const isRunSummaryPk = (pk: string) =>
+        pk === DEDUP_RUN_PK ||
+        pk === "LOOKUP_DEDUP_RUN" ||
+        pk.endsWith("#LOOKUP_DEDUP_RUN");
+
+      const perProfileDedup = items
+        .filter(
+          (item) =>
+            item.user_email === "dedup@system" && !isRunSummaryPk(item.pk),
+        )
+        .map((item) => ({
+          name: fallbackCandidateName(item),
+          t: new Date(item.timestamp).getTime(),
+        }))
+        .filter((e) => e.name !== "Unknown");
+
+      const events = items
+        .map(auditToSystemEvent)
+        .filter((event): event is SystemEvent => Boolean(event));
+
+      // Attach profile names to the nearest dedup run summary (within 5 min).
+      if (perProfileDedup.length > 0) {
+        const WINDOW_MS = 5 * 60 * 1000;
+        for (const event of events) {
+          if (event.type !== "dedup") continue;
+          const eventTime = new Date(event.timestamp).getTime();
+          const nearby = perProfileDedup
+            .filter((e) => Math.abs(e.t - eventTime) < WINDOW_MS)
+            .map((e) => e.name);
+          if (nearby.length > 0) {
+            event.affected_profiles = nearby;
+          }
+        }
+      }
+
+      setAuditEvents(events);
     } catch (err) {
       setAuditError(
         err instanceof Error
@@ -654,6 +598,19 @@ export function SystemActivity() {
   );
   const isLoading = isLoadingDeployments || isLoadingAudit;
 
+  useEffect(() => {
+    setPage(1);
+  }, [typeFilter, search]);
+
+  const paginatedEvents = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return filtered.slice(start, start + PAGE_SIZE);
+  }, [filtered, page]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const pageStart = filtered.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const pageEnd = Math.min(page * PAGE_SIZE, filtered.length);
+
   return (
     <div className="animate-fade-in">
       {latestDeploy && <LatestDeployBanner deploy={latestDeploy} />}
@@ -672,7 +629,7 @@ export function SystemActivity() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search commits, candidates, or event details..."
-            className="w-full h-10 pl-10 pr-4 rounded-xl bg-black/5 dark:bg-white/5 border border-black/[0.07] dark:border-white/[0.07] text-sm text-foreground placeholder-foreground/30 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/30 transition-all"
+            className="w-full h-10 pl-10 pr-4 rounded-xl bg-black/5 dark:bg-white/5 border border-black/7 dark:border-white/7 text-sm text-foreground placeholder-foreground/30 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/30 transition-all"
           />
           {search && (
             <button
@@ -687,13 +644,13 @@ export function SystemActivity() {
         <div className="relative">
           <button
             onClick={() => setShowFilter((v) => !v)}
-            className="flex items-center gap-2 h-10 px-4 rounded-xl border border-black/[0.07] dark:border-white/[0.07] bg-black/5 dark:bg-white/5 text-sm font-medium text-foreground/60 hover:text-foreground hover:bg-black/10 dark:hover:bg-white/10 transition-all"
+            className="flex items-center gap-2 h-10 px-4 rounded-xl border border-black/7 dark:border-white/7 bg-black/5 dark:bg-white/5 text-sm font-medium text-foreground/60 hover:text-foreground hover:bg-black/10 dark:hover:bg-white/10 transition-all"
           >
             <span>{currentFilter?.label}</span>
             <ChevronDown className="h-3.5 w-3.5" />
           </button>
           {showFilter && (
-            <div className="absolute right-0 mt-2 w-44 rounded-xl border border-black/[0.07] dark:border-white/[0.07] bg-white dark:bg-slate-800 shadow-xl shadow-black/10 z-20 py-1 animate-slide-in-up">
+            <div className="absolute right-0 mt-2 w-44 rounded-xl border border-black/7 dark:border-white/7 bg-white dark:bg-slate-800 shadow-xl shadow-black/10 z-20 py-1 animate-slide-in-up">
               {TYPE_FILTERS.map((filterOption) => (
                 <button
                   key={filterOption.value}
@@ -717,7 +674,7 @@ export function SystemActivity() {
         <button
           onClick={() => void refreshAll()}
           title="Refresh activity"
-          className="h-10 w-10 shrink-0 rounded-xl border border-black/[0.07] dark:border-white/[0.07] bg-black/5 dark:bg-white/5 text-foreground/60 hover:text-foreground hover:bg-black/10 dark:hover:bg-white/10 transition-all flex items-center justify-center"
+          className="h-10 w-10 shrink-0 rounded-xl border border-black/7 dark:border-white/7 bg-black/5 dark:bg-white/5 text-foreground/60 hover:text-foreground hover:bg-black/10 dark:hover:bg-white/10 transition-all flex items-center justify-center"
         >
           {isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -729,6 +686,10 @@ export function SystemActivity() {
 
       <p className="text-xs text-foreground/40 mb-4">
         Showing{" "}
+        <span className="font-semibold text-foreground/60">
+          {pageStart}–{pageEnd}
+        </span>{" "}
+        of{" "}
         <span className="font-semibold text-foreground/60">
           {filtered.length}
         </span>{" "}
@@ -747,14 +708,20 @@ export function SystemActivity() {
             <p className="text-sm">No system events found</p>
           </div>
         ) : (
-          filtered.map((event, index) => {
+          paginatedEvents.map((event, index) => {
             const config = TYPE_CONFIG[event.type];
+            const primaryText =
+              event.commit_message ||
+              event.candidate_name ||
+              (event.type === "dedup" ? "Lookup Dedup Run" : "System Event");
+
             return (
               <div
                 key={event.id}
-                className="animate-fade-in flex gap-4 p-4 rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm hover:border-indigo-500/20 hover:bg-white/80 dark:hover:bg-slate-800/80 transition-all duration-200"
+                className="animate-fade-in flex gap-3 p-4 rounded-2xl border border-black/6 dark:border-white/6 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm hover:border-indigo-500/20 hover:bg-white/80 dark:hover:bg-slate-800/80 transition-all duration-200"
                 style={{ animationDelay: `${index * 30}ms` }}
               >
+                {/* Icon */}
                 <div
                   className={`shrink-0 h-9 w-9 rounded-xl flex items-center justify-center ${config.bgIcon}`}
                 >
@@ -762,56 +729,151 @@ export function SystemActivity() {
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center gap-2 mb-0.5">
+                  {/* Row 1: subject + timestamp */}
+                  <div className="flex items-start justify-between gap-3 mb-1.5">
+                    <p className="text-sm font-semibold text-foreground leading-snug truncate">
+                      {primaryText}
+                    </p>
+                    <div className="shrink-0 text-right leading-none">
+                      <p className="text-xs font-medium text-foreground/50">
+                        {formatTime(event.timestamp)}
+                      </p>
+                      <p className="text-[11px] text-foreground/30 mt-0.5">
+                        {formatDate(event.timestamp)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Row 2: badge + meta */}
+                  <div className="flex flex-wrap items-center gap-2 mb-2">
                     <span
                       className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border ${config.badge}`}
                     >
-                      <span
-                        className={`w-1.5 h-1.5 rounded-full ${config.dot}`}
-                      />
+                      <span className={`w-1.5 h-1.5 rounded-full ${config.dot}`} />
                       {config.label}
                     </span>
-                    {event.commit_message && (
-                      <span className="text-sm font-medium text-foreground truncate max-w-[400px]">
-                        {event.commit_message}
+
+                    {event.type === "deploy" && (
+                      <>
+                        {event.conclusion && (
+                          <span
+                            className={`flex items-center gap-1 text-xs font-medium ${CONCLUSION_CONFIG[event.conclusion].color}`}
+                          >
+                            {CONCLUSION_CONFIG[event.conclusion].icon}
+                            <span className="capitalize">
+                              {event.conclusion.replace("_", " ")}
+                            </span>
+                          </span>
+                        )}
+                        {event.branch && (
+                          <span className="flex items-center gap-1 text-xs text-foreground/50">
+                            <GitBranch className="w-3 h-3" />
+                            {event.branch}
+                          </span>
+                        )}
+                        {event.commit_sha && (
+                          <span className="flex items-center gap-1 text-xs font-mono text-foreground/40 bg-black/5 dark:bg-white/5 px-1.5 py-0.5 rounded">
+                            <GitCommit className="w-3 h-3" />
+                            {event.commit_sha}
+                          </span>
+                        )}
+                        {event.duration_seconds != null && (
+                          <span className="flex items-center gap-1 text-xs text-foreground/40">
+                            <Clock className="w-3 h-3" />
+                            {formatDuration(event.duration_seconds)}
+                          </span>
+                        )}
+                        {event.triggered_by && (
+                          <span className="text-xs text-foreground/40">
+                            by{" "}
+                            <span className="font-medium text-foreground/60">
+                              {event.triggered_by}
+                            </span>
+                          </span>
+                        )}
+                        {event.run_url && (
+                          <a
+                            href={event.run_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-xs text-indigo-500 hover:text-indigo-600 transition-colors"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            View run
+                          </a>
+                        )}
+                      </>
+                    )}
+
+                    {event.type === "pipeline" && (
+                      <span className="flex items-center gap-1 text-xs font-medium text-emerald-500">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        Processed
+                      </span>
+                    )}
+
+                    {event.type === "dedup" && (
+                      <>
+                        <span className="text-xs px-2 py-0.5 rounded-full border font-medium bg-slate-500/10 text-slate-600 dark:text-slate-300 border-slate-500/20">
+                          {event.dedup_trigger === "manual" ? "Manual" : "Scheduled"}
+                        </span>
+                        {event.dedup_merged != null && (
+                          <span
+                            className={`flex items-center gap-1 text-xs font-medium ${
+                              event.dedup_merged > 0
+                                ? "text-amber-600 dark:text-amber-400"
+                                : "text-foreground/40"
+                            }`}
+                          >
+                            <Layers className="w-3 h-3" />
+                            {event.dedup_merged} changed
+                          </span>
+                        )}
+                      </>
+                    )}
+
+                    {event.type === "reprocess" && (
+                      <span className="text-xs text-foreground/40">
+                        via{" "}
+                        <span className="font-medium text-foreground/60">
+                          System
+                        </span>
                       </span>
                     )}
                   </div>
 
-                  {event.type === "deploy" && <DeployMeta event={event} />}
-                  {event.type === "pipeline" && <PipelineMeta event={event} />}
-                  {event.type === "dedup" && <DedupMeta event={event} />}
-                  {event.type === "reprocess" && (
-                    <div className="flex flex-wrap items-center gap-3 mt-1.5">
-                      <span className="text-xs px-2 py-0.5 rounded-full border font-medium bg-slate-500/10 text-slate-600 dark:text-slate-300 border-slate-500/20">
-                        System
-                      </span>
-                      {event.candidate_name && (
-                        <span className="text-xs font-medium text-foreground/70">
-                          {event.candidate_name}
-                        </span>
-                      )}
-                    </div>
-                  )}
-
-                  <p className="text-xs text-foreground/50 mt-1.5">
+                  {/* Row 3: details + affected profiles for dedup */}
+                  <p className="text-xs text-foreground/45 leading-relaxed">
                     {event.details}
                   </p>
-                </div>
-
-                <div className="shrink-0 text-right">
-                  <p className="text-xs font-medium text-foreground/60">
-                    {formatTime(event.timestamp)}
-                  </p>
-                  <p className="text-[11px] text-foreground/30 mt-0.5">
-                    {formatDate(event.timestamp)}
-                  </p>
+                  {event.type === "dedup" &&
+                    event.affected_profiles &&
+                    event.affected_profiles.length > 0 && (
+                      <p className="text-xs text-foreground/50 mt-1">
+                        <span className="font-medium text-foreground/60">
+                          Profiles updated:{" "}
+                        </span>
+                        {event.affected_profiles.slice(0, 5).join(", ")}
+                        {event.affected_profiles.length > 5 && (
+                          <span className="text-foreground/35">
+                            {" "}+{event.affected_profiles.length - 5} more
+                          </span>
+                        )}
+                      </p>
+                    )}
                 </div>
               </div>
             );
           })
         )}
       </div>
+      <Pagination
+        currentPage={page}
+        totalPages={totalPages}
+        onPageChange={setPage}
+        className="mt-6"
+      />
     </div>
   );
 }

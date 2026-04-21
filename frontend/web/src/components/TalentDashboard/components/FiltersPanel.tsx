@@ -117,7 +117,7 @@ export function FiltersPanel({
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
                 showDuplicatesOnly
                   ? "bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300"
-                  : "border border-black/[0.06] dark:border-white/[0.06] text-foreground/40 hover:text-amber-600 dark:hover:text-amber-400 hover:border-amber-500/20"
+                  : "border border-black/6 dark:border-white/6 text-foreground/40 hover:text-amber-600 dark:hover:text-amber-400 hover:border-amber-500/20"
               }`}
             >
               <AlertTriangle className="h-3.5 w-3.5" />

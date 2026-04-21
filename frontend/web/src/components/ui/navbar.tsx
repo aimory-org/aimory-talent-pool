@@ -40,9 +40,9 @@ export function NavBar({ user, onSignOut }: NavBarProps) {
     .toUpperCase();
 
   return (
-    <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl border-b border-black/[0.06] dark:border-white/[0.06] sticky top-0 z-50 shadow-sm shadow-black/5">
+    <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl border-b border-black/6 dark:border-white/6 sticky top-0 z-50 shadow-sm shadow-black/5">
       {/* Top accent line */}
-      <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500" />
+      <div className="absolute inset-x-0 top-0 h-0.5 bg-linear-to-r from-indigo-500 via-violet-500 to-purple-500" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-16">
@@ -75,7 +75,7 @@ export function NavBar({ user, onSignOut }: NavBarProps) {
                   <span className="hidden sm:inline relative">{label}</span>
                   {/* Active underline dot */}
                   {isActive && (
-                    <span className="absolute -bottom-[1px] left-1/2 -translate-x-1/2 w-4 h-0.5 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500" />
+                    <span className="absolute -bottom-[1px] left-1/2 -translate-x-1/2 w-4 h-0.5 rounded-full bg-linear-to-r from-indigo-500 to-violet-500" />
                   )}
                 </Link>
               );
@@ -103,10 +103,10 @@ export function NavBar({ user, onSignOut }: NavBarProps) {
 
             {/* User chip */}
             <div className="flex items-center gap-2 pl-1">
-              <div className="h-7 w-7 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white font-semibold text-[11px] shadow-md shadow-indigo-500/30 shrink-0">
+              <div className="h-7 w-7 rounded-full bg-linear-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white font-semibold text-[11px] shadow-md shadow-indigo-500/30 shrink-0">
                 {initials}
               </div>
-              <span className="text-sm text-foreground/60 hidden md:block max-w-[140px] truncate">
+              <span className="text-sm text-foreground/60 hidden md:block max-w-35 truncate">
                 {safeName}
               </span>
             </div>
