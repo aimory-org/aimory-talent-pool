@@ -7,7 +7,7 @@ data "archive_file" "presign_zip" {
   count       = var.enable_presign_url ? 1 : 0
   type        = "zip"
   source_file = "${path.module}/lambda_src/presign/app.py"
-  output_path = "${path.module}/.build/${var.pipeline_name}-presign.zip"
+  output_path = "${path.module}/${var.pipeline_name}-presign.zip"
 }
 
 resource "aws_iam_role" "presign_lambda_role" {

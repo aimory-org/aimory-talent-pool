@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Upload, FileText, Loader2 } from "lucide-react";
+import { Upload, FileText, Loader2, CheckCircle2 } from "lucide-react";
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -13,6 +13,7 @@ export function UploadModal({ isOpen, onClose, onUpload }: UploadModalProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -64,8 +65,12 @@ export function UploadModal({ isOpen, onClose, onUpload }: UploadModalProps) {
     setError(null);
     try {
       await onUpload(selectedFile);
-      onClose();
-      setSelectedFile(null);
+      setUploadSuccess(true);
+      setTimeout(() => {
+        onClose();
+        setSelectedFile(null);
+        setUploadSuccess(false);
+      }, 1500);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Upload failed. Please try again.",
@@ -156,6 +161,16 @@ export function UploadModal({ isOpen, onClose, onUpload }: UploadModalProps) {
               className="hidden"
             />
 
+            {/* Success message */}
+            {uploadSuccess && (
+              <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                <p className="text-sm text-emerald-600 dark:text-emerald-300">
+                  Uploaded! Processing will begin shortly.
+                </p>
+              </div>
+            )}
+
             {/* Error message */}
             {error && (
               <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-2">
@@ -178,13 +193,18 @@ export function UploadModal({ isOpen, onClose, onUpload }: UploadModalProps) {
               <Button
                 type="button"
                 onClick={handleSubmit}
-                disabled={!selectedFile || isUploading}
+                disabled={!selectedFile || isUploading || uploadSuccess}
                 className="flex-1"
               >
                 {isUploading ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Uploading...
+                  </>
+                ) : uploadSuccess ? (
+                  <>
+                    <CheckCircle2 className="h-4 w-4" />
+                    Done
                   </>
                 ) : (
                   "Upload Resume"

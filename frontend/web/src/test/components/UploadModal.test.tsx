@@ -7,6 +7,9 @@ import { fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { UploadModal } from "@/components/TalentDashboard/components/UploadModal";
 
+const getUploadButton = () =>
+  screen.getByRole("button", { name: /^upload resume$/i });
+
 describe("UploadModal", () => {
   const onClose = vi.fn();
   const onUpload = vi.fn().mockResolvedValue(undefined);
@@ -24,7 +27,9 @@ describe("UploadModal", () => {
 
   it("renders dialog when open", () => {
     render(<UploadModal isOpen={true} onClose={onClose} onUpload={onUpload} />);
-    expect(screen.getByText("Upload Resume")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /upload resume/i }),
+    ).toBeInTheDocument();
   });
 
   it("shows drop zone instructions", () => {
@@ -41,10 +46,7 @@ describe("UploadModal", () => {
 
   it("upload button is disabled when no file selected", () => {
     render(<UploadModal isOpen={true} onClose={onClose} onUpload={onUpload} />);
-    // Use getAllByRole and filter for the actual button (not the heading)
-    const buttons = screen.getAllByRole("button", { name: /upload resume/i });
-    const uploadBtn = buttons.find((btn) => !btn.closest("h2"));
-    expect(uploadBtn).toBeDisabled();
+    expect(getUploadButton()).toBeDisabled();
   });
 
   it("calls onClose when cancel is clicked", async () => {
@@ -76,11 +78,8 @@ describe("UploadModal", () => {
     // Use fireEvent to bypass accept attribute filtering in jsdom
     fireEvent.change(input, { target: { files: [file] } });
     // The modal doesn't show an error for invalid types on selection,
-    // it just doesn't set the file - so the upload button remains disabled
-    // Use getAllByRole and filter for the actual button (not the heading)
-    const buttons = screen.getAllByRole("button", { name: /upload resume/i });
-    const uploadBtn = buttons.find((btn) => !btn.closest("h2"));
-    expect(uploadBtn).toBeDisabled();
+    // it just doesn't set the file - so the upload button remains disabled.
+    expect(getUploadButton()).toBeDisabled();
   });
 
   it("enables upload button after valid file selected", async () => {
@@ -93,10 +92,7 @@ describe("UploadModal", () => {
       'input[type="file"]',
     ) as HTMLInputElement;
     await user.upload(input, file);
-    // Use getAllByRole and filter for the actual button (not the heading)
-    const buttons = screen.getAllByRole("button", { name: /upload resume/i });
-    const uploadBtn = buttons.find((btn) => !btn.closest("h2"));
-    expect(uploadBtn).not.toBeDisabled();
+    expect(getUploadButton()).not.toBeDisabled();
   });
 
   it("calls onUpload when upload button is clicked", async () => {
@@ -109,10 +105,7 @@ describe("UploadModal", () => {
       'input[type="file"]',
     ) as HTMLInputElement;
     await user.upload(input, file);
-    // Use getAllByRole and filter for the actual button (not the heading)
-    const buttons = screen.getAllByRole("button", { name: /upload resume/i });
-    const uploadBtn = buttons.find((btn) => !btn.closest("h2"));
-    await user.click(uploadBtn!);
+    await user.click(getUploadButton());
     expect(onUpload).toHaveBeenCalledWith(file);
   });
 
@@ -139,10 +132,7 @@ describe("UploadModal", () => {
       'input[type="file"]',
     ) as HTMLInputElement;
     await user.upload(input, file);
-    // Use getAllByRole and filter for the actual button (not the heading)
-    const buttons = screen.getAllByRole("button", { name: /upload resume/i });
-    const uploadBtn = buttons.find((btn) => !btn.closest("h2"));
-    await user.click(uploadBtn!);
+    await user.click(getUploadButton());
 
     expect(
       screen.getByRole("button", { name: /uploading/i }),
@@ -175,10 +165,7 @@ describe("UploadModal", () => {
       'input[type="file"]',
     ) as HTMLInputElement;
     await user.upload(input, file);
-    // Use getAllByRole and filter for the actual button (not the heading)
-    const buttons = screen.getAllByRole("button", { name: /upload resume/i });
-    const uploadBtn = buttons.find((btn) => !btn.closest("h2"));
-    await user.click(uploadBtn!);
+    await user.click(getUploadButton());
 
     expect(screen.getByText(/upload failed/i)).toBeInTheDocument();
   });
@@ -193,14 +180,10 @@ describe("UploadModal", () => {
       'input[type="file"]',
     ) as HTMLInputElement;
     await user.upload(input, file);
-    // Use getAllByRole and filter for the actual button (not the heading)
-    const buttons = screen.getAllByRole("button", { name: /upload resume/i });
-    const uploadBtn = buttons.find((btn) => !btn.closest("h2"));
-    expect(uploadBtn).not.toBeDisabled();
+    expect(getUploadButton()).not.toBeDisabled();
   });
 
   it("accepts doc files", async () => {
-    const user = userEvent.setup();
     render(<UploadModal isOpen={true} onClose={onClose} onUpload={onUpload} />);
     const file = new File(["hello"], "test-resume.doc", {
       type: "application/msword",
@@ -208,10 +191,8 @@ describe("UploadModal", () => {
     const input = document.querySelector(
       'input[type="file"]',
     ) as HTMLInputElement;
-    await user.upload(input, file);
-    // Use getAllByRole and filter for the actual button (not the heading)
-    const buttons = screen.getAllByRole("button", { name: /upload resume/i });
-    const uploadBtn = buttons.find((btn) => !btn.closest("h2"));
-    expect(uploadBtn).not.toBeDisabled();
+    // Bypass input accept filtering in jsdom to exercise component MIME validation.
+    fireEvent.change(input, { target: { files: [file] } });
+    expect(getUploadButton()).not.toBeDisabled();
   });
 });

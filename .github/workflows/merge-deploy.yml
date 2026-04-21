@@ -124,14 +124,9 @@ jobs:
         with:
           python-version: "3.12"
 
-      # ── Build Lambda layers ────────────────────────────────────────────────
-      - name: Build Lambda layers
-        run: |
-          find infra/modules -type f -name requirements.txt -path "*/layers/*" | while read req; do
-            layer_dir=$(dirname "$req")
-            echo "Building layer: $layer_dir"
-            pip install --quiet -r "$req" -t "$layer_dir/python"
-          done
+      # ── Build Lambda layers + staging dirs ────────────────────────────────
+      - name: Build Lambda artefacts
+        run: bash infra/build.sh --no-docker
 
       # ── Terraform ─────────────────────────────────────────────────────────
       - name: Terraform Init

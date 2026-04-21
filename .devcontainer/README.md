@@ -111,10 +111,13 @@ terraform plan    # Preview changes
 terraform apply   # Deploy
 ```
 
-### Build Lambda Layer (Before First Deploy)
+### Build Lambda Layers (Before First Deploy)
+
+This runs automatically on container creation. To rebuild manually (e.g. after
+a `requirements.txt` change):
 
 ```bash
-./infra/modules/pipeline/lambdas/layers/pdfminer/build_layer_docker.sh
+./infra/build.sh
 ```
 
 ---
@@ -203,13 +206,14 @@ entra_tenant_id     = "<from step 2>"
 
 > ⚠️ `terraform.tfvars` is gitignored — never commit it.
 
-### Step 5 — Build the Lambda Layer
+### Step 5 — Build the Lambda Layers
 
-The pdfminer layer must be built with Docker before the first Terraform apply:
+This is done automatically by `post-create.sh` when the container starts.
+To rebuild manually (e.g. after a `requirements.txt` change):
 
 ```bash
-# From the repo root
-./infra/modules/pipeline/layers/pdfminer/build_layer_docker.sh
+cd infra
+./build.sh
 ```
 
 Verify Docker is running first: `docker ps`

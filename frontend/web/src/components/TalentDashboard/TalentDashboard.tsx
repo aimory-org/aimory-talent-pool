@@ -7,8 +7,8 @@
  * - Sortable table with profile details
  * - Detail panel for viewing/editing individual profiles
  */
-import { useState, useMemo, useCallback } from "react";
-import { Users, Search, Filter, X } from "lucide-react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { Users, Search, Filter, X, Loader2 } from "lucide-react";
 import { useTalents } from "@/hooks/useTalents";
 import { useLookups } from "@/hooks/useLookups";
 import { uploadResume } from "@/lib/api";
@@ -38,6 +38,8 @@ export function TalentDashboard() {
   const [showFilters, setShowFilters] = useState(true);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showDuplicatesOnly, setShowDuplicatesOnly] = useState(false);
+  const [showProcessingBanner, setShowProcessingBanner] = useState(false);
+  const processingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Fetch data from API
   const {
@@ -140,6 +142,13 @@ export function TalentDashboard() {
         await uploadResume(file);
         // Refresh the list to show the newly uploaded resume
         refreshTalents();
+        // Show a processing banner for 30 seconds to let the user know the
+        // pipeline is running in the background.
+        if (processingTimerRef.current) clearTimeout(processingTimerRef.current);
+        setShowProcessingBanner(true);
+        processingTimerRef.current = setTimeout(() => {
+          setShowProcessingBanner(false);
+        }, 30_000);
       } catch (error) {
         console.error("Upload failed:", error);
         throw error; // Re-throw so the modal can handle the error state
@@ -147,6 +156,13 @@ export function TalentDashboard() {
     },
     [refreshTalents],
   );
+
+  // Clean up the processing banner timer on unmount
+  useEffect(() => {
+    return () => {
+      if (processingTimerRef.current) clearTimeout(processingTimerRef.current);
+    };
+  }, []);
   const commitSearch = useCallback(() => {
     setFilters((prev) => ({ ...prev, search: searchInput }));
   }, [searchInput]);
@@ -285,6 +301,25 @@ export function TalentDashboard() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Processing banner */}
+        {showProcessingBanner && (
+          <div className="flex items-center justify-between gap-3 mb-6 px-4 py-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-700 dark:text-indigo-300">
+            <div className="flex items-center gap-2.5">
+              <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+              <p className="text-sm font-medium">
+                Resume uploaded — processing in the background. It will appear in the list once ready.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowProcessingBanner(false)}
+              className="shrink-0 text-indigo-500/60 hover:text-indigo-700 dark:hover:text-indigo-200 transition-colors"
+              aria-label="Dismiss"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+
         {/* Search & Filter Toggle */}
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
           <div className="relative flex-1 group">
@@ -327,6 +362,7 @@ export function TalentDashboard() {
               </button>
             </div>
           </div>
+          <ManualUploadButton onManualUpload={handleManualUpload} />
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`flex items-center gap-2 px-5 py-3 rounded-xl border transition-all duration-300 font-medium ${
@@ -393,7 +429,6 @@ export function TalentDashboard() {
                     {activeFilterCount === 1 ? "filter" : "filters"} active
                   </span>
                 )}
-                <ManualUploadButton onManualUpload={handleManualUpload} />
               </>
             )}
           </div>

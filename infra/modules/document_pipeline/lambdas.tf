@@ -48,48 +48,35 @@ data "archive_file" "shared_zip" {
   for_each    = local.shared_lambdas
   type        = "zip"
   source_dir  = "${path.module}/lambda_src/${each.key}"
-  output_path = "${path.module}/.build/${var.pipeline_name}-${each.key}.zip"
+  output_path = "${path.module}/${var.pipeline_name}-${each.key}.zip"
 }
 
 # --- llm_extract zip: shared code + pipeline config files ------------------
 
-# We need to assemble llm_extract from two sources:
-# 1. The shared handler: lambda_src/llm_extract/app.py
-# 2. Pipeline config:    schema.json, prompt.txt, hooks.py
-# Terraform archive_file can't merge dirs, so we use a local build dir.
-
-resource "null_resource" "llm_extract_build" {
-  triggers = {
-    handler_hash = filesha256("${path.module}/lambda_src/llm_extract/app.py")
-    schema_hash  = filesha256("${var.pipeline_config_dir}/schema.json")
-    prompt_hash  = filesha256("${var.pipeline_config_dir}/prompt.txt")
-    hooks_hash   = filesha256("${var.pipeline_config_dir}/hooks.py")
-    build_app    = tostring(fileexists("${path.module}/.build/llm_extract_${var.pipeline_name}/app.py"))
-    build_schema = tostring(fileexists("${path.module}/.build/llm_extract_${var.pipeline_name}/schema.json"))
-    build_prompt = tostring(fileexists("${path.module}/.build/llm_extract_${var.pipeline_name}/prompt.txt"))
-    build_hooks  = tostring(fileexists("${path.module}/.build/llm_extract_${var.pipeline_name}/hooks.py"))
-  }
-
-  provisioner "local-exec" {
-    command = <<-EOT
-      set -e
-      BUILD_DIR="${path.module}/.build/llm_extract_${var.pipeline_name}"
-      rm -rf "$BUILD_DIR"
-      mkdir -p "$BUILD_DIR"
-      cp "${path.module}/lambda_src/llm_extract/app.py" "$BUILD_DIR/app.py"
-      cp "${var.pipeline_config_dir}/schema.json" "$BUILD_DIR/schema.json"
-      cp "${var.pipeline_config_dir}/prompt.txt" "$BUILD_DIR/prompt.txt"
-      cp "${var.pipeline_config_dir}/hooks.py" "$BUILD_DIR/hooks.py"
-    EOT
-  }
-}
+# archive_file supports multiple source blocks, so we can pull files from
+# two different locations (shared handler + pipeline-specific config) without
+# needing a staging directory or a null_resource provisioner.
 
 data "archive_file" "llm_extract_zip" {
   type        = "zip"
-  source_dir  = "${path.module}/.build/llm_extract_${var.pipeline_name}"
-  output_path = "${path.module}/.build/${var.pipeline_name}-llm_extract.zip"
+  output_path = "${path.module}/${var.pipeline_name}-llm_extract.zip"
 
-  depends_on = [null_resource.llm_extract_build]
+  source {
+    content  = file("${path.module}/lambda_src/llm_extract/app.py")
+    filename = "app.py"
+  }
+  source {
+    content  = file("${var.pipeline_config_dir}/schema.json")
+    filename = "schema.json"
+  }
+  source {
+    content  = file("${var.pipeline_config_dir}/prompt.txt")
+    filename = "prompt.txt"
+  }
+  source {
+    content  = file("${var.pipeline_config_dir}/hooks.py")
+    filename = "hooks.py"
+  }
 }
 
 # --- persist zip: fully pipeline-specific ---------------------------------
@@ -97,7 +84,7 @@ data "archive_file" "llm_extract_zip" {
 data "archive_file" "persist_zip" {
   type        = "zip"
   source_dir  = var.persist_src_dir
-  output_path = "${path.module}/.build/${var.pipeline_name}-persist.zip"
+  output_path = "${path.module}/${var.pipeline_name}-persist.zip"
 }
 
 # --- pdfminer layer -------------------------------------------------------
@@ -105,7 +92,7 @@ data "archive_file" "persist_zip" {
 data "archive_file" "pdfminer_layer" {
   type        = "zip"
   source_dir  = "${path.module}/layers/pdfminer"
-  output_path = "${path.module}/.build/pdfminer_layer.zip"
+  output_path = "${path.module}/pdfminer_layer.zip"
 }
 
 resource "aws_lambda_layer_version" "pdfminer" {

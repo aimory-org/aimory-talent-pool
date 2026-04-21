@@ -24,6 +24,13 @@ cd /workspaces/aimory-talent-pool
 pip install -r requirements-dev.txt --quiet
 
 # -----------------------------------------------------------------------------
+# Infrastructure — Lambda layers + .build directory
+# -----------------------------------------------------------------------------
+echo "🏗️  Building Lambda layers and artefacts..."
+cd /workspaces/aimory-talent-pool/infra
+bash build.sh
+
+# -----------------------------------------------------------------------------
 # Done
 # -----------------------------------------------------------------------------
 echo ""
@@ -34,5 +41,6 @@ echo "  Frontend:  cd frontend/web && npm run dev"
 echo "  Terraform: cd infra/envs/dev && terraform init"
 echo "  Tests:     pytest"
 echo ""
-echo "Before terraform apply, build the Lambda layer:"
-echo "  ./infra/modules/pipeline/lambdas/layers/pdfminer/build_layer_docker.sh"
+echo "Before terraform apply:"
+echo "  cd infra/envs/dev && cp terraform.tfvars.example terraform.tfvars"
+echo "  terraform init && terraform plan"

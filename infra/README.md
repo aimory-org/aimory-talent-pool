@@ -38,6 +38,59 @@ pipeline_configs/             # Per-pipeline config (schema, prompt, hooks, pers
 └── <future>/                 # Add new pipeline types here
 ```
 
+## Before First Deploy
+
+Two things are gitignored and must be built locally before `terraform apply` can run:
+
+| What | Why gitignored |
+|------|---------------|
+| `modules/document_pipeline/layers/pdfminer/python/` | Large compiled packages |
+| `modules/storage/layers/opensearch/python/` | Large compiled packages |
+
+Run the build script once after every fresh clone, and again whenever a `requirements.txt` changes:
+
+**Linux / macOS / CI (Docker — recommended):**
+```bash
+cd infra
+./build.sh
+```
+
+**Linux / macOS without Docker:**
+```bash
+cd infra
+./build.sh --no-docker   # requires python3.12 on PATH
+```
+
+**Windows (PowerShell, Docker):**
+```powershell
+cd infra
+.\build.ps1
+```
+
+**Windows without Docker:**
+```powershell
+.\build.ps1 -NoDocker   # requires python 3.12 on PATH
+```
+
+After the build, continue with the normal Terraform workflow:
+```bash
+cd infra/envs/dev
+cp terraform.tfvars.example terraform.tfvars  # fill in your values
+terraform init
+terraform plan
+terraform apply
+```
+
+### CI/CD
+
+Add the build script as a step before `terraform init` in your pipeline, e.g. GitHub Actions:
+```yaml
+- name: Build Lambda layers and artefacts
+  run: ./infra/build.sh
+```
+
+Docker is available in all standard GitHub Actions runners, so no extra setup is needed.
+
 ## Architecture
 
 ### System Overview

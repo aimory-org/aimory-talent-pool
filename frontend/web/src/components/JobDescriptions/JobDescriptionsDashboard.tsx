@@ -7,7 +7,6 @@ import {
   Filter,
   X,
   RefreshCw,
-  Upload,
   AlertTriangle,
 } from "lucide-react";
 import { useJobDescriptions } from "@/hooks/useJobDescriptions";
@@ -19,6 +18,7 @@ import { JdTable } from "./components/JdTable";
 import { JdDetailPanel } from "./JdDetailPanel";
 import { JdUploadDialog } from "./components/JdUploadDialog";
 import { CLEARANCE_LEVELS, US_STATES } from "@/types/talent";
+import { UploadActionButton } from "@/components/ui/upload-action-button";
 
 export function JobDescriptionsDashboard() {
   const [filters, setFilters] = useState<JdFilters>(DEFAULT_JD_FILTERS);
@@ -124,13 +124,7 @@ export function JobDescriptionsDashboard() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowUpload(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium transition-all"
-          >
-            <Upload className="h-3.5 w-3.5" />
-            Upload
-          </button>
+          <UploadActionButton label="Upload" onClick={() => setShowUpload(true)} />
           <button
             onClick={refresh}
             className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 text-foreground/50 hover:text-foreground transition-all"

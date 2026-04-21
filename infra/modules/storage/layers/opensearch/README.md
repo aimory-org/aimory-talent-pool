@@ -1,6 +1,6 @@
-# pdfminer Lambda layer
+# opensearch Lambda layer
 
-Provides `pdfminer.six` for PDF text extraction inside the document pipeline Lambdas.
+Provides `opensearch-py` for the DynamoDB → OpenSearch sync Lambda.
 
 The `python/` folder is gitignored and must be built before `terraform apply`.
 Use the top-level build script — it builds this layer alongside all other
