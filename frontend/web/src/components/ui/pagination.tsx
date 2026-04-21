@@ -9,13 +9,14 @@ interface PaginationProps {
 }
 
 export function Pagination({
-  currentPage,
+  currentPage: rawCurrentPage,
   totalPages,
   onPageChange,
   className,
 }: PaginationProps) {
   if (totalPages <= 1) return null;
 
+  const currentPage = Math.min(Math.max(1, rawCurrentPage), totalPages);
   const pages: (number | "...")[] = [];
 
   if (totalPages <= 7) {
@@ -40,7 +41,7 @@ export function Pagination({
     <div className={cn("flex items-center justify-center gap-1", className)}>
       <button
         onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-        disabled={currentPage === 1}
+        disabled={currentPage <= 1}
         aria-label="Previous page"
         className="h-8 w-8 flex items-center justify-center rounded-lg border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 text-foreground/60 hover:text-foreground hover:bg-black/10 dark:hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
       >
@@ -75,7 +76,7 @@ export function Pagination({
 
       <button
         onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-        disabled={currentPage === totalPages}
+        disabled={currentPage >= totalPages}
         aria-label="Next page"
         className="h-8 w-8 flex items-center justify-center rounded-lg border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 text-foreground/60 hover:text-foreground hover:bg-black/10 dark:hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
       >
