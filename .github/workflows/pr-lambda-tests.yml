@@ -102,7 +102,7 @@ jobs:
 
       - name: Upload Bandit SARIF to Code Scanning
         if: always()
-        uses: actions/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: bandit.sarif
           category: bandit
