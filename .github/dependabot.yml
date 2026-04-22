@@ -1,0 +1,42 @@
+version: 2
+updates:
+  # ── Python dependencies ────────────────────────────────────────────────────
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "python"
+    # Group all non-major bumps into a single PR to reduce noise
+    groups:
+      python-non-major:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # ── npm (frontend) ─────────────────────────────────────────────────────────
+  - package-ecosystem: "npm"
+    directory: "/frontend/web"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "javascript"
+    groups:
+      npm-non-major:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # ── GitHub Actions ─────────────────────────────────────────────────────────
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "github-actions"

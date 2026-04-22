@@ -37,8 +37,3 @@ variable "entra_tenant_id" {
   type        = string
 }
 
-variable "allowed_email_domains" {
-  description = "List of allowed email domains (e.g., ['aimory.com']). Empty means all domains allowed."
-  type        = list(string)
-  default     = []
-}

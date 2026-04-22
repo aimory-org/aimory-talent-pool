@@ -40,9 +40,7 @@ module "cognito" {
 }
 
 module "resume_pipeline" {
-  source       = "../../modules/document_pipeline"
-  project_name = var.project_name
-  environment  = var.environment
+  source = "../../modules/document_pipeline"
 
   pipeline_name   = "resume"
   resource_prefix = "${var.project_name}-${var.environment}"
@@ -54,7 +52,6 @@ module "resume_pipeline" {
 
   sfn_arn_param_name = var.sfn_arn_param_name
 
-  target_table_name    = module.storage.talent_profiles_table_name
   target_table_arn     = module.storage.talent_profiles_table_arn
   audit_log_table_name = module.storage.audit_log_table_name
   audit_log_table_arn  = module.storage.audit_log_table_arn
@@ -77,9 +74,7 @@ module "resume_pipeline" {
 # -----------------------------------------------------------------------------
 
 module "jd_pipeline" {
-  source       = "../../modules/document_pipeline"
-  project_name = var.project_name
-  environment  = var.environment
+  source = "../../modules/document_pipeline"
 
   pipeline_name   = "jd"
   resource_prefix = "${var.project_name}-${var.environment}-jd"
@@ -91,7 +86,6 @@ module "jd_pipeline" {
 
   sfn_arn_param_name = "/${var.project_name}/${var.environment}/jd-pipeline-arn"
 
-  target_table_name    = module.storage.job_descriptions_table_name
   target_table_arn     = module.storage.job_descriptions_table_arn
   audit_log_table_name = module.storage.audit_log_table_name
   audit_log_table_arn  = module.storage.audit_log_table_arn

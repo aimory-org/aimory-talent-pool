@@ -10,7 +10,7 @@ on:
     branches: [main]
     paths:
       - "frontend/web/**"
-      - ".github/workflows/frontend-tests.yml"
+      - ".github/workflows/pr-frontend-tests.yml"
 
 permissions:
   contents: write   # needed to push auto-fix commits back to the PR branch
@@ -44,6 +44,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: npm audit (dependency CVEs)
+        run: npm audit --audit-level=high
 
       - name: Auto-fix with ESLint
         run: |

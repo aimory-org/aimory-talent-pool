@@ -11,16 +11,6 @@
 # 3. Call this module from envs/dev/modules.tf with pipeline-specific vars.
 # -----------------------------------------------------------------------------
 
-variable "project_name" {
-  type        = string
-  description = "Project name for resource naming"
-}
-
-variable "environment" {
-  type        = string
-  description = "Environment (dev/staging/prod)"
-}
-
 variable "pipeline_name" {
   type        = string
   description = "Short name for this pipeline (e.g. 'resume', 'jd'). Used in resource names."
@@ -54,11 +44,6 @@ variable "extracted_prefix" {
 variable "sfn_arn_param_name" {
   type        = string
   description = "SSM parameter name to store the Step Functions state machine ARN"
-}
-
-variable "target_table_name" {
-  type        = string
-  description = "DynamoDB table name for the pipeline's output documents"
 }
 
 variable "target_table_arn" {

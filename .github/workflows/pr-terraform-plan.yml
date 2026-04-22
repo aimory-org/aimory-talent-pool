@@ -22,7 +22,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: write   # needed to push auto-fix commits back to the PR branch
+  contents: read         # default to read-only; only same-repo PRs should perform write/push operations
   pull-requests: write
 
 concurrency:
@@ -40,6 +40,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
+      CAN_PUSH_FIXES: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
       TF_VAR_presign_api_key: ${{ secrets.TF_VAR_PRESIGN_API_KEY }}
       TF_VAR_entra_client_id: ${{ secrets.TF_VAR_ENTRA_CLIENT_ID }}
       TF_VAR_entra_client_secret: ${{ secrets.TF_VAR_ENTRA_CLIENT_SECRET }}
@@ -107,7 +108,33 @@ jobs:
         run: terraform validate -no-color
         working-directory: ${{ env.TF_DIR }}
 
+      # ── Static analysis ───────────────────────────────────────────────────
+      - name: Setup tflint
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: v0.55.0
+
+      - name: tflint init
+        run: tflint --init --config="${{ github.workspace }}/.tflint.hcl"
+        working-directory: infra
+
+      - name: tflint
+        id: tflint
+        run: tflint --recursive --config="${{ github.workspace }}/.tflint.hcl" --format=compact
+        working-directory: infra
+        continue-on-error: true
+
+      - name: Checkov (IaC security scan)
+        id: checkov
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: infra
+          config_file: .checkov.yaml
+          output_format: cli
+          soft_fail: false
+
       - name: Terraform Plan
+        if: always()
         id: plan
         run: |
           set +e
@@ -159,6 +186,8 @@ jobs:
               `| **Format**   | ${status('${{ steps.fmt.outcome }}')} ${{ steps.fmt.outcome }} |`,
               `| **Init**     | ${status('${{ steps.init.outcome }}')} ${{ steps.init.outcome }} |`,
               `| **Validate** | ${status('${{ steps.validate.outcome }}')} ${{ steps.validate.outcome }} |`,
+              `| **tflint**   | ${status('${{ steps.tflint.outcome }}')} ${{ steps.tflint.outcome }} |`,
+              `| **Checkov**  | ${status('${{ steps.checkov.outcome }}')} ${{ steps.checkov.outcome }} |`,
               `| **Plan**     | ${status('${{ steps.plan.outcome }}')} ${{ steps.plan.outcome }} |`,
               '',
               '<details><summary>Show Plan Output</summary>',
@@ -204,6 +233,14 @@ jobs:
         run: |
           if [[ "${{ steps.fmt.outcome }}" == "failure" ]]; then
             echo "::warning::terraform fmt check failed — run 'terraform fmt -recursive' locally."
+          fi
+          if [[ "${{ steps.tflint.outcome }}" == "failure" ]]; then
+            echo "::error::tflint found issues. Review the tflint output above."
+            exit 1
+          fi
+          if [[ "${{ steps.checkov.outcome }}" == "failure" ]]; then
+            echo "::error::Checkov found security issues. Review the Code Scanning alerts."
+            exit 1
           fi
           if [[ "${{ steps.plan.outcome }}" == "failure" ]]; then
             echo "::error::Terraform plan failed. Review the plan output above."

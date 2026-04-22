@@ -1,0 +1,43 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Secret Scanning — runs on every pull request targeting main.
+# Uses Gitleaks to detect hardcoded secrets, API keys, tokens, and credentials
+# committed to the repository.
+#
+# Fails the PR if any secrets are found — no soft-fail. Secrets in source
+# code must be removed and the commit history cleaned before merge.
+#
+# To suppress a false positive, add a `# gitleaks:allow` inline comment.
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: Secret Scanning
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write   # needed to post findings as PR comments
+
+concurrency:
+  group: secret-scanning-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  gitleaks:
+    name: Gitleaks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history so gitleaks can scan all commits in the PR
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # GITLEAKS_LICENSE is only required for private repos on the paid plan.
+          # Omit for public repos or OSS use.
+          # GITLEAKS_LICENSE: ${{ secrets.GITHUB_TOKEN }}
