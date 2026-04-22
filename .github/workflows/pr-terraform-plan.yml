@@ -25,6 +25,7 @@ permissions:
   contents: read         # default to read-only; only same-repo PRs should perform write/push operations
   pull-requests: write
   security-events: write # needed to upload SARIF to GitHub Code Scanning
+  actions: read          # needed by upload-sarif to fetch workflow run metadata
 
 concurrency:
   group: terraform-plan-${{ github.event.pull_request.number }}

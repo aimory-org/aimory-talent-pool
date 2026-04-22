@@ -20,6 +20,7 @@ permissions:
   contents: write        # needed to push auto-fix commits back to the PR branch
   pull-requests: write
   security-events: write # needed to upload SARIF to GitHub Code Scanning
+  actions: read          # needed by upload-sarif to fetch workflow run metadata
 
 concurrency:
   group: lambda-tests-${{ github.event.pull_request.number }}
