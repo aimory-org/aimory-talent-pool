@@ -1,1 +1,2 @@
 pdfminer.six==20260107
+defusedxml>=0.7.1
