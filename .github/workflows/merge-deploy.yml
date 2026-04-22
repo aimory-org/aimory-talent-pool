@@ -148,7 +148,7 @@ jobs:
 
       - name: Upload State Backup
         if: steps.backup.outputs.state_exists == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: terraform-state-backup-${{ github.sha }}
           path: ${{ env.TF_DIR }}/state-backup-${{ github.sha }}.json
@@ -219,7 +219,7 @@ jobs:
       # ── Upload logs for auditing ──────────────────────────────────────────
       - name: Upload Terraform Logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: terraform-logs-${{ github.sha }}
           path: |
