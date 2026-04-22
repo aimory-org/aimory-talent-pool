@@ -22,7 +22,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: write        # needed to push auto-fix commits back to the PR branch
+  contents: read         # default to read-only; only same-repo PRs should perform write/push operations
   pull-requests: write
   security-events: write # needed to upload SARIF to GitHub Code Scanning
 
@@ -41,6 +41,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
+      CAN_PUSH_FIXES: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
       TF_VAR_presign_api_key: ${{ secrets.TF_VAR_PRESIGN_API_KEY }}
       TF_VAR_entra_client_id: ${{ secrets.TF_VAR_ENTRA_CLIENT_ID }}
       TF_VAR_entra_client_secret: ${{ secrets.TF_VAR_ENTRA_CLIENT_SECRET }}
