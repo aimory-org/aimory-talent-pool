@@ -18,7 +18,6 @@ on:
 permissions:
   contents: read
   pull-requests: write   # needed to post findings as PR comments
-  security-events: write # needed to upload SARIF to GitHub Code Scanning
 
 concurrency:
   group: secret-scanning-${{ github.event.pull_request.number }}
