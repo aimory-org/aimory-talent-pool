@@ -2,7 +2,7 @@
 # Docs: https://www.checkov.io/2.Basics/CLI%20Command%20Reference.html
 
 compact: true
-quiet: false
+quiet: true  # only show failures; passing checks are too verbose in CI logs
 framework:
   - terraform
 
@@ -52,3 +52,101 @@ skip-check:
   # Module sources pinned to exact commits — we use version constraints instead,
   # consistent with .tflint.hcl's flexible module pinning rule.
   - CKV_TF_1
+
+  # ── Lambda ─────────────────────────────────────────────────────────────────
+
+  # Lambda env var KMS encryption not configured — env vars contain non-secret
+  # configuration (table names, S3 bucket names, endpoints). Actual secrets are
+  # stored in SSM Parameter Store and fetched at runtime.
+  - CKV_AWS_173
+
+  # Lambda function-level concurrency limit not set — dev environment with low
+  # traffic; account-level concurrency is sufficient. Set before production.
+  - CKV_AWS_115
+
+  # Lambda not inside a VPC — intentional for this serverless architecture.
+  # Adding a VPC requires NAT gateway for internet access, adding significant
+  # cost and complexity with no security benefit at dev scale.
+  - CKV_AWS_117
+
+  # Presign Lambda URL AuthType is NONE — this is the presigned URL endpoint
+  # design: the URL itself is single-use and time-limited (signed by API Gateway
+  # with an API key); unauthenticated Lambda URL invoke is the intended pattern.
+  - CKV_AWS_258
+
+  # Presign Lambda is publicly invokable — same rationale as CKV_AWS_258; the
+  # public Lambda permission is required for the presigned URL flow.
+  - CKV_AWS_301
+
+  # ── IAM ────────────────────────────────────────────────────────────────────
+
+  # Bedrock IAM policy uses "*" resource — Amazon Bedrock InvokeModel requires
+  # wildcard resource; individual model ARNs cannot be used with all operations.
+  # This is a documented AWS limitation for Bedrock.
+  - CKV_AWS_355
+
+  # ── CloudWatch ─────────────────────────────────────────────────────────────
+
+  # CloudWatch log group KMS encryption not configured — dev environment;
+  # log groups use default AWS encryption. Enable CMK before production.
+  - CKV_AWS_158
+
+  # ── Step Functions ─────────────────────────────────────────────────────────
+  # (no suppressions — logging and X-Ray tracing are now enabled)
+
+  # ── CloudFront ─────────────────────────────────────────────────────────────
+
+  # CloudFront origin failover not configured — single-origin dev deployment;
+  # failover requires duplicate infrastructure.
+  - CKV_AWS_310
+
+  # CloudFront geo restriction not enabled — this application has no geographic
+  # access requirements; all regions are intentionally allowed.
+  - CKV_AWS_374
+
+  # CloudFront WAF not enabled — dev environment; WAF adds per-request cost.
+  # Enable before production.
+  - CKV_AWS_68
+
+  # ── OpenSearch ─────────────────────────────────────────────────────────────
+
+  # OpenSearch single-node, no dedicated master — dev environment uses a
+  # single t3.small node for cost; HA config required before production.
+  - CKV_AWS_318
+  - CKV2_AWS_59
+
+  # OpenSearch default security group — dev environment; VPC/SG configuration
+  # is intentionally minimal. Harden before production.
+  - CKV_AWS_248
+
+  # OpenSearch audit & application logging not enabled — dev environment.
+  - CKV_AWS_317
+  - CKV_AWS_84
+
+  # OpenSearch not inside a VPC — same rationale as Lambda VPC suppression
+  # (CKV_AWS_117); public endpoint used for dev simplicity.
+  - CKV_AWS_137
+
+  # OpenSearch CMK encryption not configured — AWS-managed encryption is used.
+  - CKV_AWS_247
+
+  # OpenSearch fine-grained access control not enabled — dev environment with
+  # IAM-based access control at the domain level.
+  - CKV2_AWS_52
+
+  # ── S3 ─────────────────────────────────────────────────────────────────────
+
+  # S3 KMS (CMK) encryption not configured — buckets use AWS-managed SSE-S3
+  # encryption; CMK not required for this data classification.
+  - CKV_AWS_145
+
+  # S3 lifecycle configuration not set — dev environment; objects are not
+  # subject to automated tiering or expiry requirements.
+  - CKV2_AWS_61
+
+  # S3 event notifications not enabled — not required for this architecture;
+  # pipeline triggers use DynamoDB Streams and EventBridge instead.
+  - CKV2_AWS_62
+
+  # ── SSM ────────────────────────────────────────────────────────────────────
+  # (no suppressions — SSM parameters now use SecureString type)

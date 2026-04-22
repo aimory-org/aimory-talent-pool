@@ -56,7 +56,7 @@ resource "aws_apigatewayv2_stage" "default" {
 
 resource "aws_cloudwatch_log_group" "api_logs" {
   name              = "/aws/apigateway/${var.project_name}-${var.environment}-api"
-  retention_in_days = 14
+  retention_in_days = 365
 
   tags = {
     Project     = var.project_name

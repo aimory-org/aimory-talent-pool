@@ -37,6 +37,38 @@ resource "aws_iam_role_policy" "sfn_invoke_lambdas" {
   })
 }
 
+resource "aws_cloudwatch_log_group" "sfn_logs" {
+  name              = "/aws/states/${var.resource_prefix}-pipeline"
+  retention_in_days = 365
+
+  tags = {
+    ManagedBy = "terraform"
+  }
+}
+
+resource "aws_iam_role_policy" "sfn_logs" {
+  name = "${var.resource_prefix}-sfn-logs"
+  role = aws_iam_role.sfn_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [{
+      Effect = "Allow",
+      Action = [
+        "logs:CreateLogDelivery",
+        "logs:GetLogDelivery",
+        "logs:UpdateLogDelivery",
+        "logs:DeleteLogDelivery",
+        "logs:ListLogDeliveries",
+        "logs:PutResourcePolicy",
+        "logs:DescribeResourcePolicies",
+        "logs:DescribeLogGroups",
+      ],
+      Resource = "*"
+    }]
+  })
+}
+
 resource "aws_sfn_state_machine" "pipeline" {
   name     = "${var.resource_prefix}-pipeline"
   role_arn = aws_iam_role.sfn_role.arn
@@ -51,12 +83,22 @@ resource "aws_sfn_state_machine" "pipeline" {
     lambda_llm_extract_arn    = aws_lambda_function.llm_extract.arn
     lambda_persist_arn        = aws_lambda_function.persist.arn
   })
+
+  tracing_configuration {
+    enabled = true
+  }
+
+  logging_configuration {
+    log_destination        = "${aws_cloudwatch_log_group.sfn_logs.arn}:*"
+    include_execution_data = true
+    level                  = "ERROR"
+  }
 }
 
 # Store SFN ARN in SSM so the starter Lambda can read it without a Terraform cycle
 resource "aws_ssm_parameter" "pipeline_sfn_arn" {
   name  = var.sfn_arn_param_name
-  type  = "String"
+  type  = "SecureString"
   value = aws_sfn_state_machine.pipeline.arn
 }
 
