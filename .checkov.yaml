@@ -1,0 +1,54 @@
+# Checkov configuration
+# Docs: https://www.checkov.io/2.Basics/CLI%20Command%20Reference.html
+
+compact: true
+quiet: false
+framework:
+  - terraform
+
+# Paths scanned by the workflow step (--directory infra)
+# Layers contain vendored third-party code — skip them entirely.
+skip-path:
+  - infra/modules/document_pipeline/layers
+  - infra/modules/storage/layers
+
+# ── Accepted risk suppressions ────────────────────────────────────────────────
+# Each suppression is documented with its rationale.
+skip-check:
+  # Lambda X-Ray tracing not enabled — acceptable for a dev environment;
+  # adds per-request cost and complexity without benefit at this stage.
+  - CKV_AWS_50
+
+  # Lambda dead-letter queue not configured — all Lambdas in this project are
+  # idempotent and retriable via Step Functions or EventBridge; a DLQ would
+  # add infrastructure without operational benefit at dev scale.
+  - CKV_AWS_116
+
+  # Lambda code-signing not enforced — signing requires an AWS Signer profile
+  # which is out of scope for this dev environment.
+  - CKV_AWS_272
+
+  # DynamoDB point-in-time recovery not enabled — dev environment with
+  # non-critical data; PITR should be enabled before production.
+  - CKV_AWS_28
+
+  # DynamoDB CMK encryption not configured — tables use AWS-managed keys
+  # (SSE enabled by default); CMK is not required for this data classification.
+  - CKV_AWS_119
+
+  # S3 access logging not enabled — dev environment; enable before production.
+  - CKV_AWS_18
+
+  # S3 cross-region replication not configured — single-region dev deployment.
+  - CKV_AWS_144
+
+  # CloudFront access logging not enabled — dev environment.
+  - CKV_AWS_86
+
+  # CloudFront viewer protocol policy — managed by the frontend module;
+  # redirect-to-HTTPS is enforced at the distribution level.
+  - CKV2_AWS_47
+
+  # Module sources pinned to exact commits — we use version constraints instead,
+  # consistent with .tflint.hcl's flexible module pinning rule.
+  - CKV_TF_1

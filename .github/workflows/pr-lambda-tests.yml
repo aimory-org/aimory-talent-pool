@@ -17,8 +17,9 @@ on:
     branches: [main]
 
 permissions:
-  contents: write   # needed to push auto-fix commits back to the PR branch
+  contents: write        # needed to push auto-fix commits back to the PR branch
   pull-requests: write
+  security-events: write # needed to upload SARIF to GitHub Code Scanning
 
 concurrency:
   group: lambda-tests-${{ github.event.pull_request.number }}
@@ -72,6 +73,48 @@ jobs:
 
       - name: Black format check
         run: black --check infra/modules infra/tests
+
+      # ── Type checking ──────────────────────────────────────────────────────
+      - name: mypy
+        run: |
+          mypy \
+            infra/modules/api/lambda_src \
+            infra/modules/document_pipeline/lambda_src \
+            infra/modules/jobs/lambda_src \
+            infra/modules/storage/lambda_src \
+            infra/pipeline_configs
+
+      # ── Security scanning ──────────────────────────────────────────────────
+      - name: Bandit SAST
+        id: bandit
+        run: |
+          bandit -r \
+            infra/modules/api/lambda_src \
+            infra/modules/document_pipeline/lambda_src \
+            infra/modules/jobs/lambda_src \
+            infra/modules/storage/lambda_src \
+            infra/pipeline_configs \
+            --severity-level medium \
+            --confidence-level medium \
+            --format sarif \
+            -o bandit.sarif
+        continue-on-error: true  # upload SARIF before re-failing
+
+      - name: Upload Bandit SARIF to Code Scanning
+        if: always()
+        uses: actions/upload-sarif@v3
+        with:
+          sarif_file: bandit.sarif
+          category: bandit
+
+      - name: Fail if Bandit found issues
+        if: steps.bandit.outcome == 'failure'
+        run: |
+          echo "::error::Bandit found security issues. Review the Code Scanning alerts."
+          exit 1
+
+      - name: pip-audit (dependency CVEs)
+        run: pip-audit -r requirements-dev.txt --progress-spinner off
 
       # ── Unit tests ─────────────────────────────────────────────────────────
       - name: Run unit tests
