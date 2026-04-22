@@ -78,6 +78,7 @@ jobs:
       - name: mypy
         run: |
           mypy \
+            --explicit-package-bases \
             infra/modules/api/lambda_src \
             infra/modules/document_pipeline/lambda_src \
             infra/modules/jobs/lambda_src \
@@ -87,6 +88,7 @@ jobs:
       # ── Security scanning ──────────────────────────────────────────────────
       - name: Bandit SAST
         id: bandit
+        if: always()  # run even if mypy fails so we always produce bandit.sarif
         run: |
           bandit -r \
             infra/modules/api/lambda_src \
@@ -101,14 +103,15 @@ jobs:
         continue-on-error: true  # upload SARIF before re-failing
 
       - name: Upload Bandit SARIF to Code Scanning
-        if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles('bandit.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: bandit.sarif
           category: bandit
+        continue-on-error: true  # don't block CI if SARIF upload itself fails
 
       - name: Fail if Bandit found issues
-        if: steps.bandit.outcome == 'failure'
+        if: always() && steps.bandit.outcome == 'failure'
         run: |
           echo "::error::Bandit found security issues. Review the Code Scanning alerts."
           exit 1
