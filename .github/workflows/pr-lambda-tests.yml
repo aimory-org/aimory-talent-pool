@@ -17,7 +17,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: write        # needed to push auto-fix commits back to the PR branch
+  contents: read         # do not grant write-scoped repo access to untrusted pull_request code
   pull-requests: write
   security-events: write # needed to upload SARIF to GitHub Code Scanning
 
@@ -34,9 +34,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          # Full ref so we can push fixes back to the PR branch
+          # Full ref so workflow checks the PR branch without persisting credentials
           ref: ${{ github.head_ref }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@v5
