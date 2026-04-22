@@ -114,7 +114,21 @@ jobs:
           exit 1
 
       - name: pip-audit (dependency CVEs)
-        run: pip-audit -r requirements-dev.txt --progress-spinner off
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          requirement_files=("requirements-dev.txt")
+          while IFS= read -r file; do
+            requirement_files+=("$file")
+          done < <(find infra/modules -type f -path '*/layers/*/requirements.txt' | sort)
+
+          echo "Auditing requirement files:"
+          printf ' - %s\n' "${requirement_files[@]}"
+
+          for file in "${requirement_files[@]}"; do
+            pip-audit -r "$file" --progress-spinner off
+          done
 
       # ── Unit tests ─────────────────────────────────────────────────────────
       - name: Run unit tests
