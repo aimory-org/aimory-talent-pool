@@ -19,8 +19,6 @@ on:
 permissions:
   contents: write        # needed to push auto-fix commits back to the PR branch
   pull-requests: write
-  security-events: write # needed to upload SARIF to GitHub Code Scanning
-  actions: read          # needed by upload-sarif to fetch workflow run metadata
 
 concurrency:
   group: lambda-tests-${{ github.event.pull_request.number }}
@@ -45,7 +43,7 @@ jobs:
           cache: "pip"
 
       - name: Install dependencies
-        run: pip install -r requirements-dev.txt bandit-sarif-formatter
+        run: pip install -r requirements-dev.txt
 
       # ── Auto-fix & commit ──────────────────────────────────────────────────
       # ruff --fix handles imports, unused vars, whitespace, etc.
@@ -88,7 +86,7 @@ jobs:
       # ── Security scanning ──────────────────────────────────────────────────
       - name: Bandit SAST
         id: bandit
-        if: always()  # run even if mypy fails so we always produce bandit.sarif
+        if: always()  # run even if mypy fails
         run: |
           bandit -r \
             infra/modules/api/lambda_src \
@@ -98,22 +96,13 @@ jobs:
             infra/pipeline_configs \
             --severity-level medium \
             --confidence-level medium \
-            --format sarif \
-            -o bandit.sarif
-        continue-on-error: true  # upload SARIF before re-failing
-
-      - name: Upload Bandit SARIF to Code Scanning
-        if: always() && hashFiles('bandit.sarif') != ''
-        uses: github/codeql-action/upload-sarif@v4
-        with:
-          sarif_file: bandit.sarif
-          category: bandit
-        continue-on-error: true  # don't block CI if SARIF upload itself fails
+            --format screen
+        continue-on-error: true  # re-fail explicitly below so we always see output first
 
       - name: Fail if Bandit found issues
         if: always() && steps.bandit.outcome == 'failure'
         run: |
-          echo "::error::Bandit found security issues. Review the Code Scanning alerts."
+          echo "::error::Bandit found security issues. Review the output above."
           exit 1
 
       - name: pip-audit (dependency CVEs)

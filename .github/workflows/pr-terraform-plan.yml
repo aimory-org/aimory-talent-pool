@@ -24,8 +24,6 @@ on:
 permissions:
   contents: read         # default to read-only; only same-repo PRs should perform write/push operations
   pull-requests: write
-  security-events: write # needed to upload SARIF to GitHub Code Scanning
-  actions: read          # needed by upload-sarif to fetch workflow run metadata
 
 concurrency:
   group: terraform-plan-${{ github.event.pull_request.number }}
@@ -132,18 +130,8 @@ jobs:
         with:
           directory: infra
           config_file: .checkov.yaml
-          output_format: cli,sarif
-          output_file_path: console,results.sarif
+          output_format: cli
           soft_fail: false
-        continue-on-error: true  # upload SARIF before re-failing
-
-      - name: Upload Checkov SARIF to Code Scanning
-        if: always() && hashFiles('results.sarif') != ''
-        uses: github/codeql-action/upload-sarif@v4
-        continue-on-error: true
-        with:
-          sarif_file: results.sarif
-          category: checkov
 
       - name: Terraform Plan
         if: always()

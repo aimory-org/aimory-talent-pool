@@ -16,7 +16,7 @@ Merging to `main` triggers the deploy workflow automatically (subject to environ
 | Lint | `ruff` | Enforces import order, unused variables, whitespace — fails if anything remains after auto-fix |
 | Format check | `black` | Enforces consistent Python formatting |
 | Type checking | `mypy` | Static type analysis across all Lambda source directories; catches type errors before runtime |
-| SAST | `bandit` | Security linter — flags medium+ severity issues (e.g. hardcoded secrets, shell injection, insecure deserialization). Findings uploaded to GitHub **Security → Code Scanning** as SARIF |
+| SAST | `bandit` | Security linter — flags medium+ severity issues (e.g. hardcoded secrets, shell injection, insecure deserialization). Findings printed in the CI log |
 | Dependency CVEs | `pip-audit` | Scans `requirements-dev.txt` and layer `requirements.txt` files against the PyPI advisory database |
 | Unit tests | `pytest` + `moto` | Runs all tests in `infra/tests/unit/`. All AWS calls are mocked with moto — no real AWS credentials needed. Coverage report posted as a PR comment |
 
@@ -53,7 +53,7 @@ Merging to `main` triggers the deploy workflow automatically (subject to environ
 | Init | `terraform init` | Initialises providers and modules |
 | Validate | `terraform validate` | Checks configuration syntax and internal consistency |
 | IaC lint | `tflint` + AWS ruleset | Checks for deprecated syntax, unused declarations, naming conventions, missing type annotations, and AWS-specific best practices. Configured via `.tflint.hcl` |
-| IaC security scan | `checkov` | Scans Terraform resources against 1000+ security and compliance checks. Findings uploaded to GitHub **Security → Code Scanning** as SARIF. Accepted-risk suppressions documented in `.checkov.yaml` |
+| IaC security scan | `checkov` | Scans Terraform resources against 1000+ security and compliance checks. Findings printed in the CI log. Accepted-risk suppressions documented in `.checkov.yaml` |
 | Plan | `terraform plan` | Produces a full execution plan; output posted as a PR comment |
 
 ---
@@ -63,7 +63,7 @@ Merging to `main` triggers the deploy workflow automatically (subject to environ
 
 | Step | Tool | Purpose |
 |------|------|---------|
-| Secret scanning | `gitleaks` | Scans the full commit history of the PR for hardcoded secrets, API keys, tokens, and credentials. Findings posted as PR annotations and to GitHub **Security → Code Scanning** |
+| Secret scanning | `gitleaks` | Scans the full commit history of the PR for hardcoded secrets, API keys, tokens, and credentials. Findings posted as PR annotations |
 
 To suppress a false positive, add a `# gitleaks:allow` inline comment or add a rule to `.gitleaks.toml` at the repo root.
 
@@ -101,9 +101,8 @@ Minor and patch bumps are grouped into a single PR per ecosystem to reduce noise
 
 ## Security Findings
 
-SARIF results from `bandit` (Python SAST) and `checkov` (IaC security) are uploaded to GitHub's **Security → Code Scanning** tab. Findings:
-- Appear as inline annotations on the exact file and line in the PR diff
-- Persist until dismissed with a reason
-- Are tracked across PRs so regressions are visible
+`bandit` (Python SAST) and `checkov` (IaC security) findings are printed directly in the CI log — visible in the **Actions** tab on any failing run.
 
-Gitleaks findings appear in **Security → Code Scanning** and as PR check annotations.
+> **Note:** GitHub Code Scanning (SARIF upload) requires GitHub Advanced Security, which is only available for public repos or organisations on the GitHub Enterprise plan. SARIF upload steps have been removed from these workflows.
+
+Gitleaks findings appear as PR check annotations.
