@@ -8,7 +8,7 @@ boto3>=1.34.0
 opensearch-py>=2.4.0     # Used by list_talents and sync_to_opensearch Lambdas
 
 # Testing
-pytest>=8.0.0
+pytest>=9.0.3
 pytest-cov>=4.1.0        # Coverage reports
 moto[all]>=5.0.0         # AWS service mocking
 
