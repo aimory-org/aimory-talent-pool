@@ -149,4 +149,9 @@ skip-check:
   - CKV2_AWS_62
 
   # ── SSM ────────────────────────────────────────────────────────────────────
-  # (no suppressions — SSM parameters now use SecureString type)
+
+  # SSM parameter KMS CMK not configured — the parameter stores a Step Function
+  # ARN (infrastructure metadata, not a secret). SecureString with the AWS-managed
+  # key (aws/ssm) is sufficient. A CMK costs $1/month with no security benefit
+  # for this data classification.
+  - CKV_AWS_337
