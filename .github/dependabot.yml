@@ -12,6 +12,12 @@ updates:
     # Group all non-major bumps into a single PR to reduce noise
     groups:
       python-non-major:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
+      python-security:
+        applies-to: security-updates
         update-types:
           - "minor"
           - "patch"
@@ -27,6 +33,12 @@ updates:
       - "javascript"
     groups:
       npm-non-major:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
+      npm-security:
+        applies-to: security-updates
         update-types:
           - "minor"
           - "patch"
