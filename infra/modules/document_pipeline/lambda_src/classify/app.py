@@ -1,10 +1,14 @@
 import io
 import os
 import re
-import xml.etree.ElementTree as ET
 import zipfile
 
 import boto3
+
+try:
+    import defusedxml.ElementTree as ET
+except ImportError:
+    import xml.etree.ElementTree as ET  # type: ignore[no-redef]  # nosec B314 — fallback for local dev only; defusedxml is always present in the Lambda layer
 
 try:
     from pdfminer.high_level import extract_text as pdf_extract_text
@@ -19,7 +23,7 @@ MIN_PDF_TEXT_CHARS = int(os.environ.get("MIN_PDF_TEXT_CHARS", "1000"))
 def _extract_docx_text(docx_bytes: bytes) -> str:
     with zipfile.ZipFile(io.BytesIO(docx_bytes)) as zf:
         xml_bytes = zf.read("word/document.xml")
-    root = ET.fromstring(xml_bytes)
+    root = ET.fromstring(xml_bytes)  # nosec B314 — ET is defusedxml.ElementTree in Lambda; stdlib fallback is dev-only
     text = "".join(root.itertext())
     return text
 

@@ -80,7 +80,7 @@ def _fetch_runs(token):
         },
     )
 
-    with urlopen(request, timeout=15) as response:
+    with urlopen(request, timeout=15) as response:  # nosec B310 — URL is hardcoded to api.github.com, not user-controlled
         payload = json.loads(response.read().decode("utf-8"))
 
     return payload.get("workflow_runs", [])
