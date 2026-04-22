@@ -46,19 +46,19 @@ jobs:
         run: pip install -r requirements-dev.txt
 
       # ── Auto-fix & commit ──────────────────────────────────────────────────
-      # ruff --fix handles imports, unused vars, whitespace, etc.
-      # black handles formatting.
+      # ruff check --fix handles imports, unused vars, whitespace, etc.
+      # ruff format handles formatting (Black-compatible).
       # If either changes anything, commit & push back to the PR branch so the
       # author doesn't have to fix style issues manually.
-      - name: Auto-fix with ruff and black
+      - name: Auto-fix with ruff
         id: autofix
         run: |
           ruff check --fix infra/modules infra/tests
-          black infra/modules infra/tests
+          ruff format infra/modules infra/tests
           if ! git diff --quiet; then
             git config user.name  "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
-            git commit -am "style: auto-fix ruff + black [skip ci]"
+            git commit -am "style: auto-fix ruff [skip ci]"
             git push
             echo "fixed=true" >> "$GITHUB_OUTPUT"
           else
@@ -69,8 +69,8 @@ jobs:
       - name: Ruff lint
         run: ruff check infra/modules infra/tests --output-format=github
 
-      - name: Black format check
-        run: black --check infra/modules infra/tests
+      - name: Ruff format check
+        run: ruff format --check infra/modules infra/tests
 
       # ── Type checking ──────────────────────────────────────────────────────
       - name: mypy
