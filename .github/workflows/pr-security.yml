@@ -6,8 +6,7 @@
 # Fails the PR if any secrets are found — no soft-fail. Secrets in source
 # code must be removed and the commit history cleaned before merge.
 #
-# To suppress a false positive, add a `# gitleaks:allow` inline comment or
-# add a rule to `.gitleaks.toml` at the repo root.
+# To suppress a false positive, add a `# gitleaks:allow` inline comment.
 # ─────────────────────────────────────────────────────────────────────────────
 
 name: Secret Scanning
@@ -42,4 +41,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # GITLEAKS_LICENSE is only required for private repos on the paid plan.
           # Omit for public repos or OSS use.
-          # GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+          # GITLEAKS_LICENSE: ${{ secrets.GITHUB_TOKEN }}
