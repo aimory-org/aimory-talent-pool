@@ -16,6 +16,7 @@ moto[all]>=5.0.0         # AWS service mocking
 black>=24.0.0            # Formatter
 ruff>=0.3.0              # Linter (replaces flake8, isort, etc.)
 bandit>=1.7.0            # Security linter (OWASP / SAST)
+bandit-sarif-formatter>=1.1.1  # SARIF output format plugin for bandit
 pip-audit>=2.7.0         # Dependency vulnerability scanner (CVE/PyPI advisory DB)
 
 # Type checking

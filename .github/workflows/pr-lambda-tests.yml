@@ -44,7 +44,7 @@ jobs:
           cache: "pip"
 
       - name: Install dependencies
-        run: pip install -r requirements-dev.txt
+        run: pip install -r requirements-dev.txt bandit-sarif-formatter
 
       # ── Auto-fix & commit ──────────────────────────────────────────────────
       # ruff --fix handles imports, unused vars, whitespace, etc.
