@@ -69,7 +69,7 @@ def _fetch_lookup_values(table_name, key_attr):
 
 def _extract_text(event: dict) -> str:
     try:
-        return event["normalized"]["text"]
+        return str(event["normalized"]["text"])
     except KeyError as e:
         raise ValueError(f"Missing normalized text in event: {e}")
 

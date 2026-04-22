@@ -27,7 +27,7 @@ def _extract_docx_text(docx_bytes: bytes) -> str:
 def _extract_pdf_text(pdf_bytes: bytes) -> str:
     if pdf_extract_text is None:
         raise RuntimeError("pdfminer.six is not available; build the Lambda layer before running.")
-    return pdf_extract_text(io.BytesIO(pdf_bytes))
+    return str(pdf_extract_text(io.BytesIO(pdf_bytes)))
 
 
 def _count_readable_chars(text: str) -> int:
