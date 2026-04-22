@@ -19,5 +19,5 @@ bandit>=1.7.0            # Security linter (OWASP / SAST)
 pip-audit>=2.7.0         # Dependency vulnerability scanner (CVE/PyPI advisory DB)
 
 # Type checking
-mypy>=1.8.0
+mypy>=1.20.2
 boto3-stubs[essential]   # Type hints for boto3
