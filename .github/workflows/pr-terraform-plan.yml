@@ -142,13 +142,8 @@ jobs:
           sarif_file: results.sarif
           category: checkov
 
-      - name: Fail if Checkov found issues
-        if: steps.checkov.outcome == 'failure'
-        run: |
-          echo "::error::Checkov found security issues. Review the Code Scanning alerts."
-          exit 1
-
       - name: Terraform Plan
+        if: always()
         id: plan
         run: |
           set +e
@@ -250,6 +245,10 @@ jobs:
           fi
           if [[ "${{ steps.tflint.outcome }}" == "failure" ]]; then
             echo "::error::tflint found issues. Review the tflint output above."
+            exit 1
+          fi
+          if [[ "${{ steps.checkov.outcome }}" == "failure" ]]; then
+            echo "::error::Checkov found security issues. Review the Code Scanning alerts."
             exit 1
           fi
           if [[ "${{ steps.plan.outcome }}" == "failure" ]]; then
