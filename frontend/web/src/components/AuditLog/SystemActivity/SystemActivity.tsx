@@ -535,7 +535,10 @@ export function SystemActivity() {
   }, [refreshDeployments, loadAuditEvents]);
 
   useEffect(() => {
-    void refreshAll();
+    const doRefresh = async () => {
+      await refreshAll();
+    };
+    void doRefresh();
   }, [refreshAll]);
 
   const allEvents = useMemo(() => {
@@ -570,14 +573,14 @@ export function SystemActivity() {
 
   // Reset to first page when type filter or search changes
   useEffect(() => {
-    setPage(1);
+    setTimeout(() => setPage(1), 0);
   }, [typeFilter, search]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
 
   // Clamp page when data changes without filter change (refresh / delete)
   useEffect(() => {
-    setPage((currentPage) => Math.min(currentPage, totalPages));
+    setTimeout(() => setPage((currentPage) => Math.min(currentPage, totalPages)), 0);
   }, [totalPages]);
 
   const safePage = Math.min(page, totalPages);

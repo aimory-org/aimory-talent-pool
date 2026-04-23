@@ -250,7 +250,7 @@ function AuditCard({ entry, isLast }: { entry: AuditEntry; isLast: boolean }) {
 
             {/* Email (for non-system) */}
             {!system && (
-              <span className="text-[11px] text-foreground/35 truncate max-w-[130px]">
+              <span className="text-[11px] text-foreground/35 truncate max-w-32.5">
                 {entry.user_email}
               </span>
             )}
@@ -329,7 +329,10 @@ export function ProfileHistory({ pk }: ProfileHistoryProps) {
   };
 
   useEffect(() => {
-    load();
+    const doLoad = async () => {
+      await load();
+    };
+    void doLoad();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pk]);
 
@@ -385,7 +388,7 @@ export function ProfileHistory({ pk }: ProfileHistoryProps) {
           <p className="text-sm text-foreground/40 font-medium">
             No history yet
           </p>
-          <p className="text-xs text-foreground/25 text-center max-w-[200px]">
+          <p className="text-xs text-foreground/25 text-center max-w-50">
             Changes will appear here once the audit log is connected.
           </p>
         </div>

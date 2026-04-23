@@ -333,7 +333,10 @@ export function RecruiterActivity() {
   };
 
   useEffect(() => {
-    void loadEvents();
+    const doLoad = async () => {
+      await loadEvents();
+    };
+    void doLoad();
   }, []);
 
   const filtered = useMemo(() => {
@@ -354,14 +357,14 @@ export function RecruiterActivity() {
 
   // Reset to first page when action filter or search changes
   useEffect(() => {
-    setPage(1);
+    setTimeout(() => setPage(1), 0);
   }, [actionFilter, search]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
 
   // Clamp page when data changes without filter change (refresh)
   useEffect(() => {
-    setPage((currentPage) => Math.min(currentPage, totalPages));
+    setTimeout(() => setPage((currentPage) => Math.min(currentPage, totalPages)), 0);
   }, [totalPages]);
 
   const safePage = Math.min(page, totalPages);
@@ -539,23 +542,23 @@ export function RecruiterActivity() {
                   {/* Row 3: diff chips or description */}
                   {event.old_value && event.new_value ? (
                     <div className="flex items-center gap-2 text-xs flex-wrap">
-                      <span className="px-2 py-0.5 rounded bg-red-500/8 text-red-600 dark:text-red-400 line-through font-mono max-w-[180px] truncate">
+                      <span className="px-2 py-0.5 rounded bg-red-500/8 text-red-600 dark:text-red-400 line-through font-mono max-w-45 truncate">
                         {event.old_value}
                       </span>
                       <span className="text-foreground/30">&rarr;</span>
-                      <span className="px-2 py-0.5 rounded bg-emerald-500/8 text-emerald-700 dark:text-emerald-400 font-mono max-w-[180px] truncate">
+                      <span className="px-2 py-0.5 rounded bg-emerald-500/8 text-emerald-700 dark:text-emerald-400 font-mono max-w-45 truncate">
                         {event.new_value}
                       </span>
                     </div>
                   ) : event.new_value ? (
                     <div className="flex items-center gap-2 text-xs">
-                      <span className="px-2 py-0.5 rounded bg-emerald-500/8 text-emerald-700 dark:text-emerald-400 font-mono max-w-[220px] truncate">
+                      <span className="px-2 py-0.5 rounded bg-emerald-500/8 text-emerald-700 dark:text-emerald-400 font-mono max-w-55 truncate">
                         {event.new_value}
                       </span>
                     </div>
                   ) : event.old_value ? (
                     <div className="flex items-center gap-2 text-xs">
-                      <span className="px-2 py-0.5 rounded bg-red-500/8 text-red-600 dark:text-red-400 line-through font-mono max-w-[220px] truncate">
+                      <span className="px-2 py-0.5 rounded bg-red-500/8 text-red-600 dark:text-red-400 line-through font-mono max-w-55 truncate">
                         {event.old_value}
                       </span>
                     </div>
