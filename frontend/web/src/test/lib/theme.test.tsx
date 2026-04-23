@@ -2,7 +2,13 @@
  * Tests for ThemeProvider and useTheme hook
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, act, renderHook } from "@testing-library/react";
+import {
+  render,
+  screen,
+  act,
+  renderHook,
+  waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ThemeProvider, useTheme } from "@/lib/theme";
 
@@ -274,7 +280,7 @@ describe("useTheme hook", () => {
     expect(typeof result.current.setTheme).toBe("function");
   });
 
-  it("updates theme when setTheme is called", () => {
+  it("updates theme when setTheme is called", async () => {
     const wrapper = ({ children }: { children: React.ReactNode }) => (
       <ThemeProvider>{children}</ThemeProvider>
     );
@@ -285,7 +291,9 @@ describe("useTheme hook", () => {
       result.current.setTheme("light");
     });
 
-    expect(result.current.theme).toBe("light");
-    expect(result.current.resolvedTheme).toBe("light");
+    await waitFor(() => {
+      expect(result.current.theme).toBe("light");
+      expect(result.current.resolvedTheme).toBe("light");
+    });
   });
 });

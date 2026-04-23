@@ -122,7 +122,11 @@ describe("useJobDescriptions", () => {
       const { result } = renderHook(() => useJobDescriptions());
 
       await waitFor(() => {
-        expect(result.current).not.toBeNull();
+        if (result.current === null) {
+          throw new Error(
+            "useJobDescriptions returned null. Check for hook errors or missing providers.",
+          );
+        }
         expect(result.current.isLoading).toBe(false);
       });
 
