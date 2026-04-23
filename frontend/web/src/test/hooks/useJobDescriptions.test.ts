@@ -1,3 +1,8 @@
+// Ensure VITE_API_ENDPOINT is set for API client
+Object.defineProperty(import.meta, "env", {
+  value: { VITE_API_ENDPOINT: "https://api.test.com" },
+  writable: true,
+});
 /**
  * Tests for useJobDescriptions hook
  */
