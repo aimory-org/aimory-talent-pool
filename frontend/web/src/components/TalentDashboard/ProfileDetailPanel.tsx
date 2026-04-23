@@ -382,12 +382,18 @@ export function ProfileDetailPanel({
 
   // Reset edit data when profile changes
   useEffect(() => {
-    setEditData(profileToEditable(profile));
+    const editable = profileToEditable(profile);
+    setEditData((prev) => {
+      // Only update if different to avoid cascading renders
+      return JSON.stringify(prev) !== JSON.stringify(editable)
+        ? editable
+        : prev;
+    });
   }, [profile]);
 
   // Reset active tab when profile changes
   useEffect(() => {
-    setActiveTab("profile");
+    setActiveTab((prev) => (prev !== "profile" ? "profile" : prev));
   }, [profile]);
 
   const matchInsights = computeMatchInsights(profile, matchContext);

@@ -87,12 +87,17 @@ export function useTalents(options: UseTalentsOptions = {}): UseTalentsResult {
         throw err;
       }
     },
-    [],
+    [setTalents],
   );
 
-  const mergeTalent = useCallback((updated: TalentProfile) => {
-    setTalents((prev) => prev.map((t) => (t.pk === updated.pk ? updated : t)));
-  }, []);
+  const mergeTalent = useCallback(
+    (updated: TalentProfile) => {
+      setTalents((prev) =>
+        prev.map((t) => (t.pk === updated.pk ? updated : t)),
+      );
+    },
+    [setTalents],
+  );
 
   return {
     talents,
