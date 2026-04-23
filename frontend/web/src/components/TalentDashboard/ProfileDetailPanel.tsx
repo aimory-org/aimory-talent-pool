@@ -2,7 +2,7 @@
  * Profile detail panel for viewing and editing candidate profiles.
  * Supports editing all profile fields with an edit mode toggle.
  */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   X,
   Mail,
@@ -380,20 +380,14 @@ export function ProfileDetailPanel({
   const [isDeleting, setIsDeleting] = useState(false);
   const [activeTab, setActiveTab] = useState<"profile" | "history">("profile");
 
-  // Reset edit data when profile changes
+  // Reset edit data and active tab only when profile identity changes
+  const prevProfileRef = useRef<TalentProfile | null>(null);
   useEffect(() => {
-    const editable = profileToEditable(profile);
-    setEditData((prev) => {
-      // Only update if different to avoid cascading renders
-      return JSON.stringify(prev) !== JSON.stringify(editable)
-        ? editable
-        : prev;
-    });
-  }, [profile]);
-
-  // Reset active tab when profile changes
-  useEffect(() => {
-    setActiveTab((prev) => (prev !== "profile" ? "profile" : prev));
+    if (prevProfileRef.current?.pk !== profile.pk) {
+      setEditData(profileToEditable(profile));
+      setActiveTab("profile");
+      prevProfileRef.current = profile;
+    }
   }, [profile]);
 
   const matchInsights = computeMatchInsights(profile, matchContext);
