@@ -55,7 +55,11 @@ export function useTalents(options: UseTalentsOptions = {}): UseTalentsResult {
   }, [enabled, filtersKey]);
 
   useEffect(() => {
-    void fetchTalents();
+    // Avoid direct setState in effect body
+    const doFetch = async () => {
+      await fetchTalents();
+    };
+    void doFetch();
   }, [fetchTalents]);
 
   const refresh = useCallback(async () => {

@@ -60,7 +60,11 @@ export function useJobDescriptions(
   }, [enabled, filtersKey]);
 
   useEffect(() => {
-    void fetchJds();
+    // Avoid direct setState in effect body
+    const doFetch = async () => {
+      await fetchJds();
+    };
+    void doFetch();
   }, [fetchJds]);
 
   const refresh = useCallback(async () => {

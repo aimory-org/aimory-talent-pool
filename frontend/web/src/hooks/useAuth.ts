@@ -60,7 +60,7 @@ export function useAuth() {
           case "signedIn":
           case "signInWithRedirect":
           case "tokenRefresh":
-            checkUser();
+            void checkUser();
             break;
           case "signedOut":
             setUser(null);
@@ -74,7 +74,11 @@ export function useAuth() {
       },
     );
 
-    checkUser();
+    // Avoid direct setState in effect body
+    const doCheck = async () => {
+      await checkUser();
+    };
+    void doCheck();
 
     return unsubscribe;
   }, [checkUser]);

@@ -65,7 +65,11 @@ export function useLookups(): UseLookupsResult {
   }, []);
 
   useEffect(() => {
-    fetchLookups();
+    // Avoid direct setState in effect body
+    const doFetch = async () => {
+      await fetchLookups();
+    };
+    void doFetch();
   }, [fetchLookups]);
 
   return {

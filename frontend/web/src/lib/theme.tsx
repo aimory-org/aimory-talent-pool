@@ -49,8 +49,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     // Apply the theme class in one operation
     root.classList.remove("light", "dark");
     root.classList.add(effectiveTheme);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setResolvedTheme(effectiveTheme);
 
     // Update meta theme-color for mobile browsers
     const metaThemeColor = document.querySelector('meta[name="theme-color"]');
@@ -60,6 +58,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         effectiveTheme === "dark" ? "#1e293b" : "#ffffff",
       );
     }
+
+    // Defer setResolvedTheme to avoid cascading renders
+    setTimeout(() => {
+      setResolvedTheme(effectiveTheme);
+    }, 0);
 
     // Force another reflow before removing the class
     void root.offsetHeight;
