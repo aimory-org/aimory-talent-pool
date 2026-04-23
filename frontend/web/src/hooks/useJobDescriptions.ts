@@ -71,19 +71,19 @@ export function useJobDescriptions(
     await fetchJds();
   }, [fetchJds]);
 
-  const removeJobDescription = useCallback(
-    async (pk: string) => {
-      const previous = jobDescriptions;
-      setJobDescriptions((prev) => prev.filter((jd) => jd.pk !== pk));
-      try {
-        await deleteJobDescription(pk);
-      } catch (err) {
-        setJobDescriptions(previous);
-        throw err;
-      }
-    },
-    [jobDescriptions],
-  );
+  const removeJobDescription = useCallback(async (pk: string) => {
+    let previous: JobDescription[] = [];
+    setJobDescriptions((prev) => {
+      previous = prev;
+      return prev.filter((jd) => jd.pk !== pk);
+    });
+    try {
+      await deleteJobDescription(pk);
+    } catch (err) {
+      setJobDescriptions(() => previous);
+      throw err;
+    }
+  }, []);
 
   const matchCandidatesForJd = useCallback(
     async (pk: string, limit?: number) => {

@@ -69,24 +69,25 @@ export function useTalents(options: UseTalentsOptions = {}): UseTalentsResult {
   const updateStatus = useCallback(
     async (pk: string, status: CandidateStatus) => {
       // Optimistic update
-      const previousTalents = talents;
-      setTalents((prev) =>
-        prev.map((t) =>
+      let previousTalents: TalentProfile[] = [];
+      setTalents((prev) => {
+        previousTalents = prev;
+        return prev.map((t) =>
           t.pk === pk
             ? { ...t, status, updated_at: new Date().toISOString() }
             : t,
-        ),
-      );
+        );
+      });
 
       try {
         await updateTalent(pk, { status });
       } catch (err) {
         // Rollback on error
-        setTalents(previousTalents);
+        setTalents(() => previousTalents);
         throw err;
       }
     },
-    [talents],
+    [],
   );
 
   const mergeTalent = useCallback((updated: TalentProfile) => {

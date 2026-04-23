@@ -383,6 +383,10 @@ export function ProfileDetailPanel({
   // Reset edit data when profile changes
   useEffect(() => {
     setEditData(profileToEditable(profile));
+  }, [profile]);
+
+  // Reset active tab when profile changes
+  useEffect(() => {
     setActiveTab("profile");
   }, [profile]);
 
