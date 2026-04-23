@@ -150,6 +150,12 @@ resource "aws_iam_role_policy" "pipeline_s3" {
         Effect   = "Allow"
         Action   = ["s3:GetObject", "s3:PutObject"]
         Resource = "arn:aws:s3:::${var.document_bucket}/${var.extracted_prefix}/*"
+      },
+      {
+        Sid      = "ListResumesBucket"
+        Effect   = "Allow"
+        Action   = ["s3:ListBucket"]
+        Resource = "arn:aws:s3:::${var.document_bucket}"
       }
     ]
   })

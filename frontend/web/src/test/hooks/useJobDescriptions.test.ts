@@ -122,6 +122,7 @@ describe("useJobDescriptions", () => {
       const { result } = renderHook(() => useJobDescriptions());
 
       await waitFor(() => {
+        expect(result.current).not.toBeNull();
         expect(result.current.isLoading).toBe(false);
       });
 
