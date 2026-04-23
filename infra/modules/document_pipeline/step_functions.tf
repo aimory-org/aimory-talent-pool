@@ -98,7 +98,7 @@ resource "aws_sfn_state_machine" "pipeline" {
 # Store SFN ARN in SSM so the starter Lambda can read it without a Terraform cycle
 resource "aws_ssm_parameter" "pipeline_sfn_arn" {
   name  = var.sfn_arn_param_name
-  type  = "SecureString"
+  type  = "string"
   value = aws_sfn_state_machine.pipeline.arn
 }
 
