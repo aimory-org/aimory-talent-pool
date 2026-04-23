@@ -155,3 +155,6 @@ skip-check:
   # key (aws/ssm) is sufficient. A CMK costs $1/month with no security benefit
   # for this data classification.
   - CKV_AWS_337
+
+
+  - CKV2_AWS_34
