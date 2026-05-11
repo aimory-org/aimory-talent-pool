@@ -10,7 +10,7 @@ opensearch-py>=2.4.0     # Used by list_talents and sync_to_opensearch Lambdas
 # Testing
 pytest>=8.0.0
 pytest-cov>=4.1.0        # Coverage reports
-moto[all]>=5.0.0         # AWS service mocking
+moto[all]>=5.2.1         # AWS service mocking
 
 # Code quality
 # black replaced by ruff format (ruff format is Black-compatible)
