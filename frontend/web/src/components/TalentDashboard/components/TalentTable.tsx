@@ -64,6 +64,39 @@ function trimAroundMark(html: string, before = 20, after = 60): string {
   return preEllipsis + pre + markContent + post + postEllipsis;
 }
 
+const JOB_TITLE_ABBREVIATIONS: [RegExp, string][] = [
+  [/\bVice President\b/gi, "VP"],
+  [/\bSenior\b/gi, "Sr."],
+  [/\bJunior\b/gi, "Jr."],
+  [/\bDirector\b/gi, "Dir."],
+  [/\bManager\b/gi, "Mgr."],
+  [/\bCoordinator\b/gi, "Coord."],
+  [/\bAdministrator\b/gi, "Admin."],
+  [/\bRepresentative\b/gi, "Rep."],
+  [/\bSpecialist\b/gi, "Spec."],
+  [/\bSupervisor\b/gi, "Supvr."],
+  [/\bExecutive\b/gi, "Exec."],
+  [/\bEngineer\b/gi, "Engr."],
+  [/\bTechnician\b/gi, "Tech."],
+  [/\bOperations\b/gi, "Ops."],
+  [/\bManagement\b/gi, "Mgmt."],
+  [/\bDevelopment\b/gi, "Dev."],
+  [/\bInformation\b/gi, "Info."],
+  [/\bCybersecurity\b/gi, "Cyber Sec."],
+  [/\bInfrastructure\b/gi, "Infra."],
+  [/\bConsultant\b/gi, "Consult."],
+];
+
+function abbreviateJobTitle(title: string, maxLen = 24): string {
+  if (title.length <= maxLen) return title;
+  let result = title;
+  for (const [pattern, abbr] of JOB_TITLE_ABBREVIATIONS) {
+    result = result.replace(pattern, abbr);
+    if (result.length <= maxLen) return result;
+  }
+  return result;
+}
+
 /** Highlights only the prefix-matching portion of a name */
 function NamePrefixHighlight({
   name,
@@ -312,8 +345,8 @@ export function TalentTable({
                   </TableCell>
                   <TableCell>
                     <div className="min-w-0">
-                      <p className="text-foreground/80 truncate">
-                        {profile.job_title || "—"}
+                      <p className="text-foreground/80 truncate" title={profile.job_title || undefined}>
+                        {profile.job_title ? abbreviateJobTitle(profile.job_title) : "—"}
                       </p>
                       <p className="text-xs text-foreground/40 truncate">
                         {profile.industry_category || profile.service_category}
