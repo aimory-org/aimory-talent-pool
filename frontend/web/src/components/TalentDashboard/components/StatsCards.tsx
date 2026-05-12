@@ -20,7 +20,7 @@ const cards = [
     label: "Total",
     icon: Users,
     color: "from-slate-500/20 to-slate-600/10",
-    border: "border-slate-500/20 hover:border-slate-400/40",
+    border: "border-slate-400/40",
     glow: "group-hover:shadow-slate-500/10",
     iconColor: "text-slate-500 dark:text-slate-300",
     textColor: "text-foreground",
@@ -32,7 +32,7 @@ const cards = [
     label: "Potential",
     icon: Sparkles,
     color: "from-emerald-500/15 to-teal-500/5",
-    border: "border-emerald-500/20 hover:border-emerald-400/50",
+    border: "border-emerald-400/50",
     glow: "group-hover:shadow-emerald-500/20",
     iconColor: "text-emerald-500 dark:text-emerald-400",
     textColor: "text-emerald-600 dark:text-emerald-300",
@@ -44,7 +44,7 @@ const cards = [
     label: "Active",
     icon: TrendingUp,
     color: "from-indigo-500/15 to-violet-500/5",
-    border: "border-indigo-500/20 hover:border-indigo-400/50",
+    border: "border-indigo-400/50",
     glow: "group-hover:shadow-indigo-500/20",
     iconColor: "text-indigo-500 dark:text-indigo-400",
     textColor: "text-indigo-600 dark:text-indigo-300",
@@ -56,7 +56,7 @@ const cards = [
     label: "Placed",
     icon: UserCheck,
     color: "from-violet-500/15 to-purple-500/5",
-    border: "border-violet-500/20 hover:border-violet-400/50",
+    border: "border-violet-400/50",
     glow: "group-hover:shadow-violet-500/20",
     iconColor: "text-violet-500 dark:text-violet-400",
     textColor: "text-violet-600 dark:text-violet-300",
@@ -74,7 +74,7 @@ export function StatsCards({ stats }: StatsCardsProps) {
         return (
           <div
             key={card.key}
-            className={`group relative animate-fade-in ${card.stagger} overflow-hidden rounded-2xl border bg-linear-to-br ${card.color} ${card.border} p-4 cursor-default transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl ${card.glow}`}
+            className={`relative animate-fade-in ${card.stagger} overflow-hidden rounded-2xl border bg-linear-to-br ${card.color} ${card.border} p-4 cursor-default`}
           >
             {/* Subtle inner shine */}
             <div className="absolute inset-0 bg-linear-to-br from-white/40 to-transparent dark:from-white/5 pointer-events-none rounded-2xl" />
