@@ -129,12 +129,9 @@ export function UploadModal({ isOpen, onClose, onUpload }: UploadModalProps) {
             >
               {selectedFile ? (
                 <div className="space-y-2">
-                  {getFileIcon(selectedFile)}
-                  <p className="text-sm font-medium text-foreground">
+                  <div className="flex justify-center">{getFileIcon(selectedFile)}</div>
+                  <p className="text-sm font-medium text-foreground truncate px-2">
                     {selectedFile.name}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
                   </p>
                 </div>
               ) : (
