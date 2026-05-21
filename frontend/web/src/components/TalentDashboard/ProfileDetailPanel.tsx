@@ -369,6 +369,10 @@ export function ProfileDetailPanel({
   const [resumeLoading, setResumeLoading] = useState(false);
   const [resumeUrl, setResumeUrl] = useState<string | null>(null);
   const [showResume, setShowResume] = useState(false);
+  const [showCompare, setShowCompare] = useState(false);
+  const [compareProfile, setCompareProfile] = useState<TalentProfile | null>(null);
+  const [compareResumeUrl, setCompareResumeUrl] = useState<string | null>(null);
+  const [compareLoading, setCompareLoading] = useState(false);
 
   // Edit mode state
   const [isEditMode, setIsEditMode] = useState(false);
@@ -582,6 +586,33 @@ export function ProfileDetailPanel({
     }
   };
 
+  const resolveResumeUrl = (key: string, rawUrl: string) => {
+    const isDocx = key.toLowerCase().endsWith(".docx") || key.toLowerCase().endsWith(".doc");
+    return isDocx
+      ? `https://docs.google.com/gview?url=${encodeURIComponent(rawUrl)}&embedded=true`
+      : rawUrl;
+  };
+
+  const handleCompare = async () => {
+    if (!profile.possible_duplicate_of) return;
+    setCompareLoading(true);
+    try {
+      const original = await getTalent(profile.possible_duplicate_of);
+      const [thisResume, origResume] = await Promise.all([
+        profile.key ? getResumeUrl(profile.key) : Promise.resolve({ url: "" }),
+        original.key ? getResumeUrl(original.key) : Promise.resolve({ url: "" }),
+      ]);
+      setCompareProfile(original);
+      setResumeUrl(profile.key ? resolveResumeUrl(profile.key, thisResume.url) : null);
+      setCompareResumeUrl(original.key ? resolveResumeUrl(original.key, origResume.url) : null);
+      setShowCompare(true);
+    } catch {
+      alert("Could not load resumes for comparison.");
+    } finally {
+      setCompareLoading(false);
+    }
+  };
+
   // Array field helpers
   const addSkill = () => {
     setEditData((prev) => ({
@@ -647,6 +678,144 @@ export function ProfileDetailPanel({
       companies: prev.companies.map((c, i) => (i === index ? { name } : c)),
     }));
   };
+
+  // Compare view — two resumes side by side
+  if (showCompare && compareProfile) {
+    const formatDate = (iso: string) => {
+      const d = new Date(iso);
+      return isNaN(d.getTime()) ? iso : d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+    };
+
+    const handleKeepNew = async () => {
+      if (!confirm("Delete the original profile and keep this one? This cannot be undone.")) return;
+      try {
+        await deleteTalent(compareProfile.pk);
+        const updated = await updateTalent(profile.pk, { dismiss_duplicate: true });
+        onProfileUpdated?.(updated);
+        setShowCompare(false);
+        await onRefresh();
+      } catch {
+        alert("Failed to complete action.");
+      }
+    };
+
+    const handleKeepOriginal = async () => {
+      if (!confirm("Delete this profile and keep the original? This cannot be undone.")) return;
+      try {
+        await deleteTalent(profile.pk);
+        setShowCompare(false);
+        onClose();
+        await onRefresh();
+      } catch {
+        alert("Failed to complete action.");
+      }
+    };
+
+    const handleIgnore = async () => {
+      try {
+        const updated = await updateTalent(profile.pk, { dismiss_duplicate: true });
+        onProfileUpdated?.(updated);
+        setShowCompare(false);
+      } catch {
+        alert("Failed to dismiss duplicate flag.");
+      }
+    };
+
+    return (
+      <div className="fixed inset-y-0 right-0 w-full bg-white/95 dark:bg-slate-800/95 backdrop-blur-lg border-l border-black/10 dark:border-white/10 shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300">
+        {/* Top bar */}
+        <div className="flex-none bg-white/95 dark:bg-slate-800/95 backdrop-blur-lg border-b border-black/10 dark:border-white/10 px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-full bg-linear-to-br from-amber-500/30 to-orange-500/30 flex items-center justify-center border border-black/10 dark:border-white/10 text-foreground font-semibold text-sm">
+              ⚠
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-foreground">Resume Comparison</h2>
+              <p className="text-xs text-foreground/40">Possible duplicate — reviewing side by side</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowCompare(false)}
+              className="px-3 py-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-500/20 transition-colors text-sm font-medium flex items-center gap-1.5"
+            >
+              <FileText className="h-3.5 w-3.5" />
+              Back to Profile
+            </button>
+            <button
+              onClick={handleIgnore}
+              className="px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 transition-colors text-sm font-medium"
+            >
+              Ignore
+            </button>
+            <button
+              onClick={onClose}
+              className="p-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors text-foreground/60 hover:text-foreground"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+        {/* Side-by-side resumes */}
+        <div className="flex-1 flex min-h-0">
+          {/* This (new) candidate */}
+          <div className="flex-1 flex flex-col border-r border-black/10 dark:border-white/10">
+            <div className="flex-none px-4 py-2 bg-indigo-500/5 border-b border-black/10 dark:border-white/10 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="h-6 w-6 shrink-0 rounded-full bg-linear-to-br from-indigo-500/30 to-purple-500/30 flex items-center justify-center text-foreground font-semibold text-xs border border-black/10 dark:border-white/10">
+                  {(profile.name || "?").charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <span className="text-xs font-semibold text-foreground truncate block">{profile.name || "Unknown"}</span>
+                  <span className="text-xs text-foreground/40">Submitted {formatDate(profile.date_received)}</span>
+                </div>
+              </div>
+              <button
+                onClick={handleKeepNew}
+                className="shrink-0 px-2.5 py-1 rounded-lg text-xs font-medium border border-green-500/30 text-green-700 dark:text-green-300 bg-green-500/10 hover:bg-green-500/20 transition-colors"
+              >
+                Keep New Resume
+              </button>
+            </div>
+            <div className="flex-1 bg-white dark:bg-slate-900">
+              {resumeUrl ? (
+                <iframe src={resumeUrl} className="w-full h-full border-0" title={`Resume - ${profile.name || "Unknown"}`} />
+              ) : (
+                <div className="flex items-center justify-center h-full text-foreground/40 text-sm">No resume available</div>
+              )}
+            </div>
+          </div>
+          {/* Original candidate */}
+          <div className="flex-1 flex flex-col">
+            <div className="flex-none px-4 py-2 bg-amber-500/5 border-b border-black/10 dark:border-white/10 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="h-6 w-6 shrink-0 rounded-full bg-linear-to-br from-amber-500/30 to-orange-500/30 flex items-center justify-center text-foreground font-semibold text-xs border border-black/10 dark:border-white/10">
+                  {(compareProfile.name || "?").charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <span className="text-xs font-semibold text-foreground truncate block">{compareProfile.name || "Unknown"}</span>
+                  <span className="text-xs text-foreground/40">Submitted {formatDate(compareProfile.date_received)}</span>
+                </div>
+              </div>
+              <button
+                onClick={handleKeepOriginal}
+                className="shrink-0 px-2.5 py-1 rounded-lg text-xs font-medium border border-red-500/30 text-red-700 dark:text-red-300 bg-red-500/10 hover:bg-red-500/20 transition-colors"
+              >
+                Keep Original
+              </button>
+            </div>
+            <div className="flex-1 bg-white dark:bg-slate-900">
+              {compareResumeUrl ? (
+                <iframe src={compareResumeUrl} className="w-full h-full border-0" title={`Resume - ${compareProfile.name || "Unknown"}`} />
+              ) : (
+                <div className="flex items-center justify-center h-full text-foreground/40 text-sm">No resume available</div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Resume viewer — side-by-side split layout: resume left, profile right (editable)
   if (showResume && resumeUrl) {
@@ -1800,44 +1969,19 @@ export function ProfileDetailPanel({
                 <p className="text-amber-700 dark:text-amber-300 text-sm font-medium mb-1">
                   ⚠ Possible duplicate of another candidate
                 </p>
+                <h3 className="text-amber-600 dark:text-amber-400 text-xs font-semibold mb-1">
+                  Please compare and confirm
+                </h3>
                 <p className="text-amber-600/70 dark:text-amber-400/70 text-xs mb-3 break-all">
                   {profile.possible_duplicate_of}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <button
-                    onClick={async () => {
-                      try {
-                        const original = await getTalent(
-                          profile.possible_duplicate_of!,
-                        );
-                        onProfileUpdated?.(original);
-                      } catch {
-                        alert("Could not load the original profile.");
-                      }
-                    }}
-                    className="px-2.5 py-1 rounded-lg text-xs font-medium border border-indigo-500/30 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-500/10 transition-colors"
+                    onClick={handleCompare}
+                    disabled={compareLoading}
+                    className="px-2.5 py-1 rounded-lg text-xs font-medium border border-indigo-500/30 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-500/10 transition-colors disabled:opacity-50"
                   >
-                    View Original
-                  </button>
-                  <button
-                    onClick={async () => {
-                      if (
-                        !confirm(
-                          "Delete this profile and keep the original? This cannot be undone.",
-                        )
-                      )
-                        return;
-                      try {
-                        await deleteTalent(profile.pk);
-                        onClose();
-                        await onRefresh();
-                      } catch {
-                        alert("Failed to delete this profile.");
-                      }
-                    }}
-                    className="px-2.5 py-1 rounded-lg text-xs font-medium border border-red-500/30 text-red-600 dark:text-red-300 hover:bg-red-500/10 transition-colors"
-                  >
-                    Delete This
+                    {compareLoading ? "Loading..." : "Compare"}
                   </button>
                   <button
                     onClick={async () => {
@@ -1852,7 +1996,7 @@ export function ProfileDetailPanel({
                     }}
                     className="px-2.5 py-1 rounded-lg text-xs font-medium border border-amber-500/30 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 transition-colors"
                   >
-                    Not a Duplicate
+                    Ignore
                   </button>
                 </div>
               </div>

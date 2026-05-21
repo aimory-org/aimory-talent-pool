@@ -202,10 +202,7 @@ function LoginPage() {
               <h2 className="text-xl font-semibold text-foreground mb-2">
                 Welcome back
               </h2>
-              <p className="text-foreground/50 text-sm leading-relaxed">
-                Sign in to access the candidate resume database and manage your
-                talent pipeline
-              </p>
+
             </div>
 
             <button
