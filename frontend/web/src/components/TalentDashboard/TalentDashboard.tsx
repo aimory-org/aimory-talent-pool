@@ -11,7 +11,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { Users, Search, Filter, X, Loader2 } from "lucide-react";
 import { useTalents } from "@/hooks/useTalents";
 import { useLookups } from "@/hooks/useLookups";
-import { uploadResume } from "@/lib/api";
+import { uploadResume, listTalents } from "@/lib/api";
 import type { TalentProfile } from "@/types/talent";
 import type { Filters, SortField, SortDirection } from "./types";
 import { DEFAULT_FILTERS } from "./types";
@@ -43,6 +43,8 @@ export function TalentDashboard() {
   const [showDuplicatesOnly, setShowDuplicatesOnly] = useState(false);
   const [showProcessingBanner, setShowProcessingBanner] = useState(false);
   const processingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pendingKeyRef = useRef<string | null>(null);
   const [page, setPage] = useState(1);
 
   // Fetch data from API
@@ -139,34 +141,58 @@ export function TalentDashboard() {
     setShowUploadModal(true);
   }, []);
 
+  const stopPolling = useCallback(() => {
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+    if (processingTimerRef.current) {
+      clearTimeout(processingTimerRef.current);
+      processingTimerRef.current = null;
+    }
+    pendingKeyRef.current = null;
+  }, []);
+
   const handleUploadSubmit = useCallback(
     async (file: File | null) => {
       if (!file) return;
       try {
-        await uploadResume(file);
-        // Refresh the list to show the newly uploaded resume
-        refreshTalents();
-        // Show a processing banner for 30 seconds to let the user know the
-        // pipeline is running in the background.
-        if (processingTimerRef.current) clearTimeout(processingTimerRef.current);
+        const key = await uploadResume(file);
+
+        stopPolling();
+        pendingKeyRef.current = key;
         setShowProcessingBanner(true);
-        processingTimerRef.current = setTimeout(() => {
-          setShowProcessingBanner(false);
-        }, 30_000);
+
+        // Poll every 4 seconds until the new profile appears, or 2 min timeout
+        const maxAttempts = 30;
+        let attempts = 0;
+
+        pollingIntervalRef.current = setInterval(async () => {
+          attempts++;
+          try {
+            const { items } = await listTalents();
+            const found = items.some((t) => t.key === pendingKeyRef.current);
+            if (found || attempts >= maxAttempts) {
+              stopPolling();
+              setShowProcessingBanner(false);
+              if (found) refreshTalents();
+            }
+          } catch {
+            // ignore transient poll errors
+          }
+        }, 4_000);
       } catch (error) {
         console.error("Upload failed:", error);
-        throw error; // Re-throw so the modal can handle the error state
+        throw error;
       }
     },
-    [refreshTalents],
+    [refreshTalents, stopPolling],
   );
 
-  // Clean up the processing banner timer on unmount
+  // Clean up timers on unmount
   useEffect(() => {
-    return () => {
-      if (processingTimerRef.current) clearTimeout(processingTimerRef.current);
-    };
-  }, []);
+    return () => stopPolling();
+  }, [stopPolling]);
   const commitSearch = useCallback(() => {
     setFilters((prev) => ({ ...prev, search: searchInput }));
   }, [searchInput]);
@@ -338,7 +364,7 @@ export function TalentDashboard() {
               </p>
             </div>
             <button
-              onClick={() => setShowProcessingBanner(false)}
+              onClick={() => { stopPolling(); setShowProcessingBanner(false); }}
               className="shrink-0 text-indigo-500/60 hover:text-indigo-700 dark:hover:text-indigo-200 transition-colors"
               aria-label="Dismiss"
             >
