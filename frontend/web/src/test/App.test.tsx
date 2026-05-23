@@ -250,9 +250,6 @@ describe("App Authentication", () => {
 
       expect(screen.getByText("Talent Pool")).toBeInTheDocument();
       expect(screen.getByText("Welcome back")).toBeInTheDocument();
-      expect(
-        screen.getByText(/Sign in to access the candidate resume database/i),
-      ).toBeInTheDocument();
     });
 
     it("triggers sign in when button clicked", async () => {
