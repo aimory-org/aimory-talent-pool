@@ -110,14 +110,14 @@ export function ArchivedJobDescriptionsDashboard() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
-            <div className="absolute inset-0 rounded-xl bg-linear-to-br from-amber-500 to-orange-600 blur-md opacity-40" />
-            <div className="relative p-2.5 bg-linear-to-br from-amber-500 to-orange-600 rounded-xl shadow-lg shadow-amber-500/30">
+            <div className="absolute inset-0 rounded-xl bg-linear-to-br from-orange-600 to-orange-700 blur-md opacity-40" />
+            <div className="relative p-2.5 bg-linear-to-br from-orange-600 to-orange-700 rounded-xl shadow-lg shadow-orange-700/30">
               <Archive className="h-5 w-5 text-white" />
             </div>
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-foreground">
-              Archived Job Descriptions
+            <h1 className="text-xl font-bold tracking-tight">
+              <span className="shimmer-text-orange-dark">Archived Job Descriptions</span>
             </h1>
             <p className="text-xs text-foreground/40 mt-0.5">
               {jobDescriptions.length} archived job{" "}
@@ -128,7 +128,7 @@ export function ArchivedJobDescriptionsDashboard() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => navigate("/job-descriptions")}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all border border-black/10 dark:border-white/10 text-foreground/50 hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all border border-orange-400/30 text-orange-400 dark:text-orange-300 hover:text-orange-500 dark:hover:text-orange-200 hover:bg-orange-400/10"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             Back to Active
@@ -144,14 +144,14 @@ export function ArchivedJobDescriptionsDashboard() {
             onClick={() => setShowFilters(!showFilters)}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
               showFilters || activeFilterCount > 0
-                ? "bg-amber-500/20 border border-amber-500/30 text-amber-600 dark:text-amber-300"
+                ? "bg-orange-700/20 border border-orange-700/30 text-orange-700 dark:text-orange-400"
                 : "border border-black/10 dark:border-white/10 text-foreground/50 hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5"
             }`}
           >
             <Filter className="h-3.5 w-3.5" />
             Filters
             {activeFilterCount > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-bold leading-none">
+              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-orange-700 text-white text-[10px] font-bold leading-none">
                 {activeFilterCount}
               </span>
             )}
@@ -241,6 +241,7 @@ export function ArchivedJobDescriptionsDashboard() {
         onSelectJd={setSelectedJd}
         activeFilterCount={activeFilterCount}
         onClearFilters={clearFilters}
+        archived
       />
       <Pagination
         currentPage={safePage}

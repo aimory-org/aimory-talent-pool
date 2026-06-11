@@ -92,8 +92,8 @@ function SkillTags({
   if (!skills.length) return null;
   const colors =
     variant === "required"
-      ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 border-indigo-500/20"
-      : "bg-purple-500/10 text-purple-600 dark:text-purple-300 border-purple-500/20";
+      ? "bg-orange-500/10 text-orange-600 dark:text-orange-300 border-orange-500/20"
+      : "bg-amber-500/10 text-amber-600 dark:text-amber-300 border-amber-500/20";
   return (
     <div>
       <p className="text-[11px] font-semibold uppercase tracking-wider text-foreground/40 mb-1.5">
@@ -222,6 +222,30 @@ export function JdDetailPanel({
   const fmtSalary = (n: number | null) =>
     n != null ? `$${n.toLocaleString()}` : null;
 
+  const t = jd.archived
+    ? {
+        headerBg: "from-orange-700/5 to-orange-600/5",
+        iconGradient: "from-orange-600/40 to-orange-700/40",
+        iconBorder: "border-orange-600/20",
+        iconText: "text-orange-700 dark:text-orange-400",
+        iconGlow: "from-orange-600/30 to-orange-700/30",
+        btnBg: "bg-orange-700/10",
+        btnBorder: "border-orange-700/20",
+        btnText: "text-orange-700 dark:text-orange-400",
+        btnHover: "hover:bg-orange-700/20",
+      }
+    : {
+        headerBg: "from-orange-400/5 to-orange-500/5",
+        iconGradient: "from-orange-400/40 to-orange-500/40",
+        iconBorder: "border-orange-400/20",
+        iconText: "text-orange-500 dark:text-orange-300",
+        iconGlow: "from-orange-400/30 to-orange-500/30",
+        btnBg: "bg-orange-500/10",
+        btnBorder: "border-orange-500/20",
+        btnText: "text-orange-500 dark:text-orange-300",
+        btnHover: "hover:bg-orange-500/20",
+      };
+
   // Profile detail view — shows the candidate profile panel
   if (selectedProfile) {
     return (
@@ -246,7 +270,7 @@ export function JdDetailPanel({
         {/* Top bar */}
         <div className="flex-none bg-white/95 dark:bg-slate-800/95 backdrop-blur-lg border-b border-black/10 dark:border-white/10 px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-full bg-linear-to-br from-violet-500/30 to-purple-500/30 flex items-center justify-center border border-black/10 dark:border-white/10 text-violet-600 dark:text-violet-300">
+            <div className={`h-8 w-8 rounded-full bg-linear-to-br ${t.iconGlow} flex items-center justify-center border border-black/10 dark:border-white/10 ${t.iconText}`}>
               <FileText className="h-4 w-4" />
             </div>
             <div>
@@ -261,7 +285,7 @@ export function JdDetailPanel({
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowDocument(false)}
-              className="px-3 py-1.5 rounded-lg bg-violet-500/10 border border-violet-500/20 text-violet-600 dark:text-violet-300 hover:bg-violet-500/20 transition-colors text-sm font-medium flex items-center gap-1.5"
+              className={`px-3 py-1.5 rounded-lg ${t.btnBg} border ${t.btnBorder} ${t.btnText} ${t.btnHover} transition-colors text-sm font-medium flex items-center gap-1.5`}
             >
               <FileText className="h-3.5 w-3.5" />
               Back to Details
@@ -350,9 +374,9 @@ export function JdDetailPanel({
   return (
     <div className="fixed inset-y-0 right-0 w-full max-w-lg z-50 flex flex-col bg-white dark:bg-slate-900 border-l border-black/10 dark:border-white/10 shadow-2xl animate-slide-in-right">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-black/10 dark:border-white/10 bg-linear-to-r from-violet-500/5 to-purple-500/5">
+      <div className={`flex items-center justify-between px-5 py-4 border-b border-black/10 dark:border-white/10 bg-linear-to-r ${t.headerBg}`}>
         <div className="flex items-center gap-3 min-w-0">
-          <div className="shrink-0 h-10 w-10 rounded-full bg-linear-to-br from-violet-500/40 to-purple-600/40 flex items-center justify-center border border-violet-500/20 text-violet-600 dark:text-violet-300">
+          <div className={`shrink-0 h-10 w-10 rounded-full bg-linear-to-br ${t.iconGradient} flex items-center justify-center border ${t.iconBorder} ${t.iconText}`}>
             <FileText className="h-5 w-5" />
           </div>
           <div className="min-w-0">
@@ -382,7 +406,7 @@ export function JdDetailPanel({
           <button
             onClick={handleViewDocument}
             disabled={documentLoading}
-            className="w-full px-4 py-3 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-600 dark:text-violet-300 hover:bg-violet-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-medium flex items-center justify-center gap-2"
+            className={`w-full px-4 py-3 rounded-xl ${t.btnBg} border ${t.btnBorder} ${t.btnText} ${t.btnHover} disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-medium flex items-center justify-center gap-2`}
           >
             {documentLoading ? (
               <>
@@ -642,7 +666,11 @@ export function JdDetailPanel({
             <button
               onClick={handleArchiveToggle}
               disabled={isArchiving}
-              className="flex items-center gap-1.5 text-sm text-foreground/50 hover:text-foreground disabled:opacity-50 transition-colors"
+              className={`flex items-center gap-1.5 text-sm font-medium disabled:opacity-50 transition-colors ${
+                jd.archived
+                  ? "text-orange-400 dark:text-orange-300 hover:text-orange-500 dark:hover:text-orange-200"
+                  : "text-orange-500 dark:text-orange-400 hover:text-orange-600 dark:hover:text-orange-300"
+              }`}
             >
               {isArchiving ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />

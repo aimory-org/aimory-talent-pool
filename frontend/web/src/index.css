@@ -283,6 +283,22 @@ body {
   background-clip: text;
   animation: shimmer 3s linear infinite;
 }
+.shimmer-text-orange {
+  background: linear-gradient(90deg, #f97316, #fb923c, #fdba74, #f97316);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 3s linear infinite;
+}
+.shimmer-text-orange-dark {
+  background: linear-gradient(90deg, #c2410c, #ea580c, #f97316, #c2410c);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 3s linear infinite;
+}
 
 /* Glass card utility */
 .glass {

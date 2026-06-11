@@ -134,14 +134,14 @@ export function JobDescriptionsDashboard() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
-            <div className="absolute inset-0 rounded-xl bg-linear-to-br from-violet-500 to-purple-600 blur-md opacity-40" />
-            <div className="relative p-2.5 bg-linear-to-br from-violet-500 to-purple-600 rounded-xl shadow-lg shadow-violet-500/30">
+            <div className="absolute inset-0 rounded-xl bg-linear-to-br from-orange-400 to-orange-500 blur-md opacity-40" />
+            <div className="relative p-2.5 bg-linear-to-br from-orange-400 to-orange-500 rounded-xl shadow-lg shadow-orange-400/30">
               <FileText className="h-5 w-5 text-white" />
             </div>
           </div>
           <div>
             <h1 className="text-xl font-bold tracking-tight">
-              <span className="shimmer-text">Job Descriptions</span>
+              <span className="shimmer-text-orange">Job Descriptions</span>
             </h1>
             <p className="text-xs text-foreground/40 mt-0.5">
               Upload, manage & match candidates across {sortedJds.length}{" "}
@@ -153,12 +153,16 @@ export function JobDescriptionsDashboard() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => navigate("/job-descriptions/archived")}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all border border-black/10 dark:border-white/10 text-foreground/50 hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all border border-orange-500/30 text-orange-600/70 dark:text-orange-400/70 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-orange-500/10"
           >
             <Archive className="h-3.5 w-3.5" />
-            Archive
+            Archive Pool
           </button>
-          <UploadActionButton label="Upload" onClick={() => setShowUpload(true)} />
+          <UploadActionButton
+            label="Upload"
+            onClick={() => setShowUpload(true)}
+            className="bg-transparent border border-orange-500/30 text-orange-600/70 dark:text-orange-400/70 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-orange-500/10 shadow-none"
+          />
           <button
             onClick={refresh}
             className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 text-foreground/50 hover:text-foreground transition-all"
@@ -170,14 +174,14 @@ export function JobDescriptionsDashboard() {
             onClick={() => setShowFilters(!showFilters)}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
               showFilters || activeFilterCount > 0
-                ? "bg-indigo-500/20 border border-indigo-500/30 text-indigo-600 dark:text-indigo-300"
+                ? "bg-orange-500/20 border border-orange-500/30 text-orange-600 dark:text-orange-300"
                 : "border border-black/10 dark:border-white/10 text-foreground/50 hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5"
             }`}
           >
             <Filter className="h-3.5 w-3.5" />
             Filters
             {activeFilterCount > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-indigo-500 text-white text-[10px] font-bold leading-none">
+              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-orange-500 text-white text-[10px] font-bold leading-none">
                 {activeFilterCount}
               </span>
             )}
