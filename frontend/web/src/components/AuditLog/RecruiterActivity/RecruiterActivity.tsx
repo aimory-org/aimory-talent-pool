@@ -27,7 +27,9 @@ type ActionType =
   | "tag_add"
   | "tag_remove"
   | "new_candidate"
-  | "new_job_description";
+  | "new_job_description"
+  | "archive_jd"
+  | "unarchive_jd";
 
 interface RecruiterEvent {
   id: string;
@@ -55,6 +57,16 @@ const FIELD_LABELS: Record<string, string> = {
   years_of_experience: "years of experience",
   summary: "summary",
   name: "name",
+  title: "title",
+  required_skills: "required skills",
+  desired_skills: "desired skills",
+  required_certifications: "required certifications",
+  desired_certifications: "desired certifications",
+  required_clearance: "clearance",
+  min_experience_years: "min experience",
+  location: "location",
+  salary_range: "salary range",
+  archived: "archived status",
 };
 
 const ACTION_CONFIG: Record<
@@ -101,6 +113,18 @@ const ACTION_CONFIG: Record<
       "bg-violet-500/10 text-violet-700 dark:text-violet-300 border-violet-500/20",
     dot: "bg-violet-500",
   },
+  archive_jd: {
+    label: "Archived",
+    badge:
+      "bg-orange-500/10 text-orange-700 dark:text-orange-300 border-orange-500/20",
+    dot: "bg-orange-500",
+  },
+  unarchive_jd: {
+    label: "Unarchived",
+    badge:
+      "bg-orange-300/10 text-orange-500 dark:text-orange-200 border-orange-400/20",
+    dot: "bg-orange-400",
+  },
 };
 
 const ACTION_FILTERS: { value: ActionType | "all"; label: string }[] = [
@@ -112,6 +136,8 @@ const ACTION_FILTERS: { value: ActionType | "all"; label: string }[] = [
   { value: "delete", label: "Deletes" },
   { value: "tag_add", label: "Tags Added" },
   { value: "tag_remove", label: "Tags Removed" },
+  { value: "archive_jd", label: "JD Archived" },
+  { value: "unarchive_jd", label: "JD Unarchived" },
 ];
 
 const AVATAR_COLORS = [
@@ -244,7 +270,14 @@ function mapRecruiterEvent(entry: AuditEntry): RecruiterEvent | null {
   }
 
   if (entry.action === "UPDATE") {
-    const changes = entry.changes || {};
+    // JD Lambda (old format) stores changes as a string array; talent Lambda stores {field: {old, new}}.
+    // Normalise to the dict format so the rest of the logic is uniform.
+    const rawChanges = entry.changes;
+    const changes: Record<string, AuditFieldChange> = Array.isArray(rawChanges)
+      ? Object.fromEntries(
+          (rawChanges as string[]).map((f) => [f, { old: null, new: null }]),
+        )
+      : (rawChanges ?? {});
 
     if (changes.tags) {
       const tagAction = deriveTagAction(changes.tags);
@@ -269,6 +302,24 @@ function mapRecruiterEvent(entry: AuditEntry): RecruiterEvent | null {
       }
     }
 
+    // Archived field change — use a dedicated action type and description.
+    if ("archived" in changes) {
+      const newVal = changes.archived.new;
+      const isArchiving = newVal === true;
+      return {
+        id: entry.sk,
+        timestamp: entry.timestamp,
+        recruiter_name: recruiterName,
+        recruiter_email: entry.user_email,
+        action: isArchiving ? "archive_jd" : "unarchive_jd",
+        candidate_name: candidateName,
+        candidate_id: entry.pk,
+        details: isArchiving
+          ? `Archived job description: ${candidateName}.`
+          : `Restored job description from archive: ${candidateName}.`,
+      };
+    }
+
     const firstField = Object.keys(changes)[0];
     const firstChange = firstField ? changes[firstField] : null;
     const entityFallback = isUUID(entry.pk) ? "job description" : "profile";
@@ -282,8 +333,8 @@ function mapRecruiterEvent(entry: AuditEntry): RecruiterEvent | null {
       action: "edit",
       candidate_name: candidateName,
       candidate_id: entry.pk,
-      old_value: firstChange ? String(firstChange.old ?? "") : undefined,
-      new_value: firstChange ? String(firstChange.new ?? "") : undefined,
+      old_value: firstChange?.old != null ? String(firstChange.old) : undefined,
+      new_value: firstChange?.new != null ? String(firstChange.new) : undefined,
       details: `Updated ${label}.`,
     };
   }

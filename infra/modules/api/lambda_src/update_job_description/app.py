@@ -206,12 +206,16 @@ def handler(event, context):
 
         table.update_item(**update_kwargs)
 
+        changes_dict = {
+            field: {"old": existing.get(field), "new": new_val}
+            for field, new_val in update_fields.items()
+        }
         _write_audit_entry(
             pk,
             "UPDATE",
             now,
             event,
-            changes=list(update_fields.keys()),
+            changes=changes_dict,
             title=update_fields.get("title", existing.get("title")),
         )
 
