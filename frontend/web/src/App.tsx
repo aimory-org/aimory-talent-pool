@@ -4,7 +4,7 @@ import "./App.css";
 import { allowedEmailSuffixes, microsoftProvider } from "@/lib/auth";
 import { useAuth, signOutUser, type UserInfo } from "@/hooks/useAuth";
 import { TalentDashboard } from "./components/TalentDashboard";
-import { JobDescriptionsDashboard } from "./components/JobDescriptions";
+import { JobDescriptionsDashboard, ArchivedJobDescriptionsDashboard } from "./components/JobDescriptions";
 import { HelpCenter } from "./components/HelpCenter";
 import { AuditLog } from "./components/AuditLog";
 import { NavBar } from "./components/ui/navbar";
@@ -18,6 +18,7 @@ const AuthenticatedRoutes = ({ user }: { user: UserInfo }) => (
     <NavBar user={user} onSignOut={signOutUser} />
     <Routes>
       <Route path="/job-descriptions" element={<JobDescriptionsDashboard />} />
+      <Route path="/job-descriptions/archived" element={<ArchivedJobDescriptionsDashboard />} />
       <Route path="/help" element={<HelpCenter />} />
       <Route path="/audit" element={<AuditLog />} />
       <Route path="*" element={<TalentDashboard />} />

@@ -31,6 +31,13 @@ def handler(event, context):
                 condition = Attr(field).eq(params[field])
                 filter_expr = condition if filter_expr is None else filter_expr & condition
 
+        # archived filter: default to active pool (not archived)
+        if params.get("archived", "").lower() == "true":
+            archived_condition = Attr("archived").eq(True)
+        else:
+            archived_condition = Attr("archived").eq(False) | Attr("archived").not_exists()
+        filter_expr = archived_condition if filter_expr is None else filter_expr & archived_condition
+
         kwargs = {}
         if filter_expr is not None:
             kwargs["FilterExpression"] = filter_expr

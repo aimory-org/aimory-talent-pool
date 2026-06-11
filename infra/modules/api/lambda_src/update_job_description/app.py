@@ -38,6 +38,7 @@ EDITABLE_FIELDS = {
     "industry_category",
     "job_title",
     "salary_range",
+    "archived",
 }
 
 

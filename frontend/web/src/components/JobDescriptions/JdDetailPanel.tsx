@@ -16,6 +16,8 @@ import {
   Loader2,
   Eye,
   ChevronRight,
+  Archive,
+  ArchiveRestore,
 } from "lucide-react";
 import {
   matchCandidates,
@@ -34,6 +36,7 @@ interface JdDetailPanelProps {
   onClose: () => void;
   onDeleted: () => void;
   onUpdated?: (jd: JobDescription) => void;
+  onArchived?: () => void;
 }
 
 function ScoreBadge({ score }: { score: number | null }) {
@@ -115,6 +118,7 @@ export function JdDetailPanel({
   onClose,
   onDeleted,
   onUpdated,
+  onArchived,
 }: JdDetailPanelProps) {
   const [matches, setMatches] = useState<CandidateMatch[]>([]);
   const [isMatching, setIsMatching] = useState(false);
@@ -122,6 +126,7 @@ export function JdDetailPanel({
   const [hasMatched, setHasMatched] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
   const [showDocument, setShowDocument] = useState(false);
   const [documentUrl, setDocumentUrl] = useState<string | null>(null);
   const [documentLoading, setDocumentLoading] = useState(false);
@@ -159,6 +164,16 @@ export function JdDetailPanel({
       setShowDeleteConfirm(false);
     }
   }, [jd.pk, onDeleted]);
+
+  const handleArchiveToggle = useCallback(async () => {
+    setIsArchiving(true);
+    try {
+      await updateJobDescription(jd.pk, { archived: !jd.archived });
+      onArchived?.();
+    } catch {
+      setIsArchiving(false);
+    }
+  }, [jd.pk, jd.archived, onArchived]);
 
   const handleViewDocument = useCallback(async () => {
     if (!jd.key) return;
@@ -615,13 +630,29 @@ export function JdDetailPanel({
             </div>
           </div>
         ) : (
-          <button
-            onClick={() => setShowDeleteConfirm(true)}
-            className="flex items-center gap-1.5 text-sm text-red-500/70 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-            Delete
-          </button>
+          <div className="flex items-center justify-between">
+            <button
+              onClick={handleArchiveToggle}
+              disabled={isArchiving}
+              className="flex items-center gap-1.5 text-sm text-foreground/50 hover:text-foreground disabled:opacity-50 transition-colors"
+            >
+              {isArchiving ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : jd.archived ? (
+                <ArchiveRestore className="h-3.5 w-3.5" />
+              ) : (
+                <Archive className="h-3.5 w-3.5" />
+              )}
+              {jd.archived ? "Unarchive" : "Archive"}
+            </button>
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="flex items-center gap-1.5 text-sm text-red-500/70 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Delete
+            </button>
+          </div>
         )}
       </div>
     </div>

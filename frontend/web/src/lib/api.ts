@@ -297,6 +297,7 @@ export interface ListJobDescriptionsParams {
   industry_category?: string;
   required_clearance?: string;
   location_state?: string;
+  archived?: boolean;
 }
 
 /**
@@ -313,6 +314,8 @@ export async function listJobDescriptions(
     searchParams.set("required_clearance", params.required_clearance);
   if (params.location_state)
     searchParams.set("location_state", params.location_state);
+  if (params.archived !== undefined)
+    searchParams.set("archived", String(params.archived));
 
   const query = searchParams.toString();
   return apiFetch<JobDescription[]>(
@@ -349,6 +352,7 @@ export interface UpdateJobDescriptionParams {
   job_title?: string;
   salary_range?: { min: number | null; max: number | null };
   dismiss_duplicate?: boolean;
+  archived?: boolean;
 }
 
 export async function updateJobDescription(
