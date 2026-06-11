@@ -46,7 +46,7 @@ export function ArchivedJobDescriptionsDashboard() {
   } = useLookups();
 
   const sortedJds = useMemo(() => {
-    const result = [...jobDescriptions];
+    const result = jobDescriptions.filter((jd) => jd.archived === true);
     result.sort((a, b) => {
       let cmp = 0;
       const av = a[sortField];

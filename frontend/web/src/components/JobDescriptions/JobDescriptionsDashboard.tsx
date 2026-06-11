@@ -50,9 +50,9 @@ export function JobDescriptionsDashboard() {
     industry_categories: lookupIndustryCategories,
   } = useLookups();
 
-  // Client-side sorting
+  // Client-side sorting — exclude archived items (belt-and-suspenders over the API filter)
   const sortedJds = useMemo(() => {
-    const result = [...jobDescriptions];
+    const result = jobDescriptions.filter((jd) => !jd.archived);
     result.sort((a, b) => {
       let cmp = 0;
       const av = a[sortField];
@@ -73,8 +73,8 @@ export function JobDescriptionsDashboard() {
   }, [sortedJds, showDuplicatesOnly]);
 
   const duplicateCount = useMemo(
-    () => jobDescriptions.filter((jd) => jd.possible_duplicate_of).length,
-    [jobDescriptions],
+    () => sortedJds.filter((jd) => jd.possible_duplicate_of).length,
+    [sortedJds],
   );
 
   const handleSort = useCallback(
@@ -144,9 +144,9 @@ export function JobDescriptionsDashboard() {
               <span className="shimmer-text">Job Descriptions</span>
             </h1>
             <p className="text-xs text-foreground/40 mt-0.5">
-              Upload, manage & match candidates across {jobDescriptions.length}{" "}
+              Upload, manage & match candidates across {sortedJds.length}{" "}
               job{" "}
-              {jobDescriptions.length === 1 ? "description" : "descriptions"}
+              {sortedJds.length === 1 ? "description" : "descriptions"}
             </p>
           </div>
         </div>
