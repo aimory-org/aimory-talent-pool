@@ -127,6 +127,7 @@ export function JdDetailPanel({
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
+  const [archiveError, setArchiveError] = useState<string | null>(null);
   const [showDocument, setShowDocument] = useState(false);
   const [documentUrl, setDocumentUrl] = useState<string | null>(null);
   const [documentLoading, setDocumentLoading] = useState(false);
@@ -167,10 +168,14 @@ export function JdDetailPanel({
 
   const handleArchiveToggle = useCallback(async () => {
     setIsArchiving(true);
+    setArchiveError(null);
     try {
       await updateJobDescription(jd.pk, { archived: !jd.archived });
       onArchived?.();
-    } catch {
+    } catch (err) {
+      setArchiveError(
+        err instanceof Error ? err.message : "Failed to update archive status",
+      );
       setIsArchiving(false);
     }
   }, [jd.pk, jd.archived, onArchived]);
@@ -606,7 +611,10 @@ export function JdDetailPanel({
       </div>
 
       {/* Footer actions */}
-      <div className="px-5 py-3 border-t border-black/10 dark:border-white/10 bg-gray-50/50 dark:bg-slate-800/50">
+      <div className="px-5 py-3 border-t border-black/10 dark:border-white/10 bg-gray-50/50 dark:bg-slate-800/50 space-y-2">
+        {archiveError && (
+          <p className="text-xs text-red-500 dark:text-red-400">{archiveError}</p>
+        )}
         {showDeleteConfirm ? (
           <div className="flex items-center justify-between">
             <p className="text-sm text-red-600 dark:text-red-400 font-medium">
