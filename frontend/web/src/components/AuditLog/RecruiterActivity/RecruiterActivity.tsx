@@ -360,6 +360,9 @@ export function RecruiterActivity() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
 
   // Clamp page when data changes without filter change (refresh)
+  // TODO: likely redundant with the `safePage` derived value below — the effect
+  // could be dropped and pagination driven by `safePage` alone. Left as-is
+  // pending test coverage for the pagination edge cases.
   useEffect(() => {
     setPage((currentPage) => Math.min(currentPage, totalPages));
   }, [totalPages]);
