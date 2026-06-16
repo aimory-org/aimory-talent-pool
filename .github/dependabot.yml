@@ -9,18 +9,16 @@ updates:
     labels:
       - "dependencies"
       - "python"
-    # Group all non-major bumps into a single PR to reduce noise
+    # Group everything (including majors) into one PR per category to minimise noise.
     groups:
-      python-non-major:
+      python:
         applies-to: version-updates
-        update-types:
-          - "minor"
-          - "patch"
+        patterns:
+          - "*"
       python-security:
         applies-to: security-updates
-        update-types:
-          - "minor"
-          - "patch"
+        patterns:
+          - "*"
 
   # ── npm (frontend) ─────────────────────────────────────────────────────────
   - package-ecosystem: "npm"
@@ -32,16 +30,14 @@ updates:
       - "dependencies"
       - "javascript"
     groups:
-      npm-non-major:
+      npm:
         applies-to: version-updates
-        update-types:
-          - "minor"
-          - "patch"
+        patterns:
+          - "*"
       npm-security:
         applies-to: security-updates
-        update-types:
-          - "minor"
-          - "patch"
+        patterns:
+          - "*"
 
   # ── GitHub Actions ─────────────────────────────────────────────────────────
   - package-ecosystem: "github-actions"
@@ -52,3 +48,12 @@ updates:
     labels:
       - "dependencies"
       - "github-actions"
+    groups:
+      github-actions:
+        applies-to: version-updates
+        patterns:
+          - "*"
+      github-actions-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
