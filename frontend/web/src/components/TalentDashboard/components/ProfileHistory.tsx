@@ -345,7 +345,7 @@ export function ProfileHistory({ pk }: ProfileHistoryProps) {
           onChange={(e) =>
             setFilter(e.target.value as AuditEntry["action"] | "ALL")
           }
-          className="flex-1 h-9 rounded-lg border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+          className="flex-1 h-9 rounded-lg border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all [&>option]:bg-white dark:[&>option]:bg-slate-800 [&>option]:text-foreground"
         >
           <option value="ALL">All events</option>
           <option value="CREATE">Ingested</option>
