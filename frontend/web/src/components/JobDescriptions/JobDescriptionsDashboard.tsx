@@ -51,7 +51,7 @@ export function JobDescriptionsDashboard() {
   const sortedJds = useMemo(() => {
     const result = [...jobDescriptions];
     result.sort((a, b) => {
-      let cmp = 0;
+      let cmp: number;
       const av = a[sortField];
       const bv = b[sortField];
       if (av == null && bv == null) cmp = 0;
