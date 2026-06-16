@@ -21,12 +21,15 @@ export default defineConfig([
       globals: globals.browser,
     },
     rules: {
-      // eslint-plugin-react-hooks v7 promotes these to errors in `recommended`.
-      // They flag pre-existing, working patterns (e.g. firing an async loader
-      // on mount), so keep them visible as warnings rather than blocking the
-      // dependency upgrade. TODO: address and restore to "error".
-      "react-hooks/set-state-in-effect": "warn",
-      "react-hooks/preserve-manual-memoization": "warn",
+      // eslint-plugin-react-hooks v7 ships two React-Compiler-readiness rules
+      // in `recommended`. This codebase doesn't use the React Compiler and
+      // relies on standard manual patterns (data fetching on mount, hand-written
+      // useCallback/useMemo deps), which both rules flag as the baseline idiom
+      // rather than as bugs. Enforcing them would mean a permanent stream of
+      // inline disables on otherwise-correct code, so they're turned off.
+      // `exhaustive-deps` and `rules-of-hooks` stay on — those catch real bugs.
+      "react-hooks/set-state-in-effect": "off",
+      "react-hooks/preserve-manual-memoization": "off",
     },
   },
   // Test files - no react-refresh rules
