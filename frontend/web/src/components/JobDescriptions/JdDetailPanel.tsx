@@ -92,7 +92,7 @@ function SkillTags({
   if (!skills.length) return null;
   const colors =
     variant === "required"
-      ? "bg-orange-500/10 text-orange-600 dark:text-orange-300 border-orange-500/20"
+      ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 border-indigo-500/20"
       : "bg-amber-500/10 text-amber-600 dark:text-amber-300 border-amber-500/20";
   return (
     <div>
@@ -224,26 +224,26 @@ export function JdDetailPanel({
 
   const t = jd.archived
     ? {
-        headerBg: "from-orange-700/5 to-orange-600/5",
-        iconGradient: "from-orange-600/40 to-orange-700/40",
-        iconBorder: "border-orange-600/20",
-        iconText: "text-orange-700 dark:text-orange-400",
-        iconGlow: "from-orange-600/30 to-orange-700/30",
-        btnBg: "bg-orange-700/10",
-        btnBorder: "border-orange-700/20",
-        btnText: "text-orange-700 dark:text-orange-400",
-        btnHover: "hover:bg-orange-700/20",
+        headerBg: "from-violet-600/5 to-purple-600/5",
+        iconGradient: "from-violet-500/40 to-purple-600/40",
+        iconBorder: "border-violet-500/20",
+        iconText: "text-violet-700 dark:text-violet-400",
+        iconGlow: "from-violet-500/30 to-purple-600/30",
+        btnBg: "bg-violet-600/10",
+        btnBorder: "border-violet-600/20",
+        btnText: "text-violet-700 dark:text-violet-400",
+        btnHover: "hover:bg-violet-600/20",
       }
     : {
-        headerBg: "from-orange-400/5 to-orange-500/5",
-        iconGradient: "from-orange-400/40 to-orange-500/40",
-        iconBorder: "border-orange-400/20",
-        iconText: "text-orange-500 dark:text-orange-300",
-        iconGlow: "from-orange-400/30 to-orange-500/30",
-        btnBg: "bg-orange-500/10",
-        btnBorder: "border-orange-500/20",
-        btnText: "text-orange-500 dark:text-orange-300",
-        btnHover: "hover:bg-orange-500/20",
+        headerBg: "from-indigo-500/5 to-violet-500/5",
+        iconGradient: "from-indigo-400/40 to-violet-500/40",
+        iconBorder: "border-indigo-400/20",
+        iconText: "text-indigo-600 dark:text-indigo-400",
+        iconGlow: "from-indigo-400/30 to-violet-500/30",
+        btnBg: "bg-indigo-500/10",
+        btnBorder: "border-indigo-500/20",
+        btnText: "text-indigo-600 dark:text-indigo-300",
+        btnHover: "hover:bg-indigo-500/20",
       };
 
   // Profile detail view — shows the candidate profile panel
@@ -668,8 +668,8 @@ export function JdDetailPanel({
               disabled={isArchiving}
               className={`flex items-center gap-1.5 text-sm font-medium disabled:opacity-50 transition-colors ${
                 jd.archived
-                  ? "text-orange-400 dark:text-orange-300 hover:text-orange-500 dark:hover:text-orange-200"
-                  : "text-orange-500 dark:text-orange-400 hover:text-orange-600 dark:hover:text-orange-300"
+                  ? "text-violet-500 dark:text-violet-400 hover:text-violet-600 dark:hover:text-violet-300"
+                  : "text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300"
               }`}
             >
               {isArchiving ? (

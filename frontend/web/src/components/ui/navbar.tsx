@@ -42,19 +42,13 @@ export function NavBar({ user, onSignOut }: NavBarProps) {
   return (
     <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl border-b border-black/6 dark:border-white/6 sticky top-0 z-50 shadow-sm shadow-black/5">
       {/* Top accent line */}
-      <div
-        className={`absolute inset-x-0 top-0 h-0.5 bg-linear-to-r ${
-          location.pathname.startsWith("/job-descriptions")
-            ? "from-orange-400 via-orange-500 to-orange-600"
-            : "from-indigo-500 via-violet-500 to-purple-500"
-        }`}
-      />
+      <div className="absolute inset-x-0 top-0 h-0.5 bg-linear-to-r from-indigo-500 via-violet-500 to-purple-500" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-16">
           {/* Nav Items */}
           <nav className="flex items-center gap-1">
-            {navItems.map(({ path, label, icon: Icon, orange }) => {
+            {navItems.map(({ path, label, icon: Icon }) => {
               const isActive =
                 path === "/"
                   ? location.pathname === "/"
@@ -65,9 +59,7 @@ export function NavBar({ user, onSignOut }: NavBarProps) {
                   to={path}
                   className={`relative flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 group ${
                     isActive
-                      ? orange
-                        ? "text-orange-500 dark:text-orange-400"
-                        : "text-indigo-600 dark:text-indigo-400"
+                      ? "text-indigo-600 dark:text-indigo-400"
                       : "text-foreground/50 hover:text-foreground"
                   }`}
                 >
@@ -75,9 +67,7 @@ export function NavBar({ user, onSignOut }: NavBarProps) {
                   <span
                     className={`absolute inset-0 rounded-lg transition-all duration-200 ${
                       isActive
-                        ? orange
-                          ? "bg-orange-500/10"
-                          : "bg-indigo-500/10"
+                        ? "bg-indigo-500/10"
                         : "bg-transparent group-hover:bg-black/5 dark:group-hover:bg-white/5"
                     }`}
                   />
@@ -85,7 +75,7 @@ export function NavBar({ user, onSignOut }: NavBarProps) {
                   <span className="hidden sm:inline relative">{label}</span>
                   {/* Active underline dot */}
                   {isActive && (
-                    <span className={`absolute -bottom-[1px] left-1/2 -translate-x-1/2 w-4 h-0.5 rounded-full bg-linear-to-r ${orange ? "from-orange-400 to-orange-500" : "from-indigo-500 to-violet-500"}`} />
+                    <span className="absolute -bottom-[1px] left-1/2 -translate-x-1/2 w-4 h-0.5 rounded-full bg-linear-to-r from-indigo-500 to-violet-500" />
                   )}
                 </Link>
               );
