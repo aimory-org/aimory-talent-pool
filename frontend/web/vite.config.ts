@@ -18,6 +18,20 @@ export default defineConfig({
     hmr: {
       clientPort: 5174, // Use same port for HMR WebSocket
     },
+    watch: {
+      // inotify file-change events don't propagate to bind-mounted files inside
+      // dev containers / WSL2, so the default watcher never sees edits and HMR
+      // (auto-reload) silently stops working. Fall back to polling when running
+      // in a container — VS Code dev containers set REMOTE_CONTAINERS, Codespaces
+      // sets CODESPACES — or when CHOKIDAR_USEPOLLING is set explicitly. Native
+      // setups keep fast inotify watching.
+      usePolling: Boolean(
+        process.env.REMOTE_CONTAINERS ||
+          process.env.CODESPACES ||
+          process.env.CHOKIDAR_USEPOLLING,
+      ),
+      interval: 100,
+    },
   },
   test: {
     globals: true,
