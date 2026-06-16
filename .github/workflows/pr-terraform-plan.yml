@@ -38,6 +38,7 @@ jobs:
   plan:
     name: Format, Validate & Plan
     runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
 
     env:
       CAN_PUSH_FIXES: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
