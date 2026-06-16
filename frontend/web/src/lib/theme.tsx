@@ -49,7 +49,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     // Apply the theme class in one operation
     root.classList.remove("light", "dark");
     root.classList.add(effectiveTheme);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setResolvedTheme(effectiveTheme);
 
     // Update meta theme-color for mobile browsers
