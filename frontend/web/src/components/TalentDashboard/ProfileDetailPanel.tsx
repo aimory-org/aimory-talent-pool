@@ -11,8 +11,6 @@ import {
   Briefcase,
   Calendar,
   Award,
-  Linkedin,
-  Github,
   Building,
   FileText,
   Trash2,
@@ -26,6 +24,7 @@ import {
   Plus,
   Minus,
 } from "lucide-react";
+import { Linkedin, Github } from "@/components/ui/brand-icons";
 import { Badge } from "@/components/ui/badge";
 import { Select } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
