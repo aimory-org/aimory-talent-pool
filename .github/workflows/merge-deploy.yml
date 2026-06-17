@@ -30,6 +30,10 @@ name: Deploy
 on:
   push:
     branches: [main]
+  # Manual trigger — recover a deploy that the push event skipped (e.g. a squash
+  # merge whose commit message inherited a `[skip ci]` marker from a branch
+  # commit), or redeploy current main on demand. Actions → Deploy → Run workflow.
+  workflow_dispatch:
 
 permissions:
   contents: read
