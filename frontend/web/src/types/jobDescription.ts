@@ -25,6 +25,7 @@ export interface JobDescription {
   bucket: string;
   key: string;
   possible_duplicate_of?: string;
+  archived?: boolean;
   created_at: string;
   updated_at: string;
 }

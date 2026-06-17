@@ -24,6 +24,7 @@ interface JdTableProps {
   onSelectJd: (jd: JobDescription) => void;
   activeFilterCount: number;
   onClearFilters: () => void;
+  archived?: boolean;
 }
 
 function formatDate(iso: string) {
@@ -46,16 +47,27 @@ function formatSalary(
   return "—";
 }
 
-function SkillsPill({ skills, max = 3 }: { skills: string[]; max?: number }) {
+function SkillsPill({
+  skills,
+  max = 3,
+  archived = false,
+}: {
+  skills: string[];
+  max?: number;
+  archived?: boolean;
+}) {
   if (!skills.length) return <span className="text-foreground/30">—</span>;
   const shown = skills.slice(0, max);
   const extra = skills.length - max;
+  const pill = archived
+    ? "bg-violet-600/10 text-violet-700 dark:text-violet-400 border-violet-600/20"
+    : "bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 border-indigo-500/20";
   return (
     <div className="flex flex-wrap gap-1">
       {shown.map((s) => (
         <span
           key={s}
-          className="inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 border border-indigo-500/20"
+          className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium border ${pill}`}
         >
           {s}
         </span>
@@ -78,10 +90,35 @@ export function JdTable({
   onSelectJd,
   activeFilterCount,
   onClearFilters,
+  archived = false,
 }: JdTableProps) {
+  const c = archived
+    ? {
+        accentLine: "via-violet-600/60",
+        spinner: "border-violet-600/30",
+        spinnerActive: "border-violet-600",
+        clearBtn: "bg-violet-600/20 border-violet-600/30 text-violet-700 dark:text-violet-400 hover:bg-violet-600/30",
+        rowHover: "hover:bg-violet-600/4 dark:hover:bg-violet-600/4",
+        titleHover: "group-hover:text-violet-700 dark:group-hover:text-violet-400",
+        iconGradient: "from-violet-500/40 to-purple-600/40",
+        iconBorder: "border-violet-500/20 dark:border-violet-500/20",
+        iconText: "text-violet-700 dark:text-violet-400",
+      }
+    : {
+        accentLine: "via-indigo-500/60",
+        spinner: "border-indigo-500/30",
+        spinnerActive: "border-indigo-500",
+        clearBtn: "bg-indigo-500/20 border-indigo-500/30 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-500/30",
+        rowHover: "hover:bg-indigo-500/4 dark:hover:bg-violet-400/4",
+        titleHover: "group-hover:text-indigo-600 dark:group-hover:text-indigo-300",
+        iconGradient: "from-indigo-400/40 to-violet-500/40",
+        iconBorder: "border-indigo-400/20 dark:border-indigo-400/20",
+        iconText: "text-indigo-500 dark:text-indigo-300",
+      };
+
   return (
     <div className="relative z-10 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-black/7 dark:border-white/7 overflow-hidden shadow-xl shadow-black/5 animate-slide-in-up">
-      <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-indigo-500/60 to-transparent" />
+      <div className={`absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent ${c.accentLine} to-transparent`} />
       <div className="overflow-x-auto">
         <Table className="table-fixed w-full">
           <TableHeader>
@@ -156,8 +193,8 @@ export function JdTable({
                     {isLoading ? (
                       <>
                         <div className="relative">
-                          <div className="h-12 w-12 border-2 border-indigo-500/30 rounded-full" />
-                          <div className="absolute inset-0 h-12 w-12 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                          <div className={`h-12 w-12 border-2 ${c.spinner} rounded-full`} />
+                          <div className={`absolute inset-0 h-12 w-12 border-2 ${c.spinnerActive} border-t-transparent rounded-full animate-spin`} />
                         </div>
                         <div className="text-center">
                           <p className="text-foreground/60 font-medium">
@@ -191,7 +228,7 @@ export function JdTable({
                         {activeFilterCount > 0 && (
                           <button
                             onClick={onClearFilters}
-                            className="mt-2 px-4 py-2 rounded-lg bg-indigo-500/20 border border-indigo-500/30 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-500/30 transition-all text-sm font-medium flex items-center gap-2"
+                            className={`mt-2 px-4 py-2 rounded-lg border transition-all text-sm font-medium flex items-center gap-2 ${c.clearBtn}`}
                           >
                             <X className="h-4 w-4" />
                             Clear all filters
@@ -206,13 +243,13 @@ export function JdTable({
               jobDescriptions.map((jd) => (
                 <TableRow
                   key={jd.pk}
-                  className="border-black/4 dark:border-white/4 cursor-pointer hover:bg-indigo-500/4 dark:hover:bg-indigo-400/4 transition-all duration-150 group"
+                  className={`border-black/4 dark:border-white/4 cursor-pointer ${c.rowHover} transition-all duration-150 group`}
                   onClick={() => onSelectJd(jd)}
                 >
                   <TableCell>
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="relative shrink-0">
-                        <div className="h-9 w-9 rounded-full bg-linear-to-br from-violet-500/40 to-purple-600/40 flex items-center justify-center border border-violet-500/20 dark:border-violet-400/20 text-violet-600 dark:text-violet-300 shadow-sm">
+                        <div className={`h-9 w-9 rounded-full bg-linear-to-br ${c.iconGradient} flex items-center justify-center border ${c.iconBorder} ${c.iconText} shadow-sm`}>
                           <FileText className="h-4 w-4" />
                         </div>
                         {jd.possible_duplicate_of && (
@@ -227,7 +264,7 @@ export function JdTable({
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="font-medium text-foreground group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors truncate">
+                        <p className={`font-medium text-foreground ${c.titleHover} transition-colors truncate`}>
                           {jd.title || "Untitled"}
                         </p>
                         <p className="text-xs text-foreground/40 truncate">
@@ -243,7 +280,7 @@ export function JdTable({
                     </div>
                   </TableCell>
                   <TableCell>
-                    <SkillsPill skills={jd.required_skills || []} />
+                    <SkillsPill skills={jd.required_skills || []} archived={archived} />
                   </TableCell>
                   <TableCell>
                     <ClearanceBadge level={jd.required_clearance} />

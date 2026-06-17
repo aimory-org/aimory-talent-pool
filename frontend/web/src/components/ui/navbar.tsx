@@ -22,10 +22,10 @@ interface NavBarProps {
 }
 
 const navItems = [
-  { path: "/", label: "Talent Pool", icon: Users },
-  { path: "/job-descriptions", label: "Job Descriptions", icon: FileText },
-  { path: "/audit", label: "Activity", icon: ClipboardList },
-  { path: "/help", label: "Help Center", icon: HelpCircle },
+  { path: "/", label: "Talent Pool", icon: Users, orange: false },
+  { path: "/job-descriptions", label: "Job Descriptions", icon: FileText, orange: true },
+  { path: "/audit", label: "Activity", icon: ClipboardList, orange: false },
+  { path: "/help", label: "Help Center", icon: HelpCircle, orange: false },
 ];
 
 export function NavBar({ user, onSignOut }: NavBarProps) {

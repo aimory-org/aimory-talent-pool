@@ -1,15 +1,14 @@
 /**
- * JobDescriptionsDashboard - Main component for viewing and managing job descriptions.
+ * ArchivedJobDescriptionsDashboard - View and manage archived job descriptions.
  */
 import { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  FileText,
+  Archive,
   Filter,
   X,
   RefreshCw,
-  AlertTriangle,
-  Archive,
+  ArrowLeft,
 } from "lucide-react";
 import { useJobDescriptions } from "@/hooks/useJobDescriptions";
 import { useLookups } from "@/hooks/useLookups";
@@ -18,41 +17,36 @@ import type { JdSortField, SortDirection, JdFilters } from "./types";
 import { DEFAULT_JD_FILTERS } from "./types";
 import { JdTable } from "./components/JdTable";
 import { JdDetailPanel } from "./JdDetailPanel";
-import { JdUploadDialog } from "./components/JdUploadDialog";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { CLEARANCE_LEVELS, US_STATES } from "@/types/talent";
-import { UploadActionButton } from "@/components/ui/upload-action-button";
 import { Pagination } from "@/components/ui/pagination";
 
 const PAGE_SIZE = 25;
 
-export function JobDescriptionsDashboard() {
+export function ArchivedJobDescriptionsDashboard() {
   const navigate = useNavigate();
   const [filters, setFilters] = useState<JdFilters>(DEFAULT_JD_FILTERS);
   const [sortField, setSortField] = useState<JdSortField>("created_at");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [selectedJd, setSelectedJd] = useState<JobDescription | null>(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [showUpload, setShowUpload] = useState(false);
-  const [showDuplicatesOnly, setShowDuplicatesOnly] = useState(false);
   const [page, setPage] = useState(1);
 
-  const { jobDescriptions, isLoading, error, refresh, removeJobDescription } =
-    useJobDescriptions({
-      job_title: filters.job_title || undefined,
-      industry_category: filters.industry_category || undefined,
-      required_clearance: filters.required_clearance || undefined,
-      location_state: filters.location_state || undefined,
-    });
+  const { jobDescriptions, isLoading, error, refresh } = useJobDescriptions({
+    job_title: filters.job_title || undefined,
+    industry_category: filters.industry_category || undefined,
+    required_clearance: filters.required_clearance || undefined,
+    location_state: filters.location_state || undefined,
+    archived: true,
+  });
 
   const {
     job_titles: lookupJobTitles,
     industry_categories: lookupIndustryCategories,
   } = useLookups();
 
-  // Client-side sorting — exclude archived items (belt-and-suspenders over the API filter)
   const sortedJds = useMemo(() => {
-    const result = jobDescriptions.filter((jd) => !jd.archived);
+    const result = jobDescriptions.filter((jd) => jd.archived === true);
     result.sort((a, b) => {
       let cmp: number;
       const av = a[sortField];
@@ -66,16 +60,6 @@ export function JobDescriptionsDashboard() {
     });
     return result;
   }, [jobDescriptions, sortField, sortDirection]);
-
-  const displayedJds = useMemo(() => {
-    if (!showDuplicatesOnly) return sortedJds;
-    return sortedJds.filter((jd) => jd.possible_duplicate_of);
-  }, [sortedJds, showDuplicatesOnly]);
-
-  const duplicateCount = useMemo(
-    () => sortedJds.filter((jd) => jd.possible_duplicate_of).length,
-    [sortedJds],
-  );
 
   const handleSort = useCallback(
     (field: JdSortField) => {
@@ -100,33 +84,25 @@ export function JobDescriptionsDashboard() {
     setFilters(DEFAULT_JD_FILTERS);
   }, []);
 
-  // Reset to first page when filters / sort / duplicate toggle change (derived-state avoids effect)
-  const resetKey = `${JSON.stringify(filters)}|${sortField}|${sortDirection}|${String(showDuplicatesOnly)}`;
+  // Reset to first page when filters / sort change
+  const resetKey = `${JSON.stringify(filters)}|${sortField}|${sortDirection}`;
   const [lastResetKey, setLastResetKey] = useState(resetKey);
   if (lastResetKey !== resetKey) {
     setLastResetKey(resetKey);
     setPage(1);
   }
 
-  const totalPages = Math.max(1, Math.ceil(displayedJds.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(sortedJds.length / PAGE_SIZE));
 
-  // Clamp page when data changes without filter change (delete / refresh)
   const safePage = Math.min(page, totalPages);
   if (page !== safePage) setPage(safePage);
 
   const paginatedJds = useMemo(() => {
     const start = (safePage - 1) * PAGE_SIZE;
-    return displayedJds.slice(start, start + PAGE_SIZE);
-  }, [displayedJds, safePage]);
+    return sortedJds.slice(start, start + PAGE_SIZE);
+  }, [sortedJds, safePage]);
 
   const activeFilterCount = Object.values(filters).filter(Boolean).length;
-
-  const handleDeleted = useCallback(() => {
-    if (selectedJd) {
-      removeJobDescription(selectedJd.pk).catch(() => {});
-    }
-    setSelectedJd(null);
-  }, [selectedJd, removeJobDescription]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5">
@@ -134,34 +110,29 @@ export function JobDescriptionsDashboard() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
-            <div className="absolute inset-0 rounded-xl bg-linear-to-br from-indigo-500 to-violet-600 blur-md opacity-40" />
-            <div className="relative p-2.5 bg-linear-to-br from-indigo-500 to-violet-600 rounded-xl shadow-lg shadow-indigo-500/30">
-              <FileText className="h-5 w-5 text-white" />
+            <div className="absolute inset-0 rounded-xl bg-linear-to-br from-violet-600 to-purple-700 blur-md opacity-40" />
+            <div className="relative p-2.5 bg-linear-to-br from-violet-600 to-purple-700 rounded-xl shadow-lg shadow-violet-700/30">
+              <Archive className="h-5 w-5 text-white" />
             </div>
           </div>
           <div>
             <h1 className="text-xl font-bold tracking-tight">
-              <span className="shimmer-text">Job Descriptions</span>
+              <span className="shimmer-text">Archived Job Descriptions</span>
             </h1>
             <p className="text-xs text-foreground/40 mt-0.5">
-              Upload, manage & match candidates across {sortedJds.length}{" "}
-              job{" "}
-              {sortedJds.length === 1 ? "description" : "descriptions"}
+              {jobDescriptions.length} archived job{" "}
+              {jobDescriptions.length === 1 ? "description" : "descriptions"}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => navigate("/job-descriptions/archived")}
+            onClick={() => navigate("/job-descriptions")}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all border border-violet-400/30 text-violet-500 dark:text-violet-300 hover:text-violet-600 dark:hover:text-violet-200 hover:bg-violet-400/10"
           >
-            <Archive className="h-3.5 w-3.5" />
-            Archive Pool
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Back to Active
           </button>
-          <UploadActionButton
-            label="Upload"
-            onClick={() => setShowUpload(true)}
-          />
           <button
             onClick={refresh}
             className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 text-foreground/50 hover:text-foreground transition-all"
@@ -173,14 +144,14 @@ export function JobDescriptionsDashboard() {
             onClick={() => setShowFilters(!showFilters)}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
               showFilters || activeFilterCount > 0
-                ? "bg-indigo-500/20 border border-indigo-500/30 text-indigo-600 dark:text-indigo-300"
+                ? "bg-violet-600/20 border border-violet-600/30 text-violet-700 dark:text-violet-400"
                 : "border border-black/10 dark:border-white/10 text-foreground/50 hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5"
             }`}
           >
             <Filter className="h-3.5 w-3.5" />
             Filters
             {activeFilterCount > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-indigo-500 text-white text-[10px] font-bold leading-none">
+              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-violet-600 text-white text-[10px] font-bold leading-none">
                 {activeFilterCount}
               </span>
             )}
@@ -246,39 +217,17 @@ export function JobDescriptionsDashboard() {
               />
             </div>
           </div>
-          <div className="mt-3 flex items-center justify-between">
-            {duplicateCount > 0 && (
-              <button
-                onClick={() => setShowDuplicatesOnly(!showDuplicatesOnly)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
-                  showDuplicatesOnly
-                    ? "bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300"
-                    : "border border-black/6 dark:border-white/6 text-foreground/40 hover:text-amber-600 dark:hover:text-amber-400 hover:border-amber-500/20"
-                }`}
-              >
-                <AlertTriangle className="h-3.5 w-3.5" />
-                Warnings
-                <span
-                  className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                    showDuplicatesOnly
-                      ? "bg-amber-500 text-white"
-                      : "bg-amber-500/15 text-amber-600 dark:text-amber-400"
-                  }`}
-                >
-                  {duplicateCount}
-                </span>
-              </button>
-            )}
-            {activeFilterCount > 0 && (
+          {activeFilterCount > 0 && (
+            <div className="mt-3 flex justify-end">
               <button
                 onClick={clearFilters}
-                className="text-xs text-foreground/40 hover:text-foreground flex items-center gap-1 transition-colors ml-auto"
+                className="text-xs text-foreground/40 hover:text-foreground flex items-center gap-1 transition-colors"
               >
                 <X className="h-3 w-3" />
                 Clear filters
               </button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -292,6 +241,7 @@ export function JobDescriptionsDashboard() {
         onSelectJd={setSelectedJd}
         activeFilterCount={activeFilterCount}
         onClearFilters={clearFilters}
+        archived
       />
       <Pagination
         currentPage={safePage}
@@ -306,10 +256,13 @@ export function JobDescriptionsDashboard() {
           key={selectedJd.pk}
           jd={selectedJd}
           onClose={() => setSelectedJd(null)}
-          onDeleted={handleDeleted}
+          onDeleted={() => {
+            setSelectedJd(null);
+            void refresh();
+          }}
           onUpdated={(updated) => {
             setSelectedJd(updated);
-            refresh();
+            void refresh();
           }}
           onArchived={() => {
             setSelectedJd(null);
@@ -317,13 +270,6 @@ export function JobDescriptionsDashboard() {
           }}
         />
       )}
-
-      {/* Upload dialog */}
-      <JdUploadDialog
-        open={showUpload}
-        onClose={() => setShowUpload(false)}
-        onUploaded={refresh}
-      />
     </div>
   );
 }
