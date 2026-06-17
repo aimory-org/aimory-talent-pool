@@ -20,6 +20,17 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // eslint-plugin-react-hooks v7 ships two React-Compiler-readiness rules
+      // in `recommended`. This codebase doesn't use the React Compiler and
+      // relies on standard manual patterns (data fetching on mount, hand-written
+      // useCallback/useMemo deps), which both rules flag as the baseline idiom
+      // rather than as bugs. Enforcing them would mean a permanent stream of
+      // inline disables on otherwise-correct code, so they're turned off.
+      // `exhaustive-deps` and `rules-of-hooks` stay on — those catch real bugs.
+      "react-hooks/set-state-in-effect": "off",
+      "react-hooks/preserve-manual-memoization": "off",
+    },
   },
   // Test files - no react-refresh rules
   {

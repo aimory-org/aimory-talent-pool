@@ -60,8 +60,8 @@ function SkillsPill({
   const shown = skills.slice(0, max);
   const extra = skills.length - max;
   const pill = archived
-    ? "bg-orange-700/10 text-orange-700 dark:text-orange-400 border-orange-700/20"
-    : "bg-orange-500/10 text-orange-600 dark:text-orange-300 border-orange-500/20";
+    ? "bg-violet-600/10 text-violet-700 dark:text-violet-400 border-violet-600/20"
+    : "bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 border-indigo-500/20";
   return (
     <div className="flex flex-wrap gap-1">
       {shown.map((s) => (
@@ -94,26 +94,26 @@ export function JdTable({
 }: JdTableProps) {
   const c = archived
     ? {
-        accentLine: "via-orange-700/60",
-        spinner: "border-orange-700/30",
-        spinnerActive: "border-orange-700",
-        clearBtn: "bg-orange-700/20 border-orange-700/30 text-orange-700 dark:text-orange-400 hover:bg-orange-700/30",
-        rowHover: "hover:bg-orange-700/4 dark:hover:bg-orange-700/4",
-        titleHover: "group-hover:text-orange-700 dark:group-hover:text-orange-400",
-        iconGradient: "from-orange-600/40 to-orange-700/40",
-        iconBorder: "border-orange-600/20 dark:border-orange-600/20",
-        iconText: "text-orange-700 dark:text-orange-400",
+        accentLine: "via-violet-600/60",
+        spinner: "border-violet-600/30",
+        spinnerActive: "border-violet-600",
+        clearBtn: "bg-violet-600/20 border-violet-600/30 text-violet-700 dark:text-violet-400 hover:bg-violet-600/30",
+        rowHover: "hover:bg-violet-600/4 dark:hover:bg-violet-600/4",
+        titleHover: "group-hover:text-violet-700 dark:group-hover:text-violet-400",
+        iconGradient: "from-violet-500/40 to-purple-600/40",
+        iconBorder: "border-violet-500/20 dark:border-violet-500/20",
+        iconText: "text-violet-700 dark:text-violet-400",
       }
     : {
-        accentLine: "via-orange-500/60",
-        spinner: "border-orange-500/30",
-        spinnerActive: "border-orange-500",
-        clearBtn: "bg-orange-500/20 border-orange-500/30 text-orange-600 dark:text-orange-300 hover:bg-orange-500/30",
-        rowHover: "hover:bg-orange-500/4 dark:hover:bg-orange-400/4",
-        titleHover: "group-hover:text-orange-600 dark:group-hover:text-orange-300",
-        iconGradient: "from-orange-400/40 to-orange-500/40",
-        iconBorder: "border-orange-400/20 dark:border-orange-400/20",
-        iconText: "text-orange-500 dark:text-orange-300",
+        accentLine: "via-indigo-500/60",
+        spinner: "border-indigo-500/30",
+        spinnerActive: "border-indigo-500",
+        clearBtn: "bg-indigo-500/20 border-indigo-500/30 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-500/30",
+        rowHover: "hover:bg-indigo-500/4 dark:hover:bg-violet-400/4",
+        titleHover: "group-hover:text-indigo-600 dark:group-hover:text-indigo-300",
+        iconGradient: "from-indigo-400/40 to-violet-500/40",
+        iconBorder: "border-indigo-400/20 dark:border-indigo-400/20",
+        iconText: "text-indigo-500 dark:text-indigo-300",
       };
 
   return (

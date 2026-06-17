@@ -54,7 +54,7 @@ export function JobDescriptionsDashboard() {
   const sortedJds = useMemo(() => {
     const result = jobDescriptions.filter((jd) => !jd.archived);
     result.sort((a, b) => {
-      let cmp = 0;
+      let cmp: number;
       const av = a[sortField];
       const bv = b[sortField];
       if (av == null && bv == null) cmp = 0;
@@ -134,14 +134,14 @@ export function JobDescriptionsDashboard() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
-            <div className="absolute inset-0 rounded-xl bg-linear-to-br from-orange-400 to-orange-500 blur-md opacity-40" />
-            <div className="relative p-2.5 bg-linear-to-br from-orange-400 to-orange-500 rounded-xl shadow-lg shadow-orange-400/30">
+            <div className="absolute inset-0 rounded-xl bg-linear-to-br from-indigo-500 to-violet-600 blur-md opacity-40" />
+            <div className="relative p-2.5 bg-linear-to-br from-indigo-500 to-violet-600 rounded-xl shadow-lg shadow-indigo-500/30">
               <FileText className="h-5 w-5 text-white" />
             </div>
           </div>
           <div>
             <h1 className="text-xl font-bold tracking-tight">
-              <span className="shimmer-text-orange">Job Descriptions</span>
+              <span className="shimmer-text">Job Descriptions</span>
             </h1>
             <p className="text-xs text-foreground/40 mt-0.5">
               Upload, manage & match candidates across {sortedJds.length}{" "}
@@ -153,7 +153,7 @@ export function JobDescriptionsDashboard() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => navigate("/job-descriptions/archived")}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all border border-orange-500/30 text-orange-600/70 dark:text-orange-400/70 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-orange-500/10"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all border border-violet-400/30 text-violet-500 dark:text-violet-300 hover:text-violet-600 dark:hover:text-violet-200 hover:bg-violet-400/10"
           >
             <Archive className="h-3.5 w-3.5" />
             Archive Pool
@@ -161,7 +161,6 @@ export function JobDescriptionsDashboard() {
           <UploadActionButton
             label="Upload"
             onClick={() => setShowUpload(true)}
-            className="bg-transparent border border-orange-500/30 text-orange-600/70 dark:text-orange-400/70 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-orange-500/10 shadow-none"
           />
           <button
             onClick={refresh}
@@ -174,14 +173,14 @@ export function JobDescriptionsDashboard() {
             onClick={() => setShowFilters(!showFilters)}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
               showFilters || activeFilterCount > 0
-                ? "bg-orange-500/20 border border-orange-500/30 text-orange-600 dark:text-orange-300"
+                ? "bg-indigo-500/20 border border-indigo-500/30 text-indigo-600 dark:text-indigo-300"
                 : "border border-black/10 dark:border-white/10 text-foreground/50 hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5"
             }`}
           >
             <Filter className="h-3.5 w-3.5" />
             Filters
             {activeFilterCount > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-orange-500 text-white text-[10px] font-bold leading-none">
+              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-indigo-500 text-white text-[10px] font-bold leading-none">
                 {activeFilterCount}
               </span>
             )}

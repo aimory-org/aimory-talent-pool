@@ -31,13 +31,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.head_ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: "pip"
@@ -105,8 +105,13 @@ jobs:
           echo "::error::Bandit found security issues. Review the output above."
           exit 1
 
+      # Informational only — newly-published advisories can flip this red with no
+      # code change, so it must not block unrelated PRs. Dependabot security
+      # updates are the mechanism that actually drives fixes. Review the output
+      # and address findings via a dedicated PR.
       - name: pip-audit (dependency CVEs)
         shell: bash
+        continue-on-error: true
         run: |
           set -euo pipefail
 
@@ -139,7 +144,7 @@ jobs:
       # ── Artifacts ──────────────────────────────────────────────────────────
       - name: Upload coverage report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-pr-${{ github.event.pull_request.number }}
           path: coverage.xml
@@ -147,7 +152,7 @@ jobs:
 
       - name: Post coverage summary to PR
         if: always()
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');

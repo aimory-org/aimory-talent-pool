@@ -30,13 +30,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.head_ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "20"
           cache: npm
@@ -45,8 +45,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Informational only — newly-published advisories can flip this red with no
+      # code change, so it must not block unrelated PRs. Dependabot security
+      # updates are the mechanism that actually drives fixes. Review the output
+      # and address highs via a dedicated PR.
       - name: npm audit (dependency CVEs)
         run: npm audit --audit-level=high
+        continue-on-error: true
 
       - name: Auto-fix with ESLint
         run: |
@@ -71,7 +76,7 @@ jobs:
         run: npm run test:coverage
 
       - name: Upload coverage report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: coverage-report
