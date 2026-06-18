@@ -193,8 +193,8 @@ describe("ProfileDetailPanel", () => {
         const statusSelect = statusLabel.parentElement?.querySelector("select");
 
         if (statusSelect) {
-          await userEvent.selectOptions(statusSelect, "Placed Candidate");
-          expect(statusSelect).toHaveValue("Placed Candidate");
+          await userEvent.selectOptions(statusSelect, "Placed at Other Company");
+          expect(statusSelect).toHaveValue("Placed at Other Company");
         }
       }
     });
@@ -261,7 +261,7 @@ describe("ProfileDetailPanel", () => {
         const statusSelect = statusLabel.parentElement?.querySelector("select");
 
         if (statusSelect) {
-          await userEvent.selectOptions(statusSelect, "Placed Candidate");
+          await userEvent.selectOptions(statusSelect, "Placed at Other Company");
         }
 
         // Click save

@@ -201,7 +201,8 @@ _SERVICE_CATEGORIES = {
 _CANDIDATE_STATUSES = {
     "Potential Candidate",
     "Active Candidate",
-    "Placed Candidate",
+    "Placed at Other Company",
+    "Placed with us",
     "Stale Candidate",
     "Do Not Contact",
 }

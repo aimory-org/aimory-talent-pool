@@ -102,7 +102,7 @@ function StatusCard({
   description,
 }: {
   status: string;
-  color: "blue" | "green" | "purple" | "yellow" | "red";
+  color: "blue" | "green" | "purple" | "teal" | "yellow" | "red";
   description: string;
 }) {
   const colorClasses: Record<typeof color, string> = {
@@ -111,6 +111,7 @@ function StatusCard({
       "bg-emerald-500/20 border-emerald-500/30 text-emerald-600 dark:text-emerald-400",
     purple:
       "bg-purple-500/20 border-purple-500/30 text-purple-600 dark:text-purple-400",
+    teal: "bg-teal-500/20 border-teal-500/30 text-teal-600 dark:text-teal-400",
     yellow:
       "bg-amber-500/20 border-amber-500/30 text-amber-600 dark:text-amber-400",
     red: "bg-red-500/20 border-red-500/30 text-red-600 dark:text-red-400",
@@ -245,9 +246,14 @@ export function UserGuide() {
             description="Currently being considered for opportunities. Actively in your pipeline."
           />
           <StatusCard
-            status="Placed Candidate"
+            status="Placed with us"
+            color="teal"
+            description="Successfully placed by us. Kept for future reference."
+          />
+          <StatusCard
+            status="Placed at Other Company"
             color="purple"
-            description="Successfully placed in a position. Kept for future reference."
+            description="Was already placed elsewhere when reviewed."
           />
           <StatusCard
             status="Stale Candidate"

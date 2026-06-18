@@ -144,3 +144,25 @@ python scripts/run_dedup.py --env dev --region us-east-1
 | `--env` | `dev` | Environment name |
 | `--region` | `us-east-1` | AWS region |
 | `--dry-run` | off | Preview changes without applying them |
+
+---
+
+### `migrate_placed_candidate_status.py`
+
+One-off migration that updates any profile with the retired `"Placed Candidate"` status to `"Placed at Other Company"`. This status was split into `"Placed at Other Company"` and `"Placed with us"`; since there's no automated way to tell which existing placements were made by this agency, every old record is migrated to `"Placed at Other Company"` and any that should actually be `"Placed with us"` need to be corrected manually afterward via the dashboard.
+
+**Always run with `--dry-run` first** to review the affected profiles before applying.
+
+```bash
+# Preview what would be changed
+python scripts/migrate_placed_candidate_status.py --dry-run
+
+# Apply changes
+python scripts/migrate_placed_candidate_status.py --env dev --region us-east-1
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--env` | `dev` | Environment name |
+| `--region` | `us-east-1` | AWS region |
+| `--dry-run` | off | Preview changes without applying them |

@@ -108,7 +108,7 @@ export const mockTalents: TalentProfile[] = [
     notes: "",
     tags: [],
     resume_text: "",
-    status: "Placed Candidate",
+    status: "Placed at Other Company",
     date_received: "2023-11-01T00:00:00Z",
     updated_at: "2024-03-10T08:00:00Z",
   },

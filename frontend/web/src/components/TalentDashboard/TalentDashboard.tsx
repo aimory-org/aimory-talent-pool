@@ -317,7 +317,7 @@ export function TalentDashboard() {
         (p) => p.status === "Active Candidate",
       ).length,
       placedCount: displayedProfiles.filter(
-        (p) => p.status === "Placed Candidate",
+        (p) => p.status === "Placed at Other Company" || p.status === "Placed with us",
       ).length,
     }),
     [displayedProfiles],
