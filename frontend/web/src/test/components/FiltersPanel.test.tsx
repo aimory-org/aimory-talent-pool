@@ -31,6 +31,8 @@ describe("FiltersPanel", () => {
       no_location: 0,
     },
     totalWarningCount: 0,
+    warningsFilterActive: false,
+    onToggleWarningsFilter: vi.fn(),
     selectedWarningTypes: [],
     onWarningTypesChange: vi.fn(),
   };

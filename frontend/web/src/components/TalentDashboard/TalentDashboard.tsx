@@ -42,6 +42,7 @@ export function TalentDashboard() {
   );
   const [showFilters, setShowFilters] = useState(true);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [warningsFilterActive, setWarningsFilterActive] = useState(false);
   const [selectedWarningTypes, setSelectedWarningTypes] = useState<WarningType[]>([]);
   const [showProcessingBanner, setShowProcessingBanner] = useState(false);
   const processingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -267,11 +268,14 @@ export function TalentDashboard() {
 
   // Client-side warnings filter
   const displayedProfiles = useMemo(() => {
-    if (selectedWarningTypes.length === 0) return sortedProfiles;
+    if (!warningsFilterActive) return sortedProfiles;
+    if (selectedWarningTypes.length === 0) {
+      return sortedProfiles.filter((p) => getProfileWarnings(p).length > 0);
+    }
     return sortedProfiles.filter((p) =>
       getProfileWarnings(p).some((w) => selectedWarningTypes.includes(w)),
     );
-  }, [sortedProfiles, selectedWarningTypes]);
+  }, [sortedProfiles, warningsFilterActive, selectedWarningTypes]);
 
   const warningCounts = useMemo(() => {
     const counts: Record<WarningType, number> = {
@@ -293,7 +297,7 @@ export function TalentDashboard() {
   );
 
   // Reset to first page when filters / sort change (derived-state avoids effect)
-  const resetKey = `${JSON.stringify(filters)}|${sortField}|${sortDirection}|${selectedWarningTypes.join(",")}`;
+  const resetKey = `${JSON.stringify(filters)}|${sortField}|${sortDirection}|${String(warningsFilterActive)}|${selectedWarningTypes.join(",")}`;
   const [lastResetKey, setLastResetKey] = useState(resetKey);
   if (lastResetKey !== resetKey) {
     setLastResetKey(resetKey);
@@ -471,6 +475,14 @@ export function TalentDashboard() {
             lookupTags={lookupTags}
             warningCounts={warningCounts}
             totalWarningCount={totalWarningCount}
+            warningsFilterActive={warningsFilterActive}
+            onToggleWarningsFilter={() => {
+              setWarningsFilterActive((active) => {
+                const next = !active;
+                if (!next) setSelectedWarningTypes([]);
+                return next;
+              });
+            }}
             selectedWarningTypes={selectedWarningTypes}
             onWarningTypesChange={setSelectedWarningTypes}
           />
