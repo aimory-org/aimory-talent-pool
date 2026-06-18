@@ -166,7 +166,7 @@ export function FiltersPanel({
         </div>
 
         {warningsFilterActive && selectedWarningTypes.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mb-5">
+          <div className="flex flex-wrap justify-end gap-1.5 mb-5">
             {selectedWarningTypes.map((type) => (
               <span
                 key={type}
