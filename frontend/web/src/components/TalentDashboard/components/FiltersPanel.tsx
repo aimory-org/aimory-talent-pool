@@ -13,6 +13,8 @@ import {
 } from "@/types/talent";
 import { deleteTag } from "@/lib/api";
 import type { Filters } from "../types";
+import type { WarningType } from "../warnings";
+import { WARNING_TYPES } from "../warnings";
 
 interface City {
   city: string;
@@ -34,9 +36,10 @@ interface FiltersPanelProps {
   lookupIndustryCategories: string[];
   lookupCities: City[];
   lookupTags?: string[];
-  duplicateCount?: number;
-  showDuplicatesOnly?: boolean;
-  onToggleDuplicates?: () => void;
+  warningCounts: Record<WarningType, number>;
+  totalWarningCount: number;
+  selectedWarningTypes: WarningType[];
+  onWarningTypesChange: (types: WarningType[]) => void;
 }
 
 export function FiltersPanel({
@@ -54,13 +57,15 @@ export function FiltersPanel({
   lookupIndustryCategories,
   lookupCities,
   lookupTags = [],
-  duplicateCount = 0,
-  showDuplicatesOnly = false,
-  onToggleDuplicates,
+  warningCounts,
+  totalWarningCount,
+  selectedWarningTypes,
+  onWarningTypesChange,
 }: FiltersPanelProps) {
   const [managingTags, setManagingTags] = useState(false);
   const [confirmDeleteTag, setConfirmDeleteTag] = useState<string | null>(null);
   const [deletingTag, setDeletingTag] = useState<string | null>(null);
+  const [showWarningTypes, setShowWarningTypes] = useState(false);
 
   const handleDeleteTag = async (tag: string) => {
     if (confirmDeleteTag !== tag) {
@@ -111,11 +116,11 @@ export function FiltersPanel({
               Clear all ({activeFilterCount})
             </button>
           )}
-          {duplicateCount > 0 && onToggleDuplicates && (
+          {totalWarningCount > 0 && (
             <button
-              onClick={onToggleDuplicates}
+              onClick={() => setShowWarningTypes((v) => !v)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
-                showDuplicatesOnly
+                selectedWarningTypes.length > 0 || showWarningTypes
                   ? "bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300"
                   : "border border-black/6 dark:border-white/6 text-foreground/40 hover:text-amber-600 dark:hover:text-amber-400 hover:border-amber-500/20"
               }`}
@@ -124,12 +129,12 @@ export function FiltersPanel({
               Warnings
               <span
                 className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                  showDuplicatesOnly
+                  selectedWarningTypes.length > 0 || showWarningTypes
                     ? "bg-amber-500 text-white"
                     : "bg-amber-500/15 text-amber-600 dark:text-amber-400"
                 }`}
               >
-                {duplicateCount}
+                {totalWarningCount}
               </span>
             </button>
           )}
@@ -137,6 +142,54 @@ export function FiltersPanel({
 
         {/* All filters in a single grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          {showWarningTypes && (
+            <div className="space-y-2">
+              <Label className="text-amber-600 dark:text-amber-400">
+                Warning Type{" "}
+                {selectedWarningTypes.length > 0 && (
+                  <span>({selectedWarningTypes.length})</span>
+                )}
+              </Label>
+              <SearchableSelect
+                value=""
+                onValueChange={(v) => {
+                  const type = v as WarningType;
+                  if (type && !selectedWarningTypes.includes(type)) {
+                    onWarningTypesChange([...selectedWarningTypes, type]);
+                  }
+                }}
+                options={WARNING_TYPES.filter(
+                  (w) => !selectedWarningTypes.includes(w.value),
+                ).map((w) => ({
+                  value: w.value,
+                  label: `${w.label} (${warningCounts[w.value]})`,
+                }))}
+                placeholder="Add warning type..."
+              />
+              {selectedWarningTypes.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {selectedWarningTypes.map((type) => (
+                    <span
+                      key={type}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 text-xs border border-amber-500/30 hover:bg-amber-500/30 transition-colors"
+                    >
+                      {WARNING_TYPES.find((w) => w.value === type)?.label}
+                      <button
+                        onClick={() =>
+                          onWarningTypesChange(
+                            selectedWarningTypes.filter((t) => t !== type),
+                          )
+                        }
+                        className="hover:text-foreground ml-0.5"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           <div className="space-y-2">
             <Label className="text-foreground/70">Status</Label>
             <SearchableSelect

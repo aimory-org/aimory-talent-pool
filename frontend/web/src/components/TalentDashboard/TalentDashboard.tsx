@@ -15,6 +15,8 @@ import { uploadResume, listTalents } from "@/lib/api";
 import type { TalentProfile } from "@/types/talent";
 import type { Filters, SortField, SortDirection } from "./types";
 import { DEFAULT_FILTERS } from "./types";
+import type { WarningType } from "./warnings";
+import { getProfileWarnings } from "./warnings";
 import { StatsCards } from "./components/StatsCards";
 import { ManualUploadButton } from "./components/ManualUploadButton";
 import { UploadModal } from "./components/UploadModal";
@@ -40,7 +42,7 @@ export function TalentDashboard() {
   );
   const [showFilters, setShowFilters] = useState(true);
   const [showUploadModal, setShowUploadModal] = useState(false);
-  const [showDuplicatesOnly, setShowDuplicatesOnly] = useState(false);
+  const [selectedWarningTypes, setSelectedWarningTypes] = useState<WarningType[]>([]);
   const [showProcessingBanner, setShowProcessingBanner] = useState(false);
   const processingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -263,19 +265,35 @@ export function TalentDashboard() {
     return result;
   }, [talents, sortField, sortDirection]);
 
-  // Client-side duplicate filter
+  // Client-side warnings filter
   const displayedProfiles = useMemo(() => {
-    if (!showDuplicatesOnly) return sortedProfiles;
-    return sortedProfiles.filter((p) => p.possible_duplicate_of);
-  }, [sortedProfiles, showDuplicatesOnly]);
+    if (selectedWarningTypes.length === 0) return sortedProfiles;
+    return sortedProfiles.filter((p) =>
+      getProfileWarnings(p).some((w) => selectedWarningTypes.includes(w)),
+    );
+  }, [sortedProfiles, selectedWarningTypes]);
 
-  const duplicateCount = useMemo(
-    () => talents.filter((p) => p.possible_duplicate_of).length,
+  const warningCounts = useMemo(() => {
+    const counts: Record<WarningType, number> = {
+      duplicate: 0,
+      missing_name: 0,
+      missing_job_title: 0,
+      no_skills: 0,
+      no_location: 0,
+    };
+    for (const p of talents) {
+      for (const w of getProfileWarnings(p)) counts[w]++;
+    }
+    return counts;
+  }, [talents]);
+
+  const totalWarningCount = useMemo(
+    () => talents.filter((p) => getProfileWarnings(p).length > 0).length,
     [talents],
   );
 
   // Reset to first page when filters / sort change (derived-state avoids effect)
-  const resetKey = `${JSON.stringify(filters)}|${sortField}|${sortDirection}|${String(showDuplicatesOnly)}`;
+  const resetKey = `${JSON.stringify(filters)}|${sortField}|${sortDirection}|${selectedWarningTypes.join(",")}`;
   const [lastResetKey, setLastResetKey] = useState(resetKey);
   if (lastResetKey !== resetKey) {
     setLastResetKey(resetKey);
@@ -451,11 +469,10 @@ export function TalentDashboard() {
             lookupIndustryCategories={lookupIndustryCategories}
             lookupCities={lookupCities}
             lookupTags={lookupTags}
-            duplicateCount={duplicateCount}
-            showDuplicatesOnly={showDuplicatesOnly}
-            onToggleDuplicates={() =>
-              setShowDuplicatesOnly(!showDuplicatesOnly)
-            }
+            warningCounts={warningCounts}
+            totalWarningCount={totalWarningCount}
+            selectedWarningTypes={selectedWarningTypes}
+            onWarningTypesChange={setSelectedWarningTypes}
           />
         )}
 

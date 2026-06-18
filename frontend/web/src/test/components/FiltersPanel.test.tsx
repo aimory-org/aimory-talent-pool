@@ -23,6 +23,16 @@ describe("FiltersPanel", () => {
       { city: "New York", state: "NY" },
       { city: "Chicago", state: "IL" },
     ],
+    warningCounts: {
+      duplicate: 0,
+      missing_name: 0,
+      missing_job_title: 0,
+      no_skills: 0,
+      no_location: 0,
+    },
+    totalWarningCount: 0,
+    selectedWarningTypes: [],
+    onWarningTypesChange: vi.fn(),
   };
 
   describe("Rendering", () => {

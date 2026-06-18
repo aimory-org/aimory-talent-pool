@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/table";
 import type { TalentProfile } from "@/types/talent";
 import type { SortField, SortDirection } from "../types";
+import { getProfileWarnings, WARNING_LABELS } from "../warnings";
 import { StatusBadge } from "./StatusBadge";
 import { ClearanceBadge } from "./ClearanceBadge";
 import { SortableHeader } from "./SortableHeader";
@@ -302,16 +303,22 @@ export function TalentTable({
                         <div className="h-9 w-9 rounded-full bg-linear-to-br from-indigo-500/40 to-violet-600/40 flex items-center justify-center border border-indigo-500/20 dark:border-indigo-400/20 text-indigo-600 dark:text-indigo-300 font-semibold text-sm shadow-sm">
                           {(profile.name || "?").charAt(0).toUpperCase()}
                         </div>
-                        {profile.possible_duplicate_of && (
-                          <span
-                            className="absolute -top-1 -right-1 flex items-center justify-center h-4 w-4 rounded-full bg-amber-500 border-2 border-white dark:border-slate-800"
-                            title="Possible duplicate"
-                          >
-                            <span className="text-white text-[9px] font-bold leading-none">
-                              !
+                        {(() => {
+                          const warnings = getProfileWarnings(profile);
+                          if (warnings.length === 0) return null;
+                          return (
+                            <span
+                              className="absolute -top-1 -right-1 flex items-center justify-center h-4 w-4 rounded-full bg-amber-500 border-2 border-white dark:border-slate-800"
+                              title={warnings
+                                .map((w) => WARNING_LABELS[w])
+                                .join(", ")}
+                            >
+                              <span className="text-white text-[9px] font-bold leading-none">
+                                !
+                              </span>
                             </span>
-                          </span>
-                        )}
+                          );
+                        })()}
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="font-medium text-foreground group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors truncate">
