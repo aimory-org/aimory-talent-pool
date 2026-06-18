@@ -338,8 +338,11 @@ export function TalentDashboard() {
       activeCount: displayedProfiles.filter(
         (p) => p.status === "Active Candidate",
       ).length,
-      placedCount: displayedProfiles.filter(
-        (p) => p.status === "Placed at Other Company" || p.status === "Placed with us",
+      placedWithUsCount: displayedProfiles.filter(
+        (p) => p.status === "Placed with us",
+      ).length,
+      placedOtherCount: displayedProfiles.filter(
+        (p) => p.status === "Placed at Other Company",
       ).length,
     }),
     [displayedProfiles],

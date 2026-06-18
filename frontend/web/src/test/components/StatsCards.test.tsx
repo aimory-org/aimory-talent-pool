@@ -10,7 +10,8 @@ describe("StatsCards", () => {
     total: 100,
     potentialCount: 40,
     activeCount: 35,
-    placedCount: 25,
+    placedWithUsCount: 15,
+    placedOtherCount: 10,
   };
 
   it("renders total count", () => {
@@ -31,10 +32,13 @@ describe("StatsCards", () => {
     expect(screen.getByText("Active")).toBeInTheDocument();
   });
 
-  it("renders placed count", () => {
+  it("renders placed counts", () => {
     render(<StatsCards stats={defaultStats} />);
-    expect(screen.getByText("25")).toBeInTheDocument();
+    expect(screen.getByText("15")).toBeInTheDocument();
+    expect(screen.getByText("10")).toBeInTheDocument();
     expect(screen.getByText("Placed")).toBeInTheDocument();
+    expect(screen.getByText("With us")).toBeInTheDocument();
+    expect(screen.getByText("Outside")).toBeInTheDocument();
   });
 
   it("displays zero counts correctly", () => {
@@ -42,14 +46,15 @@ describe("StatsCards", () => {
       total: 0,
       potentialCount: 0,
       activeCount: 0,
-      placedCount: 0,
+      placedWithUsCount: 0,
+      placedOtherCount: 0,
     };
 
     render(<StatsCards stats={zeroStats} />);
 
-    // Should have four "0" values
+    // Should have five "0" values
     const zeros = screen.getAllByText("0");
-    expect(zeros).toHaveLength(4);
+    expect(zeros).toHaveLength(5);
   });
 
   it("displays large numbers", () => {
@@ -57,7 +62,8 @@ describe("StatsCards", () => {
       total: 10000,
       potentialCount: 5000,
       activeCount: 3000,
-      placedCount: 2000,
+      placedWithUsCount: 1200,
+      placedOtherCount: 800,
     };
 
     render(<StatsCards stats={largeStats} />);
@@ -65,13 +71,14 @@ describe("StatsCards", () => {
     expect(screen.getByText("10000")).toBeInTheDocument();
     expect(screen.getByText("5000")).toBeInTheDocument();
     expect(screen.getByText("3000")).toBeInTheDocument();
-    expect(screen.getByText("2000")).toBeInTheDocument();
+    expect(screen.getByText("1200")).toBeInTheDocument();
+    expect(screen.getByText("800")).toBeInTheDocument();
   });
 
-  it("renders all four stat cards", () => {
+  it("renders all stat cards", () => {
     const { container } = render(<StatsCards stats={defaultStats} />);
 
-    // Should have 4 stat cards in the grid
+    // Should have 4 stat cards in the grid (3 simple + 1 split Placed card)
     const grid = container.querySelector(".grid");
     expect(grid).toBeInTheDocument();
     expect(grid?.children).toHaveLength(4);

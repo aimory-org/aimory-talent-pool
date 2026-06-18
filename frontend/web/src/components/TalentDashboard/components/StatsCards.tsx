@@ -7,7 +7,8 @@ interface Stats {
   total: number;
   potentialCount: number;
   activeCount: number;
-  placedCount: number;
+  placedWithUsCount: number;
+  placedOtherCount: number;
 }
 
 interface StatsCardsProps {
@@ -51,23 +52,11 @@ const cards = [
     labelColor: "text-indigo-600/60 dark:text-indigo-400/60",
     stagger: "stagger-3",
   },
-  {
-    key: "placedCount" as const,
-    label: "Placed",
-    icon: UserCheck,
-    color: "from-violet-500/15 to-purple-500/5",
-    border: "border-violet-400/50",
-    glow: "group-hover:shadow-violet-500/20",
-    iconColor: "text-violet-500 dark:text-violet-400",
-    textColor: "text-violet-600 dark:text-violet-300",
-    labelColor: "text-violet-600/60 dark:text-violet-400/60",
-    stagger: "stagger-4",
-  },
 ];
 
 export function StatsCards({ stats }: StatsCardsProps) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
       {cards.map((card) => {
         const Icon = card.icon;
         const value = stats[card.key];
@@ -100,6 +89,52 @@ export function StatsCards({ stats }: StatsCardsProps) {
           </div>
         );
       })}
+
+      {/* Placed — "With us" / "Outside" breakdown to the right of the label */}
+      <div className="relative animate-fade-in stagger-4 col-span-2 overflow-hidden rounded-2xl border bg-linear-to-br from-violet-500/15 to-purple-500/5 border-violet-400/50 p-4 cursor-default">
+        <div className="absolute inset-0 bg-linear-to-br from-white/40 to-transparent dark:from-white/5 pointer-events-none rounded-2xl" />
+        <div className="relative flex items-stretch gap-4">
+          <div className="flex flex-col">
+            <div className="h-7 flex items-center mb-3">
+              <span className="text-[11px] font-semibold uppercase tracking-widest text-violet-600/60 dark:text-violet-400/60">
+                Placed
+              </span>
+            </div>
+            <div className="h-9 flex items-center">
+              <div className="p-1.5 rounded-lg bg-white/50 dark:bg-black/20 shrink-0 text-violet-500 dark:text-violet-400">
+                <UserCheck className="h-3.5 w-3.5" />
+              </div>
+            </div>
+          </div>
+          <div className="flex items-stretch gap-4 ml-3">
+            <div className="flex flex-col">
+              <div className="h-7 flex items-center mb-3">
+                <span className="text-xs font-semibold uppercase tracking-widest text-violet-600/50 dark:text-violet-400/50">
+                  With us
+                </span>
+              </div>
+              <div className="h-9 flex items-center">
+                <p className="text-3xl font-bold tabular-nums tracking-tight animate-count-up stagger-4 text-violet-600 dark:text-violet-300">
+                  {stats.placedWithUsCount}
+                </p>
+              </div>
+            </div>
+            <div className="-my-4 w-px bg-violet-400/30 dark:bg-violet-400/20" />
+            <div className="flex flex-col">
+              <div className="h-7 flex items-center mb-3">
+                <span className="text-xs font-semibold uppercase tracking-widest text-violet-600/50 dark:text-violet-400/50">
+                  Outside
+                </span>
+              </div>
+              <div className="h-9 flex items-center">
+                <p className="text-3xl font-bold tabular-nums tracking-tight animate-count-up stagger-4 text-violet-600 dark:text-violet-300">
+                  {stats.placedOtherCount}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
