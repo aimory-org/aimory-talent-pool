@@ -95,16 +95,15 @@ export function StatsCards({ stats }: StatsCardsProps) {
         <div className="absolute inset-0 bg-linear-to-br from-white/40 to-transparent dark:from-white/5 pointer-events-none rounded-2xl" />
         <div className="relative flex items-stretch gap-4">
           <div className="flex flex-col">
-            <div className="h-7 flex items-center mb-3">
+            <div className="h-7 flex items-center justify-between gap-3 mb-3">
               <span className="text-[11px] font-semibold uppercase tracking-widest text-violet-600/60 dark:text-violet-400/60">
                 Placed
               </span>
-            </div>
-            <div className="h-9 flex items-center">
               <div className="p-1.5 rounded-lg bg-white/50 dark:bg-black/20 shrink-0 text-violet-500 dark:text-violet-400">
                 <UserCheck className="h-3.5 w-3.5" />
               </div>
             </div>
+            <div className="h-9" />
           </div>
           <div className="flex items-stretch gap-4 ml-3">
             <div className="flex flex-col">
