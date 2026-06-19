@@ -46,6 +46,7 @@ import {
 import { StatusBadge } from "./components/StatusBadge";
 import { ClearanceBadge } from "./components/ClearanceBadge";
 import { ProfileHistory } from "./components/ProfileHistory";
+import { getProfileWarnings, WARNING_LABELS } from "./warnings";
 
 interface ProfileDetailPanelProps {
   profile: TalentProfile;
@@ -2000,6 +2001,33 @@ export function ProfileDetailPanel({
                 </div>
               </div>
             )}
+
+            {/* Data Quality Warnings */}
+            {!isEditMode &&
+              (() => {
+                const dataWarnings = getProfileWarnings(profile).filter(
+                  (w) => w !== "duplicate",
+                );
+                if (dataWarnings.length === 0) return null;
+                return (
+                  <div className="bg-amber-500/10 rounded-xl p-4 border border-amber-500/30">
+                    <p className="text-amber-700 dark:text-amber-300 text-sm font-medium mb-2">
+                      ⚠ Data quality warnings
+                    </p>
+                    <ul className="space-y-1">
+                      {dataWarnings.map((w) => (
+                        <li
+                          key={w}
+                          className="text-amber-600 dark:text-amber-400 text-xs flex items-center gap-1.5"
+                        >
+                          <span className="h-1 w-1 rounded-full bg-amber-500" />
+                          {WARNING_LABELS[w]}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })()}
 
             {/* Contact Section */}
             <div className="space-y-3">

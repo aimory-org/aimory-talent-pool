@@ -131,9 +131,9 @@ describe("API Client", () => {
         }),
       );
 
-      await updateTalent("bucket1#resume1.pdf", { status: "Placed Candidate" });
+      await updateTalent("bucket1#resume1.pdf", { status: "Placed at Other Company" });
 
-      expect(capturedBody).toEqual({ status: "Placed Candidate" });
+      expect(capturedBody).toEqual({ status: "Placed at Other Company" });
     });
 
     it("handles partial update with multiple fields", async () => {

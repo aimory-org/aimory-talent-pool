@@ -8,8 +8,15 @@ interface StatusBadgeProps {
   status: CandidateStatus;
 }
 
+const FALLBACK_CFG = {
+  badge: "bg-gray-500/12 text-gray-700 dark:text-gray-300 border-gray-500/25",
+  dot: "bg-gray-500",
+};
+
 export function StatusBadge({ status }: StatusBadgeProps) {
-  const cfg = statusConfig[status];
+  // status is a stored DB value and may briefly hold a retired status
+  // (e.g. "Placed Candidate") between a status rename and its data migration.
+  const cfg = statusConfig[status] ?? FALLBACK_CFG;
   return (
     <span
       className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border whitespace-nowrap ${cfg.badge}`}

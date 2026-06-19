@@ -250,12 +250,12 @@ describe("useTalents", () => {
       await act(async () => {
         await result.current.updateStatus(
           result.current.talents[0].pk,
-          "Placed Candidate",
+          "Placed at Other Company",
         );
       });
 
       // Status should be updated optimistically
-      expect(result.current.talents[0].status).toBe("Placed Candidate");
+      expect(result.current.talents[0].status).toBe("Placed at Other Company");
       expect(result.current.talents[0].status).not.toBe(originalStatus);
     });
 
@@ -271,7 +271,7 @@ describe("useTalents", () => {
       await act(async () => {
         await result.current.updateStatus(
           result.current.talents[0].pk,
-          "Placed Candidate",
+          "Placed at Other Company",
         );
       });
 
@@ -297,7 +297,7 @@ describe("useTalents", () => {
         try {
           await result.current.updateStatus(
             result.current.talents[0].pk,
-            "Placed Candidate",
+            "Placed at Other Company",
           );
         } catch {
           // Expected to throw
@@ -320,12 +320,12 @@ describe("useTalents", () => {
       await act(async () => {
         await result.current.updateStatus(
           result.current.talents[0].pk,
-          "Placed Candidate",
+          "Placed at Other Company",
         );
       });
 
       // First talent updated
-      expect(result.current.talents[0].status).toBe("Placed Candidate");
+      expect(result.current.talents[0].status).toBe("Placed at Other Company");
       // Second talent unchanged
       expect(result.current.talents[1].status).toBe(secondTalentStatus);
     });

@@ -46,7 +46,8 @@ export interface TalentProfile {
 export type CandidateStatus =
   | "Potential Candidate"
   | "Active Candidate"
-  | "Placed Candidate"
+  | "Placed at Other Company"
+  | "Placed with us"
   | "Stale Candidate"
   | "Do Not Contact";
 
@@ -69,7 +70,8 @@ export type ClearanceLevel =
 export const CANDIDATE_STATUSES: { value: CandidateStatus; label: string }[] = [
   { value: "Active Candidate", label: "Active Candidate" },
   { value: "Do Not Contact", label: "Do Not Contact" },
-  { value: "Placed Candidate", label: "Placed Candidate" },
+  { value: "Placed at Other Company", label: "Placed at Other Company" },
+  { value: "Placed with us", label: "Placed with us" },
   { value: "Potential Candidate", label: "Potential Candidate" },
   { value: "Stale Candidate", label: "Stale Candidate" },
 ];

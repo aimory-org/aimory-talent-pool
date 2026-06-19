@@ -27,7 +27,8 @@ TAGS_LOOKUP_TABLE = os.environ.get("TAGS_LOOKUP_TABLE", "")
 VALID_STATUSES = {
     "Active Candidate",
     "Do Not Contact",
-    "Placed Candidate",
+    "Placed at Other Company",
+    "Placed with us",
     "Potential Candidate",
     "Stale Candidate",
 }

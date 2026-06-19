@@ -870,7 +870,7 @@ aimory-talent-pool-dev-frontend-{acct-id}   # S3`}</CodeBlock>
   requested_salary:     number | null
   tags:                 string[]
   notes:                string
-  status:               "Potential Candidate" | "Active Candidate" | "Placed Candidate" | "Stale Candidate" | "Do Not Contact"
+  status:               "Potential Candidate" | "Active Candidate" | "Placed at Other Company" | "Placed with us" | "Stale Candidate" | "Do Not Contact"
   date_received:        string    // ISO 8601
   updated_at:           string    // ISO 8601
   resume_text:          string    // full extracted text (not shown in UI)

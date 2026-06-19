@@ -71,7 +71,15 @@ class TestStaleCheckerHandler:
             Item={
                 "pk": "b#placed",
                 "name": "Placed",
-                "status": "Placed Candidate",
+                "status": "Placed at Other Company",
+                "date_received": _date_days_ago(200),
+            }
+        )
+        talent_profiles_table.put_item(
+            Item={
+                "pk": "b#placed-with-us",
+                "name": "Placed With Us",
+                "status": "Placed with us",
                 "date_received": _date_days_ago(200),
             }
         )

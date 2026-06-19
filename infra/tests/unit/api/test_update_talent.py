@@ -38,6 +38,12 @@ class TestUpdateTalentValidation:
         resp = app.handler(_make_event("b#k", {"status": "BadStatus"}), None)
         assert resp["statusCode"] == 400
 
+    def test_retired_placed_candidate_status_returns_400(self, talent_profiles_table):
+        talent_profiles_table.put_item(Item={"pk": "b#k"})
+        app = _reload_app()
+        resp = app.handler(_make_event("b#k", {"status": "Placed Candidate"}), None)
+        assert resp["statusCode"] == 400
+
     def test_invalid_service_category_returns_400(self, talent_profiles_table):
         talent_profiles_table.put_item(Item={"pk": "b#k"})
         app = _reload_app()
@@ -76,6 +82,22 @@ class TestUpdateTalentSuccess:
         assert resp["statusCode"] == 200
         body = json.loads(resp["body"])
         assert body["profile"]["status"] == "Active Candidate"
+
+    def test_update_status_placed_at_other_company(self, talent_profiles_table):
+        talent_profiles_table.put_item(Item={"pk": "b#k", "status": "Active Candidate"})
+        app = _reload_app()
+        resp = app.handler(_make_event("b#k", {"status": "Placed at Other Company"}), None)
+        assert resp["statusCode"] == 200
+        body = json.loads(resp["body"])
+        assert body["profile"]["status"] == "Placed at Other Company"
+
+    def test_update_status_placed_with_us(self, talent_profiles_table):
+        talent_profiles_table.put_item(Item={"pk": "b#k", "status": "Active Candidate"})
+        app = _reload_app()
+        resp = app.handler(_make_event("b#k", {"status": "Placed with us"}), None)
+        assert resp["statusCode"] == 200
+        body = json.loads(resp["body"])
+        assert body["profile"]["status"] == "Placed with us"
 
     def test_update_requested_salary_decimal(self, talent_profiles_table):
         talent_profiles_table.put_item(Item={"pk": "b#k"})

@@ -10,7 +10,8 @@ describe("StatusBadge", () => {
   const statuses: CandidateStatus[] = [
     "Potential Candidate",
     "Active Candidate",
-    "Placed Candidate",
+    "Placed at Other Company",
+    "Placed with us",
     "Stale Candidate",
     "Do Not Contact",
   ];
@@ -32,10 +33,16 @@ describe("StatusBadge", () => {
     expect(badge).toHaveClass("bg-indigo-500/12");
   });
 
-  it("applies correct styling for Placed Candidate", () => {
-    render(<StatusBadge status="Placed Candidate" />);
-    const badge = screen.getByText("Placed Candidate");
+  it("applies correct styling for Placed at Other Company", () => {
+    render(<StatusBadge status="Placed at Other Company" />);
+    const badge = screen.getByText("Placed at Other Company");
     expect(badge).toHaveClass("bg-violet-500/12");
+  });
+
+  it("applies correct styling for Placed with us", () => {
+    render(<StatusBadge status="Placed with us" />);
+    const badge = screen.getByText("Placed with us");
+    expect(badge).toHaveClass("bg-teal-500/12");
   });
 
   it("applies correct styling for Stale Candidate", () => {

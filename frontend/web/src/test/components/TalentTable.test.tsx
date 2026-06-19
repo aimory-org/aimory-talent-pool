@@ -46,7 +46,7 @@ describe("TalentTable", () => {
 
       expect(screen.getByText("Active Candidate")).toBeInTheDocument();
       expect(screen.getByText("Potential Candidate")).toBeInTheDocument();
-      expect(screen.getByText("Placed Candidate")).toBeInTheDocument();
+      expect(screen.getByText("Placed at Other Company")).toBeInTheDocument();
     });
 
     it("displays clearance badges when present", () => {

@@ -19,10 +19,15 @@ export const statusConfig: Record<CandidateStatus, StatusCfg> = {
       "bg-indigo-500/12 text-indigo-700 dark:text-indigo-300 border-indigo-500/25",
     dot: "bg-indigo-500",
   },
-  "Placed Candidate": {
+  "Placed at Other Company": {
     badge:
       "bg-violet-500/12 text-violet-700 dark:text-violet-300 border-violet-500/25",
     dot: "bg-violet-500",
+  },
+  "Placed with us": {
+    badge:
+      "bg-teal-500/12 text-teal-700 dark:text-teal-300 border-teal-500/25",
+    dot: "bg-teal-500",
   },
   "Stale Candidate": {
     badge:
