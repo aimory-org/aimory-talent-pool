@@ -4,17 +4,17 @@
 # Install with: pip install -r requirements-dev.txt
 
 # AWS SDK - matches Lambda runtime
-boto3>=1.43.30
+boto3>=1.43.34
 opensearch-py>=3.2.0     # Used by list_talents and sync_to_opensearch Lambdas
 
 # Testing
-pytest>=9.1.0
+pytest>=9.1.1
 pytest-cov>=7.1.0        # Coverage reports
 moto[all]>=5.2.2         # AWS service mocking
 
 # Code quality
 # black replaced by ruff format (ruff format is Black-compatible)
-ruff>=0.15.17              # Linter (replaces flake8, isort, etc.)
+ruff>=0.15.18              # Linter (replaces flake8, isort, etc.)
 bandit>=1.9.4            # Security linter (OWASP / SAST)
 pip-audit>=2.10.1         # Dependency vulnerability scanner (CVE/PyPI advisory DB)
 
