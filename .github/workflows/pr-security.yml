@@ -36,7 +36,8 @@ jobs:
 
       - name: Install Gitleaks
         run: |
-          curl -sSfL https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks_$(uname -s | tr '[:upper:]' '[:lower:]')_x64.tar.gz | tar -xz
+          VERSION=$(curl -sSf https://api.github.com/repos/gitleaks/gitleaks/releases/latest | jq -r '.tag_name | ltrimstr("v")')
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz" | tar -xz
           sudo mv gitleaks /usr/local/bin/
 
       - name: Run Gitleaks
