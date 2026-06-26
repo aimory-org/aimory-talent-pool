@@ -76,13 +76,17 @@ def handler(event, context):
         for field in (
             "status",
             "service_category",
-            "industry_category",
             "job_title",
             "clearance_level",
             "location_state",
         ):
             if params.get(field):
                 filters.append({"term": {field: params[field]}})
+
+        # Industry categories — each must be present (AND logic)
+        if params.get("industry_category"):
+            for cat in [c.strip() for c in params["industry_category"].split(",") if c.strip()]:
+                filters.append({"term": {"industry_category": cat}})
 
         if params.get("city"):
             filters.append({"term": {"location.city": params["city"]}})

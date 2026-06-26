@@ -25,6 +25,7 @@ interface FiltersPanelProps {
   filters: Filters;
   onFilterChange: (key: keyof Filters, value: string) => void;
   onClearFilters: () => void;
+  onIndustryCategoriesChange: (categories: string[]) => void;
   onSkillsChange: (skills: string[]) => void;
   onCertificationsChange: (certifications: string[]) => void;
   onTagsChange?: (tags: string[]) => void;
@@ -48,6 +49,7 @@ export function FiltersPanel({
   filters,
   onFilterChange,
   onClearFilters,
+  onIndustryCategoriesChange,
   onSkillsChange,
   onCertificationsChange,
   onTagsChange,
@@ -209,18 +211,48 @@ export function FiltersPanel({
             />
           </div>
           <div className="space-y-2">
-            <Label className="text-foreground/70">Industry</Label>
+            <Label className="text-foreground/70">
+              Industry{" "}
+              {filters.industry_categories.length > 0 && (
+                <span className="text-purple-600 dark:text-purple-400">
+                  ({filters.industry_categories.length})
+                </span>
+              )}
+            </Label>
             <SearchableSelect
-              value={filters.industry_category}
-              onValueChange={(v) => onFilterChange("industry_category", v)}
+              value=""
+              onValueChange={(cat) => {
+                if (cat && !filters.industry_categories.includes(cat)) {
+                  onIndustryCategoriesChange([...filters.industry_categories, cat]);
+                }
+              }}
               options={lookupIndustryCategories
-                .filter((ic) => ic !== "Healthcare")
-                .map((ic) => ({
-                  value: ic,
-                  label: ic,
-                }))}
-              placeholder="All industries"
+                .filter((ic) => ic !== "Healthcare" && !filters.industry_categories.includes(ic))
+                .map((ic) => ({ value: ic, label: ic }))}
+              placeholder="Add industry..."
             />
+            {filters.industry_categories.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {filters.industry_categories.map((cat) => (
+                  <span
+                    key={cat}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-700 dark:text-purple-300 text-xs border border-purple-500/30 hover:bg-purple-500/30 transition-colors"
+                  >
+                    {cat}
+                    <button
+                      onClick={() =>
+                        onIndustryCategoriesChange(
+                          filters.industry_categories.filter((c) => c !== cat),
+                        )
+                      }
+                      className="hover:text-foreground ml-0.5"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
           <div className="space-y-2">
             <Label className="text-foreground/70">Job Title</Label>

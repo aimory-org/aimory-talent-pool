@@ -60,7 +60,7 @@ export function TalentDashboard() {
   } = useTalents({
     status: filters.status || undefined,
     service_category: filters.service_category || undefined,
-    industry_category: filters.industry_category || undefined,
+    industry_categories: filters.industry_categories.length > 0 ? filters.industry_categories : undefined,
     job_title: filters.job_title || undefined,
     clearance_level: filters.clearance_level || undefined,
     location_state: filters.location_state || undefined,
@@ -118,6 +118,10 @@ export function TalentDashboard() {
     },
     [lookupCities, filters.city],
   );
+
+  const handleIndustryCategoriesChange = useCallback((industry_categories: string[]) => {
+    setFilters((prev) => ({ ...prev, industry_categories }));
+  }, []);
 
   const handleSkillsChange = useCallback((skills: string[]) => {
     setFilters((prev) => ({ ...prev, skills }));
@@ -322,7 +326,7 @@ export function TalentDashboard() {
   // Calculate active filter count
   const activeFilterCount = useMemo(() => {
     return Object.entries(filters).filter(([key, v]) =>
-      key === "skills" || key === "certifications" || key === "tags"
+      key === "skills" || key === "certifications" || key === "tags" || key === "industry_categories"
         ? (v as string[]).length > 0
         : v !== "",
     ).length;
@@ -465,6 +469,7 @@ export function TalentDashboard() {
             filters={filters}
             onFilterChange={handleFilterChange}
             onClearFilters={clearFilters}
+            onIndustryCategoriesChange={handleIndustryCategoriesChange}
             onSkillsChange={handleSkillsChange}
             onCertificationsChange={handleCertificationsChange}
             onTagsChange={handleTagsChange}
