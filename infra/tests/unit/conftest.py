@@ -60,6 +60,8 @@ _LAMBDA_DIRS = [
     "modules/api/lambda_src/delete_job_description",
     "modules/api/lambda_src/match_candidates",
     "modules/api/lambda_src/get_jd_upload_url",
+    "modules/api/lambda_src/bulk_update_talents",
+    "modules/api/lambda_src/bulk_delete_talents",
 ]
 
 # Add the unit tests directory itself so _lambda_loader is importable from subfolders.

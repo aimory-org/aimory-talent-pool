@@ -28,6 +28,11 @@ interface TalentTableProps {
   onClearFilters: () => void;
   searchActive?: boolean;
   searchTerm?: string;
+  // Selection props (optional — omit to disable checkboxes)
+  selectedPks?: Set<string>;
+  onToggleSelect?: (pk: string) => void;
+  // Receives the PKs of all profiles on the current page plus the desired checked state
+  onToggleSelectAll?: (pks: string[], allSelected: boolean) => void;
 }
 
 /**
@@ -153,7 +158,16 @@ export function TalentTable({
   onClearFilters,
   searchActive = false,
   searchTerm = "",
+  selectedPks,
+  onToggleSelect,
+  onToggleSelectAll,
 }: TalentTableProps) {
+  const selectionEnabled = !!selectedPks && !!onToggleSelect;
+  const allOnPageSelected =
+    selectionEnabled && profiles.length > 0 && profiles.every((p) => selectedPks!.has(p.pk));
+  const someOnPageSelected =
+    selectionEnabled && profiles.some((p) => selectedPks!.has(p.pk)) && !allOnPageSelected;
+
   return (
     <div className="relative z-10 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-black/7 dark:border-white/7 overflow-hidden shadow-xl shadow-black/5 animate-slide-in-up">
       {/* Top shimmer line */}
@@ -162,7 +176,21 @@ export function TalentTable({
         <Table className="table-fixed w-full">
           <TableHeader>
             <TableRow className="border-black/10 dark:border-white/10 hover:bg-transparent">
-              <TableHead className="text-foreground/60 w-[22%]">
+              {selectionEnabled && (
+                <TableHead className="w-[40px] pl-4">
+                  <input
+                    type="checkbox"
+                    checked={allOnPageSelected}
+                    ref={(el) => {
+                      if (el) el.indeterminate = someOnPageSelected;
+                    }}
+                    onChange={(e) => onToggleSelectAll?.(profiles.map((p) => p.pk), e.target.checked)}
+                    className="h-4 w-4 rounded border-black/20 dark:border-white/20 accent-indigo-500 cursor-pointer"
+                    aria-label="Select all on page"
+                  />
+                </TableHead>
+              )}
+              <TableHead className={`text-foreground/60 ${selectionEnabled ? "w-[20%]" : "w-[22%]"}`}>
                 <SortableHeader
                   label="Candidate"
                   field="name"
@@ -239,7 +267,7 @@ export function TalentTable({
           <TableBody>
             {profiles.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-16">
+                <TableCell colSpan={selectionEnabled ? 9 : 8} className="text-center py-16">
                   <div className="flex flex-col items-center gap-4">
                     {isLoading ? (
                       <>
@@ -294,9 +322,20 @@ export function TalentTable({
               profiles.map((profile) => (
                 <TableRow
                   key={profile.pk}
-                  className="border-black/4 dark:border-white/4 cursor-pointer hover:bg-indigo-500/4 dark:hover:bg-indigo-400/4 transition-all duration-150 group"
+                  className={`border-black/4 dark:border-white/4 cursor-pointer hover:bg-indigo-500/4 dark:hover:bg-indigo-400/4 transition-all duration-150 group ${selectionEnabled && selectedPks!.has(profile.pk) ? "bg-indigo-500/6 dark:bg-indigo-400/6" : ""}`}
                   onClick={() => onSelectProfile(profile)}
                 >
+                  {selectionEnabled && (
+                    <TableCell className="pl-4" onClick={(e) => { e.stopPropagation(); onToggleSelect!(profile.pk); }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedPks!.has(profile.pk)}
+                        onChange={() => onToggleSelect!(profile.pk)}
+                        className="h-4 w-4 rounded border-black/20 dark:border-white/20 accent-indigo-500 cursor-pointer"
+                        aria-label={`Select ${profile.name}`}
+                      />
+                    </TableCell>
+                  )}
                   <TableCell>
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="relative shrink-0">

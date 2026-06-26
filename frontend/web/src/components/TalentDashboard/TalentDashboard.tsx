@@ -11,8 +11,8 @@ import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { Users, Search, Filter, X, Loader2 } from "lucide-react";
 import { useTalents } from "@/hooks/useTalents";
 import { useLookups } from "@/hooks/useLookups";
-import { uploadResume, listTalents } from "@/lib/api";
-import type { TalentProfile } from "@/types/talent";
+import { uploadResume, listTalents, bulkDeleteTalents } from "@/lib/api";
+import type { TalentProfile, CandidateStatus } from "@/types/talent";
 import type { Filters, SortField, SortDirection } from "./types";
 import { DEFAULT_FILTERS } from "./types";
 import type { WarningType } from "./warnings";
@@ -22,6 +22,8 @@ import { ManualUploadButton } from "./components/ManualUploadButton";
 import { UploadModal } from "./components/UploadModal";
 import { FiltersPanel } from "./components/FiltersPanel";
 import { TalentTable } from "./components/TalentTable";
+import { BulkActionToolbar } from "./components/BulkActionToolbar";
+import { ConfirmDialog } from "./components/ConfirmDialog";
 import { ProfileDetailPanel } from "./ProfileDetailPanel";
 import { Pagination } from "@/components/ui/pagination";
 
@@ -50,6 +52,25 @@ export function TalentDashboard() {
   const pendingKeyRef = useRef<string | null>(null);
   const [page, setPage] = useState(1);
 
+  // Bulk selection state
+  const [selectedPks, setSelectedPks] = useState<Set<string>>(new Set());
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isBulkUpdating, setIsBulkUpdating] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showToast = useCallback((message: string, type: "success" | "error" = "success") => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast({ message, type });
+    toastTimerRef.current = setTimeout(() => setToast(null), 4000);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
+
   // Fetch data from API
   const {
     talents,
@@ -57,6 +78,8 @@ export function TalentDashboard() {
     error: talentsError,
     refresh: refreshTalents,
     mergeTalent,
+    bulkUpdateStatus,
+    removeTalents,
   } = useTalents({
     status: filters.status || undefined,
     service_category: filters.service_category || undefined,
@@ -98,6 +121,78 @@ export function TalentDashboard() {
     },
     [mergeTalent],
   );
+
+  // Selection handlers
+  const handleToggleSelect = useCallback((pk: string) => {
+    setSelectedPks((prev) => {
+      const next = new Set(prev);
+      if (next.has(pk)) next.delete(pk);
+      else next.add(pk);
+      return next;
+    });
+  }, []);
+
+  const handleToggleSelectAll = useCallback(
+    (pks: string[], selectAll: boolean) => {
+      if (selectAll) {
+        setSelectedPks((prev) => {
+          const next = new Set(prev);
+          pks.forEach((pk) => next.add(pk));
+          return next;
+        });
+      } else {
+        setSelectedPks((prev) => {
+          const next = new Set(prev);
+          pks.forEach((pk) => next.delete(pk));
+          return next;
+        });
+      }
+    },
+    [],
+  );
+
+  const handleClearSelection = useCallback(() => setSelectedPks(new Set()), []);
+
+  const handleBulkStatus = useCallback(
+    async (status: CandidateStatus) => {
+      const pks = Array.from(selectedPks);
+      if (pks.length === 0) return;
+      setIsBulkUpdating(true);
+      try {
+        const result = await bulkUpdateStatus(pks, status);
+        setSelectedPks(new Set());
+        const count = result.updated_count;
+        showToast(`${count} ${count === 1 ? "candidate" : "candidates"} updated to ${status}`);
+      } catch {
+        showToast("Failed to update candidates. Please try again.", "error");
+      } finally {
+        setIsBulkUpdating(false);
+      }
+    },
+    [selectedPks, bulkUpdateStatus, showToast],
+  );
+
+  const handleBulkDelete = useCallback(() => {
+    if (selectedPks.size === 0) return;
+    setShowDeleteConfirm(true);
+  }, [selectedPks]);
+
+  const handleConfirmDelete = useCallback(async () => {
+    const pks = Array.from(selectedPks);
+    setShowDeleteConfirm(false);
+    setIsBulkUpdating(true);
+    try {
+      const result = await bulkDeleteTalents(pks);
+      removeTalents(pks);
+      setSelectedPks(new Set());
+      const count = result.deleted_count;
+      showToast(`${count} ${count === 1 ? "candidate" : "candidates"} deleted`);
+    } catch {
+      showToast("Failed to delete candidates. Please try again.", "error");
+    } finally {
+      setIsBulkUpdating(false);
+    }
+  }, [selectedPks, removeTalents, showToast]);
 
   // Filter change handler with city reset logic
   const handleFilterChange = useCallback(
@@ -535,6 +630,15 @@ export function TalentDashboard() {
           )}
         </div>
 
+        {/* Bulk Action Toolbar */}
+        <BulkActionToolbar
+          selectedCount={selectedPks.size}
+          onClearSelection={handleClearSelection}
+          onBulkStatus={handleBulkStatus}
+          onBulkDelete={handleBulkDelete}
+          isUpdating={isBulkUpdating}
+        />
+
         {/* Results Table */}
         <TalentTable
           profiles={paginatedProfiles}
@@ -547,6 +651,9 @@ export function TalentDashboard() {
           onClearFilters={clearFilters}
           searchActive={!!filters.search}
           searchTerm={filters.search || ""}
+          selectedPks={selectedPks}
+          onToggleSelect={handleToggleSelect}
+          onToggleSelectAll={handleToggleSelectAll}
         />
         <Pagination
           currentPage={safePage}
@@ -579,6 +686,34 @@ export function TalentDashboard() {
         onClose={() => setShowUploadModal(false)}
         onUpload={handleUploadSubmit}
       />
+
+      {/* Bulk Delete Confirmation */}
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        count={selectedPks.size}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
+
+      {/* Toast Notification */}
+      {toast && (
+        <div
+          className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 rounded-xl shadow-xl text-sm font-medium animate-fade-in border ${
+            toast.type === "success"
+              ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300"
+              : "bg-red-500/10 border-red-500/30 text-red-700 dark:text-red-300"
+          }`}
+        >
+          <span>{toast.message}</span>
+          <button
+            onClick={() => setToast(null)}
+            className="opacity-60 hover:opacity-100 transition-opacity"
+            aria-label="Dismiss"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

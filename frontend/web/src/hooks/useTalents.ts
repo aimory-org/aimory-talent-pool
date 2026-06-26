@@ -2,7 +2,7 @@
  * React hooks for fetching and managing talent data.
  */
 import { useState, useEffect, useCallback } from "react";
-import { listTalents, updateTalent, type ListTalentsParams } from "@/lib/api";
+import { listTalents, updateTalent, bulkUpdateTalents, type ListTalentsParams } from "@/lib/api";
 import type { TalentProfile, CandidateStatus } from "@/types/talent";
 
 export interface UseTalentsOptions extends ListTalentsParams {
@@ -18,8 +18,12 @@ export interface UseTalentsResult {
   refresh: () => Promise<void>;
   /** Update a talent's status optimistically */
   updateStatus: (pk: string, status: CandidateStatus) => Promise<void>;
+  /** Bulk update status for multiple talents optimistically */
+  bulkUpdateStatus: (pks: string[], status: CandidateStatus) => Promise<{ updated_count: number; failed_pks: string[] }>;
   /** Replace a single talent in the local list (e.g. after an edit) */
   mergeTalent: (updated: TalentProfile) => void;
+  /** Remove multiple talents from local state (after bulk delete) */
+  removeTalents: (pks: string[]) => void;
 }
 
 /**
@@ -85,8 +89,34 @@ export function useTalents(options: UseTalentsOptions = {}): UseTalentsResult {
     [talents],
   );
 
+  const bulkUpdateStatus = useCallback(
+    async (pks: string[], status: CandidateStatus) => {
+      const previousTalents = talents;
+      const pkSet = new Set(pks);
+      setTalents((prev) =>
+        prev.map((t) =>
+          pkSet.has(t.pk)
+            ? { ...t, status, updated_at: new Date().toISOString() }
+            : t,
+        ),
+      );
+      try {
+        return await bulkUpdateTalents(pks, status);
+      } catch (err) {
+        setTalents(previousTalents);
+        throw err;
+      }
+    },
+    [talents],
+  );
+
   const mergeTalent = useCallback((updated: TalentProfile) => {
     setTalents((prev) => prev.map((t) => (t.pk === updated.pk ? updated : t)));
+  }, []);
+
+  const removeTalents = useCallback((pks: string[]) => {
+    const pkSet = new Set(pks);
+    setTalents((prev) => prev.filter((t) => !pkSet.has(t.pk)));
   }, []);
 
   return {
@@ -95,6 +125,8 @@ export function useTalents(options: UseTalentsOptions = {}): UseTalentsResult {
     error,
     refresh,
     updateStatus,
+    bulkUpdateStatus,
     mergeTalent,
+    removeTalents,
   };
 }

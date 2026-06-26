@@ -197,6 +197,41 @@ export async function deleteTalent(pk: string): Promise<void> {
   });
 }
 
+export interface BulkUpdateResult {
+  updated_count: number;
+  failed_pks: string[];
+}
+
+/**
+ * Bulk update status for multiple talent profiles in a single API call.
+ */
+export async function bulkUpdateTalents(
+  pks: string[],
+  status: CandidateStatus,
+): Promise<BulkUpdateResult> {
+  return apiFetch<BulkUpdateResult>("/talents/bulk", {
+    method: "PATCH",
+    body: JSON.stringify({ pks, status }),
+  });
+}
+
+export interface BulkDeleteResult {
+  deleted_count: number;
+  failed_pks: string[];
+}
+
+/**
+ * Bulk delete multiple talent profiles and their S3 resumes.
+ */
+export async function bulkDeleteTalents(
+  pks: string[],
+): Promise<BulkDeleteResult> {
+  return apiFetch<BulkDeleteResult>("/talents/bulk", {
+    method: "DELETE",
+    body: JSON.stringify({ pks }),
+  });
+}
+
 /**
  * Permanently delete a tag from the lookup table and remove it from all profiles.
  */
