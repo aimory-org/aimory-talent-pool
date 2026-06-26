@@ -213,10 +213,12 @@ export function FiltersPanel({
             <SearchableSelect
               value={filters.industry_category}
               onValueChange={(v) => onFilterChange("industry_category", v)}
-              options={lookupIndustryCategories.map((ic) => ({
-                value: ic,
-                label: ic,
-              }))}
+              options={lookupIndustryCategories
+                .filter((ic) => ic !== "Healthcare")
+                .map((ic) => ({
+                  value: ic,
+                  label: ic,
+                }))}
               placeholder="All industries"
             />
           </div>
