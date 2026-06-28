@@ -1,6 +1,7 @@
 /**
  * Table component for displaying talent profiles.
  */
+import { useRef } from "react";
 import { Users, Search, MapPin, ChevronRight, X } from "lucide-react";
 import {
   Table,
@@ -147,6 +148,62 @@ function NamePrefixHighlight({
   );
 }
 
+function StyledCheckbox({
+  checked,
+  indeterminate,
+  onChange,
+  stopClick,
+  ariaLabel,
+}: {
+  checked: boolean;
+  indeterminate?: boolean;
+  onChange: () => void;
+  stopClick?: boolean;
+  ariaLabel?: string;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  return (
+    <label
+      className="relative inline-flex items-center justify-center cursor-pointer h-5 w-5"
+      onClick={stopClick ? (e) => e.stopPropagation() : undefined}
+    >
+      <input
+        ref={(el) => {
+          (inputRef as React.MutableRefObject<HTMLInputElement | null>).current = el;
+          if (el) el.indeterminate = !!indeterminate;
+        }}
+        type="checkbox"
+        checked={checked}
+        onChange={onChange}
+        className="sr-only"
+        aria-label={ariaLabel}
+      />
+      <div
+        className={`h-4 w-4 rounded border-2 transition-all duration-150 flex items-center justify-center ${
+          checked || indeterminate
+            ? "bg-indigo-500 border-indigo-500 shadow-sm shadow-indigo-500/30"
+            : "border-foreground/20 dark:border-white/20 bg-transparent hover:border-indigo-400/60 dark:hover:border-indigo-400/60"
+        }`}
+      >
+        {indeterminate && !checked ? (
+          <div className="h-0.5 w-2 bg-white rounded-full" />
+        ) : checked ? (
+          <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 10 8" fill="none">
+            <path
+              d="M1 4L3.5 6.5L9 1"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        ) : null}
+      </div>
+    </label>
+  );
+}
+
 export function TalentTable({
   profiles,
   isLoading,
@@ -178,15 +235,13 @@ export function TalentTable({
             <TableRow className="border-black/10 dark:border-white/10 hover:bg-transparent">
               {selectionEnabled && (
                 <TableHead className="w-[40px] pl-4">
-                  <input
-                    type="checkbox"
+                  <StyledCheckbox
                     checked={allOnPageSelected}
-                    ref={(el) => {
-                      if (el) el.indeterminate = someOnPageSelected;
-                    }}
-                    onChange={(e) => onToggleSelectAll?.(profiles.map((p) => p.pk), e.target.checked)}
-                    className="h-4 w-4 rounded border-black/20 dark:border-white/20 accent-indigo-500 cursor-pointer"
-                    aria-label="Select all on page"
+                    indeterminate={someOnPageSelected}
+                    onChange={() =>
+                      onToggleSelectAll?.(profiles.map((p) => p.pk), !allOnPageSelected)
+                    }
+                    ariaLabel="Select all on page"
                   />
                 </TableHead>
               )}
@@ -326,13 +381,15 @@ export function TalentTable({
                   onClick={() => onSelectProfile(profile)}
                 >
                   {selectionEnabled && (
-                    <TableCell className="pl-4" onClick={(e) => { e.stopPropagation(); onToggleSelect!(profile.pk); }}>
-                      <input
-                        type="checkbox"
+                    <TableCell
+                      className="pl-4"
+                      onClick={(e) => { e.stopPropagation(); onToggleSelect!(profile.pk); }}
+                    >
+                      <StyledCheckbox
                         checked={selectedPks!.has(profile.pk)}
                         onChange={() => onToggleSelect!(profile.pk)}
-                        className="h-4 w-4 rounded border-black/20 dark:border-white/20 accent-indigo-500 cursor-pointer"
-                        aria-label={`Select ${profile.name}`}
+                        stopClick
+                        ariaLabel={`Select ${profile.name}`}
                       />
                     </TableCell>
                   )}
