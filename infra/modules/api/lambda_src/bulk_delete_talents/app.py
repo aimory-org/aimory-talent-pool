@@ -46,11 +46,7 @@ def _fetch_items(pks):
     items = {}
     for i in range(0, len(pks), BATCH_SIZE):
         chunk = pks[i : i + BATCH_SIZE]
-        request = {
-            TALENT_PROFILES_TABLE: {
-                "Keys": [{"pk": {"S": pk}} for pk in chunk]
-            }
-        }
+        request = {TALENT_PROFILES_TABLE: {"Keys": [{"pk": {"S": pk}} for pk in chunk]}}
         while request:
             response = dynamodb_client.batch_get_item(RequestItems=request)
             for raw in response.get("Responses", {}).get(TALENT_PROFILES_TABLE, []):
@@ -67,11 +63,7 @@ def _batch_delete(pks):
     failed = []
     for i in range(0, len(pks), BATCH_SIZE):
         chunk = pks[i : i + BATCH_SIZE]
-        request = {
-            TALENT_PROFILES_TABLE: [
-                {"DeleteRequest": {"Key": {"pk": {"S": pk}}}} for pk in chunk
-            ]
-        }
+        request = {TALENT_PROFILES_TABLE: [{"DeleteRequest": {"Key": {"pk": {"S": pk}}}} for pk in chunk]}
         max_retries = 5
         attempt = 0
         while request and attempt < max_retries:
@@ -168,6 +160,7 @@ def handler(event, context):
     except Exception as e:
         print(f"Error: {e}")
         import traceback
+
         traceback.print_exc()
         return {
             "statusCode": 500,

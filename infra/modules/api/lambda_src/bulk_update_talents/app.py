@@ -132,6 +132,7 @@ def handler(event, context):
     except Exception as e:
         print(f"Error: {e}")
         import traceback
+
         traceback.print_exc()
         return {
             "statusCode": 500,
