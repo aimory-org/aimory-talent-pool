@@ -113,9 +113,7 @@ def _prepare_document(item):
     # Split the (display) industry_category string into a list for exact AND-term matching.
     # The original string field is preserved for display; the list field powers filtering.
     if isinstance(item.get("industry_category"), str):
-        item["industry_category_list"] = [
-            c.strip() for c in item["industry_category"].split(",") if c.strip()
-        ]
+        item["industry_category_list"] = [c.strip() for c in item["industry_category"].split(",") if c.strip()]
     # Ensure tags is a list
     if not isinstance(item.get("tags"), list):
         item["tags"] = []
