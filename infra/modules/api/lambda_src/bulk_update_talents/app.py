@@ -77,8 +77,6 @@ def _update_one(pk, new_status, now, user_email, user_name):
             ReturnValues="ALL_NEW",
         )
         attrs = response.get("Attributes", {})
-        old_status = attrs.get("status")  # already updated, so this is new; capture before update isn't possible here
-        # Write audit — old_status isn't available without a pre-fetch; use None for old
         _write_audit_entry(pk, None, new_status, now, user_email, user_name, attrs.get("name"))
         return pk, True
     except dynamodb.meta.client.exceptions.ConditionalCheckFailedException:
