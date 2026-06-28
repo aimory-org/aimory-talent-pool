@@ -62,7 +62,7 @@ async function apiFetch<T>(
 export interface ListTalentsParams {
   status?: string;
   service_category?: string;
-  industry_category?: string;
+  industry_categories?: string[];
   job_title?: string;
   clearance_level?: string;
   location_state?: string;
@@ -100,11 +100,12 @@ export async function listTalents(
   params: ListTalentsParams = {},
 ): Promise<ListTalentsResponse> {
   const q = new URLSearchParams();
-  const { skills, certifications, tags, minYears, maxYears, ...simple } = params;
+  const { skills, certifications, tags, industry_categories, minYears, maxYears, ...simple } = params;
 
   for (const [key, val] of Object.entries(simple)) {
     if (val != null && val !== "") q.set(key, String(val));
   }
+  if (industry_categories?.length) q.set("industry_category", industry_categories.join(","));
   if (skills?.length) q.set("skills", skills.join(","));
   if (certifications?.length) q.set("certifications", certifications.join(","));
   if (tags?.length) q.set("tags", tags.join(","));

@@ -44,8 +44,9 @@
       "description": "Aimory company service category this talent aligns to"
     },
     "industry_category": {
-      "type": ["string", "null"],
-      "description": "The organizational/industry function this talent works in. Common values: HR, Accounting, Finance, IT Engineering, Manufacturing, Federal Government. If the resume clearly fits a different industry not listed, use the most appropriate industry name. Use null if truly indeterminate."
+      "type": ["array", "null"],
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Array of the business SECTOR(S) of the organizations and clients where this talent has worked (e.g. Federal Government, Defense, Healthcare, Finance, Education, Commercial), based on their employers — NOT their job function. Include multiple sectors when the candidate has substantial, evidenced experience across more than one. Use null if truly indeterminate."
     },
     "job_title": {
       "type": ["string", "null"],

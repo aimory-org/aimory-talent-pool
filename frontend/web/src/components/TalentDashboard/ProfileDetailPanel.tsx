@@ -1202,17 +1202,64 @@ export function ProfileDetailPanel({
                       className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground text-xs"
                       options={SERVICE_CATEGORIES}
                     />
-                    <Input
-                      value={editData.industry_category}
-                      onChange={(e) =>
-                        setEditData((prev) => ({
-                          ...prev,
-                          industry_category: e.target.value,
-                        }))
-                      }
-                      className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground text-xs"
-                      placeholder="Industry category"
-                    />
+                    <div className="space-y-1">
+                      <div className="flex flex-wrap gap-1">
+                        {editData.industry_category
+                          .split(",")
+                          .map((s) => s.trim())
+                          .filter(Boolean)
+                          .map((tag, i) => (
+                            <span
+                              key={i}
+                              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-purple-500/15 text-purple-700 dark:text-purple-300 text-[10px] border border-purple-500/20"
+                            >
+                              {tag}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const tags = editData.industry_category
+                                    .split(",")
+                                    .map((s) => s.trim())
+                                    .filter(Boolean);
+                                  tags.splice(i, 1);
+                                  setEditData((prev) => ({
+                                    ...prev,
+                                    industry_category: tags.join(", "),
+                                  }));
+                                }}
+                                className="hover:text-foreground ml-0.5"
+                              >
+                                <Minus className="h-2.5 w-2.5" />
+                              </button>
+                            </span>
+                          ))}
+                      </div>
+                      <input
+                        placeholder="Add industry tag…"
+                        className="flex h-7 w-full rounded-lg border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 px-2 py-1 text-xs text-foreground placeholder-foreground/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            const val = (
+                              e.target as HTMLInputElement
+                            ).value.trim();
+                            if (val) {
+                              const tags = editData.industry_category
+                                .split(",")
+                                .map((s) => s.trim())
+                                .filter(Boolean);
+                              if (!tags.includes(val)) {
+                                setEditData((prev) => ({
+                                  ...prev,
+                                  industry_category: [...tags, val].join(", "),
+                                }));
+                              }
+                              (e.target as HTMLInputElement).value = "";
+                            }
+                          }
+                        }}
+                      />
+                    </div>
                     <Select
                       value={editData.clearance_level}
                       onChange={(e) =>
@@ -2241,16 +2288,61 @@ export function ProfileDetailPanel({
                     <Label className="text-foreground/60 text-xs">
                       Industry Category
                     </Label>
-                    <Input
-                      value={editData.industry_category}
-                      onChange={(e) =>
-                        setEditData((prev) => ({
-                          ...prev,
-                          industry_category: e.target.value,
-                        }))
-                      }
-                      className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
-                      placeholder="e.g. Healthcare, Government"
+                    <div className="flex flex-wrap gap-1.5 mb-1">
+                      {editData.industry_category
+                        .split(",")
+                        .map((s) => s.trim())
+                        .filter(Boolean)
+                        .map((tag, i) => (
+                          <span
+                            key={i}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-700 dark:text-purple-300 text-xs border border-purple-500/30"
+                          >
+                            {tag}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const tags = editData.industry_category
+                                  .split(",")
+                                  .map((s) => s.trim())
+                                  .filter(Boolean);
+                                tags.splice(i, 1);
+                                setEditData((prev) => ({
+                                  ...prev,
+                                  industry_category: tags.join(", "),
+                                }));
+                              }}
+                              className="hover:text-foreground ml-0.5"
+                            >
+                              <Minus className="h-3 w-3" />
+                            </button>
+                          </span>
+                        ))}
+                    </div>
+                    <input
+                      placeholder="Add industry tag…"
+                      className="flex h-9 w-full rounded-lg border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 px-3 py-2 text-sm text-foreground placeholder-foreground/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          const val = (
+                            e.target as HTMLInputElement
+                          ).value.trim();
+                          if (val) {
+                            const tags = editData.industry_category
+                              .split(",")
+                              .map((s) => s.trim())
+                              .filter(Boolean);
+                            if (!tags.includes(val)) {
+                              setEditData((prev) => ({
+                                ...prev,
+                                industry_category: [...tags, val].join(", "),
+                              }));
+                            }
+                            (e.target as HTMLInputElement).value = "";
+                          }
+                        }
+                      }}
                     />
                   </div>
                   <div className="space-y-2">
@@ -2361,9 +2453,21 @@ export function ProfileDetailPanel({
                         <Briefcase className="h-3.5 w-3.5" />
                         <span>Industry</span>
                       </div>
-                      <p className="text-foreground font-semibold text-sm">
-                        {profile.industry_category}
-                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {profile.industry_category
+                          .split(",")
+                          .map((s) => s.trim())
+                          .filter(Boolean)
+                          .map((tag, i) => (
+                            <Badge
+                              key={i}
+                              variant="outline"
+                              className="bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/30"
+                            >
+                              {tag}
+                            </Badge>
+                          ))}
+                      </div>
                     </div>
                   )}
                   <div className="grid grid-cols-2 gap-3">

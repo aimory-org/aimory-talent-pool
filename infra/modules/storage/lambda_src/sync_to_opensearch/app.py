@@ -34,9 +34,20 @@ def _get_client():
     )
 
 
+# Fields added after the index was first created. Applied additively to existing
+# indices via put_mapping (idempotent) so deploys don't require recreating the index.
+_ADDITIVE_PROPERTIES = {
+    "industry_category_list": {"type": "keyword"},
+}
+
+
 def _ensure_index(client):
-    """Create talent-profiles index with explicit mappings if it doesn't exist."""
+    """Create talent-profiles index with explicit mappings if it doesn't exist.
+
+    For a pre-existing index, additively ensure newer fields exist (idempotent).
+    """
     if client.indices.exists(index=INDEX_NAME):
+        client.indices.put_mapping(index=INDEX_NAME, body={"properties": _ADDITIVE_PROPERTIES})
         return
     client.indices.create(
         index=INDEX_NAME,
@@ -51,6 +62,7 @@ def _ensure_index(client):
                     "status": {"type": "keyword"},
                     "service_category": {"type": "keyword"},
                     "industry_category": {"type": "keyword"},
+                    "industry_category_list": {"type": "keyword"},
                     "job_title": {"type": "keyword"},
                     "clearance_level": {"type": "keyword"},
                     "location_state": {"type": "keyword"},
@@ -98,6 +110,10 @@ def _prepare_document(item):
         item["skill_names"] = [s.strip() for s in item["skill_names"].split(",") if s.strip()]
     if isinstance(item.get("cert_names"), str):
         item["cert_names"] = [c.strip() for c in item["cert_names"].split(",") if c.strip()]
+    # Split the (display) industry_category string into a list for exact AND-term matching.
+    # The original string field is preserved for display; the list field powers filtering.
+    if isinstance(item.get("industry_category"), str):
+        item["industry_category_list"] = [c.strip() for c in item["industry_category"].split(",") if c.strip()]
     # Ensure tags is a list
     if not isinstance(item.get("tags"), list):
         item["tags"] = []

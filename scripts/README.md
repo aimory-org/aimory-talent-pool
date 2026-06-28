@@ -92,6 +92,30 @@ python scripts/reprocess_resumes.py \
 
 ---
 
+### `backfill_industry_list.py`
+
+Re-indexes existing talent profiles into OpenSearch so the `industry_category_list` filter
+field is populated, **without** any LLM/Textract cost. It re-writes each item in the
+talent-profiles DynamoDB table unchanged, which emits a stream event that `sync_to_opensearch`
+turns into a re-index.
+
+Run this **after `terraform apply`** (so the updated sync Lambda is deployed) and **before**
+relying on industry filters, to avoid a window where not-yet-reprocessed candidates drop out
+of industry filtering. A full `reprocess_resumes.py` run also covers this, but costs Bedrock.
+
+```bash
+python scripts/backfill_industry_list.py \
+  --table aimory-talent-pool-dev-talent-profiles
+```
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--table` | Yes | Talent profiles DynamoDB table name (`terraform output -raw talent_profiles_table_name`) |
+| `--region` | No (default: `us-east-1`) | AWS region |
+| `--dry-run` | No | Count items without re-writing |
+
+---
+
 ### `reprocess_job_descriptions.py`
 
 Lists all objects under the `job-descriptions/raw/` prefix and triggers a new JD pipeline Step Functions execution for each file.

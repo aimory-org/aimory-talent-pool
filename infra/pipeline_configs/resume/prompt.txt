@@ -21,13 +21,24 @@ Company Service Category Assignment (pick exactly one):
 - FSP Headhunting: Executive-level placements, Senior leadership roles, C-suite candidates, Directors, VPs
 - Cybersecurity: Security Analysts, Penetration Testers, SOC Analysts, Security Engineers, CISO-track professionals
 
-Industry Category:
-- This represents the organizational/industry function the candidate works in.
-- Common values: HR, Accounting, Finance, IT Engineering, Manufacturing, Federal Government
-- If the resume clearly fits a DIFFERENT industry not listed above, use the most appropriate industry name.
-  For example: Healthcare, Education, Legal, Retail, Logistics, Energy, Telecommunications, etc.
-- The AI MAY create new industry categories when a resume doesn't fit existing ones.
-- Use null only if truly indeterminate.
+Industry Category (return an ARRAY of strings):
+- This is the business SECTOR(S) of the organizations and CLIENTS where the candidate has
+  worked — NOT their job function or role. (Job function is captured separately.)
+- Determine the sector from the candidate's EMPLOYERS and CLIENTS, not from their job title.
+  Examples: an accountant at a hospital is "Healthcare"; an accountant at a bank is "Finance";
+  an accountant supporting a federal agency is "Federal Government"; an analyst at a private
+  consulting firm or corporation is "Commercial".
+- Return a JSON array. Assign MULTIPLE sectors when the candidate has substantial, evidenced
+  experience across more than one distinct sector — e.g. someone who spent years at a federal
+  agency AND years at a commercial company is ["Federal Government", "Commercial"]; someone
+  who worked at both hospitals and government health agencies is ["Healthcare", "Federal Government"].
+  Do NOT pad the array with speculative sectors — base each entry on real work history.
+- Prefer these standard sector names when they genuinely apply:
+  Federal Government, Defense, Healthcare, Finance, Education, Legal, Commercial,
+  Telecommunications, Energy, Manufacturing, Retail, Logistics, Non-Profit.
+- If none of the standard names fits, use the most accurate sector name — do NOT force a poor fit
+  just to reuse an existing value.
+- Use null only if the sector is truly indeterminate (do not return an empty array).
 
 Job Title:
 - Extract the MOST SPECIFIC standard job title for this candidate's primary role.

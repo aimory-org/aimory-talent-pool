@@ -183,11 +183,24 @@ def _normalize_profile(profile: dict) -> dict:
             if company.get("name"):
                 company["name"] = _normalize_company(company["name"])
 
-    # Strip job title and industry category
+    # Strip job title
     if profile.get("job_title"):
         profile["job_title"] = profile["job_title"].strip()
-    if profile.get("industry_category"):
-        profile["industry_category"] = profile["industry_category"].strip()
+
+    # Normalize industry category: accept a list (multi-industry) or string, store as a
+    # deduplicated, comma-separated string (consistent with skill_names/cert_names).
+    industry = profile.get("industry_category")
+    if isinstance(industry, list):
+        seen = {}
+        deduped = []
+        for item in industry:
+            stripped = item.strip() if isinstance(item, str) else ""
+            if stripped and stripped.lower() not in seen:
+                seen[stripped.lower()] = True
+                deduped.append(stripped)
+        profile["industry_category"] = ", ".join(deduped)
+    elif isinstance(industry, str):
+        profile["industry_category"] = industry.strip()
 
     return profile
 
@@ -287,6 +300,19 @@ def _validate_certifications(certifications):
         _validate_string(cert, f"certifications[{i}]", min_len=1, allow_null=False)
 
 
+def _validate_industry(value):
+    """industry_category may be a list of strings (multi-industry), a string (back-compat), or null."""
+    if value is None:
+        return
+    if isinstance(value, str):
+        return
+    if isinstance(value, list):
+        for i, item in enumerate(value):
+            _validate_string(item, f"industry_category[{i}]", min_len=1, allow_null=False)
+        return
+    raise ValueError("industry_category must be a list of strings, a string, or null")
+
+
 def _validate_profile(profile):
     if not isinstance(profile, dict):
         raise ValueError("extracted must be an object")
@@ -317,7 +343,7 @@ def _validate_profile(profile):
     if svc is not None and svc not in _SERVICE_CATEGORIES:
         raise ValueError(f"service_category invalid: {svc}")
 
-    _validate_string(profile["industry_category"], "industry_category")
+    _validate_industry(profile["industry_category"])
     _validate_string(profile["job_title"], "job_title")
 
     _validate_contact(profile["contact"])
@@ -395,11 +421,11 @@ def _populate_lookup_tables(profile):
             titles_table = dynamodb.Table(JOB_TITLES_LOOKUP_TABLE)
             titles_table.put_item(Item={"job_title": job_title, "updated_at": now})
 
-    # Populate industry categories lookup
+    # Populate industry categories lookup — split the comma-separated string so each
+    # industry becomes its own selectable lookup row.
     if INDUSTRY_CATEGORIES_LOOKUP_TABLE and profile.get("industry_category"):
-        industry = profile["industry_category"].strip()
-        if industry:
-            industries_table = dynamodb.Table(INDUSTRY_CATEGORIES_LOOKUP_TABLE)
+        industries_table = dynamodb.Table(INDUSTRY_CATEGORIES_LOOKUP_TABLE)
+        for industry in [s.strip() for s in profile["industry_category"].split(",") if s.strip()]:
             industries_table.put_item(Item={"industry_category": industry, "updated_at": now})
 
 

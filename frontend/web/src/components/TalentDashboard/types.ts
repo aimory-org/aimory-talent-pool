@@ -6,7 +6,7 @@ export interface Filters {
   search: string;
   status: string;
   service_category: string;
-  industry_category: string;
+  industry_categories: string[];
   job_title: string;
   clearance_level: string;
   location_state: string;
@@ -34,7 +34,7 @@ export const DEFAULT_FILTERS: Filters = {
   search: "",
   status: "",
   service_category: "",
-  industry_category: "",
+  industry_categories: [],
   job_title: "",
   clearance_level: "",
   location_state: "",

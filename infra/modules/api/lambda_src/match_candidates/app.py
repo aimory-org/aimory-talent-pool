@@ -277,7 +277,8 @@ def _build_prefilter_query(jd):
 
     # Boost matching industry / job title (use match for title for partial word overlap)
     if jd.get("industry_category"):
-        should.append({"term": {"industry_category": {"value": jd["industry_category"], "boost": 2}}})
+        # Match against the split list field so multi-industry candidates still get boosted.
+        should.append({"term": {"industry_category_list": {"value": jd["industry_category"], "boost": 2}}})
     if jd.get("job_title"):
         should.append({"match": {"job_title": {"query": jd["job_title"], "boost": 2}}})
 

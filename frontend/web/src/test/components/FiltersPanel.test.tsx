@@ -12,6 +12,7 @@ describe("FiltersPanel", () => {
     filters: DEFAULT_FILTERS,
     onFilterChange: vi.fn(),
     onClearFilters: vi.fn(),
+    onIndustryCategoriesChange: vi.fn(),
     onSkillsChange: vi.fn(),
     onCertificationsChange: vi.fn(),
     activeFilterCount: 0,

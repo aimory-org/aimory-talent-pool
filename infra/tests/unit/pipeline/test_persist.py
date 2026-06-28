@@ -113,6 +113,18 @@ class TestPersistValidation:
         with pytest.raises(ValueError, match="certifications must be a list"):
             app.handler(_make_event(sample_profile), None)
 
+    def test_industry_category_list_accepted(self, all_tables, sample_profile):
+        app = _reload_app()
+        sample_profile["industry_category"] = ["Finance", "Healthcare"]
+        # Should not raise
+        app.handler(_make_event(sample_profile), None)
+
+    def test_industry_category_invalid_type_raises(self, all_tables, sample_profile):
+        app = _reload_app()
+        sample_profile["industry_category"] = 123
+        with pytest.raises(ValueError, match="industry_category must be"):
+            app.handler(_make_event(sample_profile), None)
+
 
 # ── Normalization tests ───────────────────────────────────────────────────
 
@@ -303,6 +315,26 @@ class TestPersistDynamoDB:
         item = table.get_item(Key={"pk": result["pk"]})["Item"]
         assert "PMP" in item["cert_names"]
 
+    def test_industry_list_stored_as_comma_string(self, all_tables, sample_profile):
+        app = _reload_app()
+        sample_profile["industry_category"] = ["Finance", "Healthcare"]
+        result = app.handler(_make_event(sample_profile), None)
+        import boto3
+
+        table = boto3.resource("dynamodb", region_name="us-east-1").Table("talent-profiles")
+        item = table.get_item(Key={"pk": result["pk"]})["Item"]
+        assert item["industry_category"] == "Finance, Healthcare"
+
+    def test_industry_list_deduplicated(self, all_tables, sample_profile):
+        app = _reload_app()
+        sample_profile["industry_category"] = ["Finance", " finance ", "Healthcare"]
+        result = app.handler(_make_event(sample_profile), None)
+        import boto3
+
+        table = boto3.resource("dynamodb", region_name="us-east-1").Table("talent-profiles")
+        item = table.get_item(Key={"pk": result["pk"]})["Item"]
+        assert item["industry_category"] == "Finance, Healthcare"
+
     def test_null_service_category_defaults_unknown(self, all_tables, sample_profile):
         app = _reload_app()
         sample_profile["service_category"] = None
@@ -379,6 +411,17 @@ class TestPersistLookupTables:
         items = table.scan()["Items"]
         assert len(items) == 1
         assert items[0]["industry_category"] == "Technology"
+
+    def test_populates_industry_categories_lookup_splits_multi(self, all_tables, sample_profile):
+        app = _reload_app()
+        sample_profile["industry_category"] = ["Finance", "Healthcare"]
+        app.handler(_make_event(sample_profile), None)
+        import boto3
+
+        table = boto3.resource("dynamodb", region_name="us-east-1").Table("industry-categories-lookup")
+        names = {i["industry_category"] for i in table.scan()["Items"]}
+        # Each industry is its own lookup row — not the combined "Finance, Healthcare" string.
+        assert names == {"Finance", "Healthcare"}
 
     def test_empty_skillsets_no_lookup_write(self, all_tables, sample_profile):
         app = _reload_app()
