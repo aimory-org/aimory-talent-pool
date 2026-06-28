@@ -212,3 +212,17 @@ class TestSyncHelpers:
         item = {"skill_names": ["A", "B"]}
         result = app._prepare_document(item)
         assert result["skill_names"] == ["A", "B"]
+
+    def test_prepare_document_splits_industry_to_list(self):
+        app = _reload_app()
+        item = {"industry_category": "Finance, Healthcare"}
+        result = app._prepare_document(item)
+        # Display string is preserved; a separate list field powers AND-term filtering.
+        assert result["industry_category"] == "Finance, Healthcare"
+        assert result["industry_category_list"] == ["Finance", "Healthcare"]
+
+    def test_prepare_document_single_industry_to_list(self):
+        app = _reload_app()
+        item = {"industry_category": "Finance"}
+        result = app._prepare_document(item)
+        assert result["industry_category_list"] == ["Finance"]

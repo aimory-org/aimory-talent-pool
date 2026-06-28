@@ -83,10 +83,11 @@ def handler(event, context):
             if params.get(field):
                 filters.append({"term": {field: params[field]}})
 
-        # Industry categories — each must be present (AND logic)
+        # Industry categories — each must be present (AND logic).
+        # Matches against the split list field (industry_category itself is the display string).
         if params.get("industry_category"):
             for cat in [c.strip() for c in params["industry_category"].split(",") if c.strip()]:
-                filters.append({"term": {"industry_category": cat}})
+                filters.append({"term": {"industry_category_list": cat}})
 
         if params.get("city"):
             filters.append({"term": {"location.city": params["city"]}})

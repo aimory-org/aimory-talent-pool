@@ -180,6 +180,12 @@ def main():
     parser.add_argument("--prefix", default="resumes/raw/", help="S3 key prefix to scan (default: resumes/raw/)")
     parser.add_argument("--dry-run", action="store_true", help="List files without starting executions")
     parser.add_argument(
+        "--limit",
+        type=int,
+        default=0,
+        help="Only process the first N resumes (0 = all). Useful for a small validation run.",
+    )
+    parser.add_argument(
         "--clear-lookups",
         nargs="*",
         metavar="KEY=TABLE",
@@ -241,6 +247,10 @@ def main():
     if not keys:
         print("Nothing to reprocess.")
         return
+
+    if args.limit and args.limit > 0:
+        keys = keys[: args.limit]
+        print(f"Limiting to first {len(keys)} objects (--limit {args.limit})")
 
     if args.dry_run:
         for key in keys:

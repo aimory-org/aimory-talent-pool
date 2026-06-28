@@ -85,11 +85,15 @@ def handler(event, context):
     system_instructions = _load_prompt()
     hooks = _load_hooks()
 
-    # Fetch existing lookup values to help Claude stay consistent
+    # Fetch existing lookup values to help Claude stay consistent.
+    # NOTE: industry_category is intentionally NOT fed back here. Feeding the growing industry
+    # vocabulary with a "use these exact names" instruction creates a convergence attractor that
+    # collapses every candidate onto whatever the first few resumes produced. Industry sectors are
+    # canonicalized via a stable curated list in the prompt instead, so each extraction stays
+    # independent and truthful (and can assign multiple sectors when warranted).
     existing_skills = _fetch_lookup_values(SKILLS_LOOKUP_TABLE, "skill")
     existing_certs = _fetch_lookup_values(CERTIFICATIONS_LOOKUP_TABLE, "certification")
     existing_titles = _fetch_lookup_values(JOB_TITLES_LOOKUP_TABLE, "job_title")
-    existing_industries = _fetch_lookup_values(INDUSTRY_CATEGORIES_LOOKUP_TABLE, "industry_category")
 
     lookups_context = ""
     if existing_skills:
@@ -109,12 +113,6 @@ def handler(event, context):
             f"\nExisting job titles in our database "
             f"(use these exact names when matched, create new only if nothing fits): "
             f"{', '.join(existing_titles)}\n"
-        )
-    if existing_industries:
-        lookups_context += (
-            f"\nExisting industry categories in our database "
-            f"(use these exact names when matched, create new only if nothing fits): "
-            f"{', '.join(existing_industries)}\n"
         )
 
     schema_text = json.dumps(schema, indent=2)
