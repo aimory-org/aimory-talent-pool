@@ -1,8 +1,6 @@
 # AIMORY Talent Pool
 
-An internal resume ingestion and talent management platform. Resumes uploaded to OneDrive are automatically processed through an AI pipeline — extracting structured candidate data — and made searchable through a React dashboard.
-
-**Contributors:** Ben and Kyle
+An AI-powered talent management platform. Resumes uploaded to OneDrive are automatically processed through a serverless AI pipeline — extracting structured candidate data — and made searchable through a React dashboard. This repository is public as a showcase of our technical approach to AI-assisted recruiting infrastructure.
 
 ## Repository Structure
 
@@ -121,4 +119,4 @@ aws cloudfront create-invalidation --distribution-id <id> --paths "/*"
 
 ## License
 
-Proprietary — AIMORY internal use only.
+Source available for reference and portfolio purposes. Not licensed for reuse or redistribution without permission from Aimory Consulting.
