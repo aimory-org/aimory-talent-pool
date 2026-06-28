@@ -1,6 +1,7 @@
 /**
  * Table component for displaying talent profiles.
  */
+import { useRef } from "react";
 import { Users, Search, MapPin, ChevronRight, X } from "lucide-react";
 import {
   Table,
@@ -28,6 +29,11 @@ interface TalentTableProps {
   onClearFilters: () => void;
   searchActive?: boolean;
   searchTerm?: string;
+  // Selection props (optional — omit to disable checkboxes)
+  selectedPks?: Set<string>;
+  onToggleSelect?: (pk: string) => void;
+  // Receives the PKs of all profiles on the current page plus the desired checked state
+  onToggleSelectAll?: (pks: string[], allSelected: boolean) => void;
 }
 
 /**
@@ -142,6 +148,62 @@ function NamePrefixHighlight({
   );
 }
 
+function StyledCheckbox({
+  checked,
+  indeterminate,
+  onChange,
+  stopClick,
+  ariaLabel,
+}: {
+  checked: boolean;
+  indeterminate?: boolean;
+  onChange: () => void;
+  stopClick?: boolean;
+  ariaLabel?: string;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  return (
+    <label
+      className="relative inline-flex items-center justify-center cursor-pointer h-5 w-5"
+      onClick={stopClick ? (e) => e.stopPropagation() : undefined}
+    >
+      <input
+        ref={(el) => {
+          (inputRef as React.MutableRefObject<HTMLInputElement | null>).current = el;
+          if (el) el.indeterminate = !!indeterminate;
+        }}
+        type="checkbox"
+        checked={checked}
+        onChange={onChange}
+        className="sr-only"
+        aria-label={ariaLabel}
+      />
+      <div
+        className={`h-4 w-4 rounded border-2 transition-all duration-150 flex items-center justify-center ${
+          checked || indeterminate
+            ? "bg-indigo-500 border-indigo-500 shadow-sm shadow-indigo-500/30"
+            : "border-foreground/20 dark:border-white/20 bg-transparent hover:border-indigo-400/60 dark:hover:border-indigo-400/60"
+        }`}
+      >
+        {indeterminate && !checked ? (
+          <div className="h-0.5 w-2 bg-white rounded-full" />
+        ) : checked ? (
+          <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 10 8" fill="none">
+            <path
+              d="M1 4L3.5 6.5L9 1"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        ) : null}
+      </div>
+    </label>
+  );
+}
+
 export function TalentTable({
   profiles,
   isLoading,
@@ -153,7 +215,16 @@ export function TalentTable({
   onClearFilters,
   searchActive = false,
   searchTerm = "",
+  selectedPks,
+  onToggleSelect,
+  onToggleSelectAll,
 }: TalentTableProps) {
+  const selectionEnabled = !!selectedPks && !!onToggleSelect;
+  const allOnPageSelected =
+    selectionEnabled && profiles.length > 0 && profiles.every((p) => selectedPks!.has(p.pk));
+  const someOnPageSelected =
+    selectionEnabled && profiles.some((p) => selectedPks!.has(p.pk)) && !allOnPageSelected;
+
   return (
     <div className="relative z-10 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-black/7 dark:border-white/7 overflow-hidden shadow-xl shadow-black/5 animate-slide-in-up">
       {/* Top shimmer line */}
@@ -162,7 +233,19 @@ export function TalentTable({
         <Table className="table-fixed w-full">
           <TableHeader>
             <TableRow className="border-black/10 dark:border-white/10 hover:bg-transparent">
-              <TableHead className="text-foreground/60 w-[22%]">
+              {selectionEnabled && (
+                <TableHead className="w-[40px] pl-4">
+                  <StyledCheckbox
+                    checked={allOnPageSelected}
+                    indeterminate={someOnPageSelected}
+                    onChange={() =>
+                      onToggleSelectAll?.(profiles.map((p) => p.pk), !allOnPageSelected)
+                    }
+                    ariaLabel="Select all on page"
+                  />
+                </TableHead>
+              )}
+              <TableHead className={`text-foreground/60 ${selectionEnabled ? "w-[20%]" : "w-[22%]"}`}>
                 <SortableHeader
                   label="Candidate"
                   field="name"
@@ -239,7 +322,7 @@ export function TalentTable({
           <TableBody>
             {profiles.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-16">
+                <TableCell colSpan={selectionEnabled ? 9 : 8} className="text-center py-16">
                   <div className="flex flex-col items-center gap-4">
                     {isLoading ? (
                       <>
@@ -294,9 +377,22 @@ export function TalentTable({
               profiles.map((profile) => (
                 <TableRow
                   key={profile.pk}
-                  className="border-black/4 dark:border-white/4 cursor-pointer hover:bg-indigo-500/4 dark:hover:bg-indigo-400/4 transition-all duration-150 group"
+                  className={`border-black/4 dark:border-white/4 cursor-pointer hover:bg-indigo-500/4 dark:hover:bg-indigo-400/4 transition-all duration-150 group ${selectionEnabled && selectedPks!.has(profile.pk) ? "bg-indigo-500/6 dark:bg-indigo-400/6" : ""}`}
                   onClick={() => onSelectProfile(profile)}
                 >
+                  {selectionEnabled && (
+                    <TableCell
+                      className="pl-4"
+                      onClick={(e) => { e.stopPropagation(); onToggleSelect!(profile.pk); }}
+                    >
+                      <StyledCheckbox
+                        checked={selectedPks!.has(profile.pk)}
+                        onChange={() => onToggleSelect!(profile.pk)}
+                        stopClick
+                        ariaLabel={`Select ${profile.name}`}
+                      />
+                    </TableCell>
+                  )}
                   <TableCell>
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="relative shrink-0">

@@ -160,7 +160,9 @@ resource "aws_iam_role_policy" "api_dynamodb_write" {
       Effect = "Allow"
       Action = [
         "dynamodb:UpdateItem",
-        "dynamodb:DeleteItem"
+        "dynamodb:DeleteItem",
+        "dynamodb:BatchWriteItem",
+        "dynamodb:BatchGetItem"
       ]
       Resource = var.talent_profiles_table_arn
       },

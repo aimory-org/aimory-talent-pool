@@ -172,6 +172,27 @@ locals {
         RESUME_RAW_PREFIX = "resumes/raw"
       }
     }
+    bulk_update_talents = {
+      route   = "PATCH /talents/bulk"
+      timeout = 30
+      memory  = 256
+      layers  = []
+      env = {
+        TALENT_PROFILES_TABLE = var.talent_profiles_table_name
+        AUDIT_LOG_TABLE       = var.audit_log_table_name
+      }
+    }
+    bulk_delete_talents = {
+      route   = "DELETE /talents/bulk"
+      timeout = 30
+      memory  = 256
+      layers  = []
+      env = {
+        TALENT_PROFILES_TABLE = var.talent_profiles_table_name
+        AUDIT_LOG_TABLE       = var.audit_log_table_name
+        RESUME_BUCKET         = var.resume_bucket_name
+      }
+    }
   }
 }
 
