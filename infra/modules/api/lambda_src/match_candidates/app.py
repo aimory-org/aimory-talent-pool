@@ -695,9 +695,7 @@ def handler(event, context):
             print(f"OpenSearch query error: {e}")
             hits = []
 
-        lexical_sources = {
-            h["_source"]["pk"]: h["_source"] for h in hits if (h.get("_source") or {}).get("pk")
-        }
+        lexical_sources = {h["_source"]["pk"]: h["_source"] for h in hits if (h.get("_source") or {}).get("pk")}
         lexical_pks = list(lexical_sources.keys())  # already ordered by lexical _score
 
         # 2b. Semantic (vector) retrieval — surfaces candidates the lexical leg missed.
