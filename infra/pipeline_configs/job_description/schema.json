@@ -102,6 +102,19 @@
       "type": ["string", "null"],
       "maxLength": 500,
       "description": "Concise summary of the role's responsibilities, team, and mission for matching purposes"
+    },
+    "responsibilities": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "3-8 concise statements of what the role actually requires the person to DO (day-to-day duties, scope, mission). Highest-signal field for candidate matching — a résumé's experience is matched against these."
+    },
+    "seniority": {
+      "type": ["string", "null"],
+      "description": "Seniority level (e.g. Junior, Mid, Senior, Lead, Principal, Manager, Director, Executive), or null if unclear."
+    },
+    "domain": {
+      "type": ["string", "null"],
+      "description": "Primary mission/domain of the role (e.g. Signals Intelligence, Cybersecurity Operations, Systems Engineering, Financial Audit), or null if unclear."
     }
   }
 }

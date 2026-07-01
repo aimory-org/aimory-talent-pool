@@ -153,7 +153,10 @@ class TestSyncToOpenSearch:
         event = {"Records": [_make_insert_record("b#k7")]}
         app.handler(event, None)
 
-        mc.indices.create.assert_called_once()
+        # Both the profile index and the sibling chunk index are created when missing.
+        created = {c.kwargs["index"] for c in mc.indices.create.call_args_list}
+        assert "talent-profiles" in created
+        assert "talent-chunks" in created
 
     @patch("app._get_client")
     def test_no_records_ok(self, mock_get_client):
@@ -179,6 +182,69 @@ class TestSyncToOpenSearch:
         event = {"Records": [_make_remove_record("b#k-missing")]}
         result = app.handler(event, None)
         assert result["processed"] == 1
+
+
+class TestChunkEmbedding:
+    def setup_method(self):
+        _load_lambda("modules/storage/lambda_src/sync_to_opensearch")
+
+    def test_chunk_text_overlapping_windows(self):
+        app = _reload_app()
+        chunks = app._chunk_text("a" * 3000, size=1400, overlap=200)
+        assert len(chunks) >= 2
+        assert all(len(c) <= 1400 for c in chunks)
+
+    def test_chunk_text_empty(self):
+        app = _reload_app()
+        assert app._chunk_text("") == []
+        assert app._chunk_text(None) == []
+
+    @patch("app._embed", return_value=[0.1] * 512)
+    @patch("app._get_client")
+    def test_insert_with_resume_embeds_chunks(self, mock_get_client, mock_embed):
+        import app
+
+        mc = MagicMock()
+        mc.indices.exists.return_value = True
+        mock_get_client.return_value = mc
+
+        rec = _make_insert_record("b#rt1")
+        rec["dynamodb"]["NewImage"]["resume_text"] = _dynamo_string("x " * 1500)
+        app.handler({"Records": [rec]}, None)
+
+        assert mock_embed.called
+        assert mc.bulk.called  # chunks bulk-indexed
+
+    @patch("app._embed", return_value=[0.1] * 512)
+    @patch("app._get_client")
+    def test_modify_without_resume_change_skips_embed(self, mock_get_client, mock_embed):
+        import app
+
+        mc = MagicMock()
+        mc.indices.exists.return_value = True
+        mock_get_client.return_value = mc
+
+        rec = _make_insert_record("b#rt2")
+        rec["eventName"] = "MODIFY"
+        rec["dynamodb"]["NewImage"]["resume_text"] = _dynamo_string("unchanged text")
+        rec["dynamodb"]["OldImage"] = {
+            "pk": _dynamo_string("b#rt2"),
+            "resume_text": _dynamo_string("unchanged text"),
+        }
+        app.handler({"Records": [rec]}, None)
+
+        assert not mock_embed.called  # no re-embed when resume_text is unchanged
+
+    @patch("app._get_client")
+    def test_remove_deletes_chunks(self, mock_get_client):
+        import app
+
+        mc = MagicMock()
+        mc.indices.exists.return_value = True
+        mock_get_client.return_value = mc
+
+        app.handler({"Records": [_make_remove_record("b#rt3")]}, None)
+        assert mc.delete_by_query.called
 
 
 class TestSyncHelpers:

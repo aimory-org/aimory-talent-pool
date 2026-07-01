@@ -168,3 +168,57 @@ python scripts/run_dedup.py --env dev --region us-east-1
 | `--env` | `dev` | Environment name |
 | `--region` | `us-east-1` | AWS region |
 | `--dry-run` | off | Preview changes without applying them |
+
+---
+
+### `backfill_embeddings.py`
+
+One-time backfill: chunks + embeds every candidate's résumé into the OpenSearch `talent-chunks` kNN index, powering the matcher's semantic (vector) retrieval leg. See [docs/match.md](../docs/match.md) for how chunking and retrieval work.
+
+**Why a script (not the stream path):** re-writing an identical DynamoDB item emits no stream event, so `sync_to_opensearch` can't be used to backfill existing records — this reads profiles directly and writes chunks.
+
+**Idempotent:** existing chunks for a candidate are deleted before re-indexing.
+
+```bash
+python scripts/backfill_embeddings.py \
+  --table    aimory-talent-pool-dev-talent-profiles \
+  --endpoint <opensearch-endpoint-without-https://> \
+  --region   us-east-1 \
+  [--limit N]   # process only N records (validation runs)
+```
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--table` | Yes | Talent profiles DynamoDB table name |
+| `--endpoint` | Yes | OpenSearch domain endpoint (no `https://`) |
+| `--region` | No (default: `us-east-1`) | AWS region |
+| `--limit` | No | Process only N records (validation runs) |
+
+Keep chunking params (`CHUNK_CHARS`, `CHUNK_OVERLAP`) in sync with `infra/modules/storage/lambda_src/sync_to_opensearch/app.py`.
+
+---
+
+### `eval_matching.py`
+
+Ablation harness for the candidate matcher: invokes the deployed `match_candidates` Lambda under each feature-toggle combination (lexical → +vector → +rerank → +expand) across all job descriptions, and reports both quality (top-K mean LLM score) and measured cost (tokens, embed calls, rerank docs, latency) per arm. This is how every quality/cost number in [docs/match.md](../docs/match.md) was produced.
+
+```bash
+python scripts/eval_matching.py \
+  --function aimory-talent-pool-dev-api-match-candidates \
+  --jd-table aimory-talent-pool-dev-job-descriptions \
+  --region   us-east-1 \
+  [--limit-jds N] [--top-k 5] [--runs 2] [--arms lexical,+vector]
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--function` | *(required)* | Matcher Lambda function name |
+| `--jd-table` | *(required)* | Job descriptions DynamoDB table name |
+| `--region` | `us-east-1` | AWS region |
+| `--limit-jds` | all | Only evaluate the first N job descriptions |
+| `--top-k` | `5` | Size of the top-K window used for the quality mean |
+| `--runs` | `1` | Runs per config per JD, averaged (de-noises the LLM-judge scoring) |
+| `--arms` | all | Comma-separated arm names to include |
+| `--sleep` | `2.0` | Seconds between invokes (avoids Bedrock throttling) |
+
+**Note:** LLM-as-judge scoring is noisy — trust aggregates across JDs/runs, not single-JD deltas.

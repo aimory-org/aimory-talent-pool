@@ -17,6 +17,12 @@ import {
   RefreshCw,
   FileText,
   Upload,
+  Target,
+  Layers,
+  AlertTriangle,
+  GitMerge,
+  Sparkles,
+  Filter,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -452,6 +458,97 @@ function PipelineDiagram() {
             </div>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Candidate matching pipeline diagram
+// ---------------------------------------------------------------------------
+
+function MatchPipelineDiagram() {
+  return (
+    <div className="mt-6 rounded-2xl border border-black/10 dark:border-white/10 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm overflow-hidden">
+      <div className="px-5 py-3 border-b border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 flex items-center gap-2">
+        <div className="w-2 h-2 rounded-full bg-violet-500" />
+        <span className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
+          Retrieve → Rerank → Score
+        </span>
+      </div>
+
+      <div className="p-6 space-y-6 overflow-x-auto">
+        {/* Retrieval row */}
+        <div>
+          <p className="text-[10px] font-bold text-foreground/35 uppercase tracking-widest mb-3">
+            1. Retrieval — cast a wide net (cheap, no LLM)
+          </p>
+          <div className="flex items-center gap-2 min-w-max">
+            <ArchNode
+              label="Job Description"
+              sub="title, skills, responsibilities"
+              icon={<FileText className="w-4 h-4" />}
+              color="slate"
+            />
+            <FlowArrow />
+            <ArchNode
+              label="Lexical Search"
+              sub="OpenSearch, structured fields"
+              icon={<Search className="w-4 h-4" />}
+              color="blue"
+            />
+            <FlowArrow label="+" />
+            <ArchNode
+              label="Vector Search"
+              sub="résumé chunks, kNN"
+              icon={<Sparkles className="w-4 h-4" />}
+              color="amber"
+            />
+            <FlowArrow />
+            <ArchNode
+              label="RRF Fusion"
+              sub="merge both rankings"
+              icon={<GitMerge className="w-4 h-4" />}
+              color="violet"
+            />
+          </div>
+        </div>
+
+        {/* Refine row */}
+        <div>
+          <p className="text-[10px] font-bold text-foreground/35 uppercase tracking-widest mb-3">
+            2. Refine — narrow to the best few
+          </p>
+          <div className="flex items-center gap-2 min-w-max">
+            <ArchNode
+              label="Hard Filters"
+              sub="clearance safety gate"
+              icon={<Filter className="w-4 h-4" />}
+              color="red"
+            />
+            <FlowArrow />
+            <ArchNode
+              label="Reranker"
+              sub="Cohere cross-encoder"
+              icon={<Layers className="w-4 h-4" />}
+              color="blue"
+            />
+            <FlowArrow label="top ~10" />
+            <ArchNode
+              label="LLM Scoring"
+              sub="Claude, evidence-based"
+              icon={<Cpu className="w-4 h-4" />}
+              color="violet"
+            />
+            <FlowArrow />
+            <ArchNode
+              label="Ranked Results"
+              sub="score + rationale"
+              icon={<Target className="w-4 h-4" />}
+              color="emerald"
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1025,6 +1122,133 @@ aimory-talent-pool-dev-frontend-{acct-id}   # S3`}</CodeBlock>
         </div>
       </Section>
 
+      {/* Candidate Matching */}
+      <Section title="Candidate Matching" icon={<Target className="w-6 h-6" />}>
+        <p>
+          <Mono>POST /job-descriptions/{"{pk}"}/match</Mono> ranks every
+          candidate against a job description. The core idea:{" "}
+          <strong className="text-foreground/85">
+            cast a wide net cheaply, then spend the expensive AI reasoning on
+            only a small, carefully-chosen shortlist
+          </strong>{" "}
+          — an LLM call never scales with the size of the candidate pool. A
+          full write-up, including every experiment run to validate these
+          design choices, lives in{" "}
+          <Mono>docs/match.md</Mono> in the repo.
+        </p>
+        <MatchPipelineDiagram />
+
+        <SubSection title="Two ways to search, fused together">
+          <p className="text-sm leading-relaxed">
+            <strong className="text-foreground/80">Lexical search</strong>{" "}
+            matches exact terms against structured fields (skills, job
+            title, industry) — precise, but misses a candidate whose résumé
+            says "Software Developer" when the job calls for "Software
+            Engineer."{" "}
+            <strong className="text-foreground/80">Vector search</strong>{" "}
+            embeds the job description and every résumé chunk into the same
+            numeric space and finds candidates by{" "}
+            <em>meaning</em>, not exact wording — it catches those
+            differently-worded matches that lexical search misses. The two
+            result lists are merged with{" "}
+            <strong className="text-foreground/80">
+              Reciprocal Rank Fusion (RRF)
+            </strong>
+            : a candidate's position in each list (not the raw score, which
+            isn't comparable across methods) contributes to a combined
+            rank, so a candidate both methods agree on rises to the top.
+          </p>
+        </SubSection>
+
+        <SubSection title="The reranker">
+          <p className="text-sm leading-relaxed">
+            Before any candidate reaches the LLM, a dedicated reranking
+            model (Cohere Rerank, via Bedrock) reads each candidate's full
+            résumé side-by-side with the job description and reorders the
+            fused list by genuine relevance — catching nuance that
+            keyword/embedding matching alone can miss. Its reordering is
+            blended back with the fusion order (also via RRF) rather than
+            replacing it outright, so one bad reranker call can't drop a
+            well-matched candidate out of contention entirely.
+          </p>
+        </SubSection>
+
+        <SubSection title="Hard filters — the safety gate">
+          <div className="flex gap-3 p-4 rounded-xl bg-red-500/5 border border-red-500/20 mb-3">
+            <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+            <p className="text-sm leading-relaxed text-foreground/70">
+              Retrieval is about relevance, not eligibility — a candidate
+              can be a strong semantic match for a role's skills while
+              still failing a hard, non-negotiable requirement (most
+              importantly{" "}
+              <strong className="text-foreground/80">
+                required security clearance
+              </strong>
+              ). Because the lexical and vector search paths work
+              differently, one path can surface a candidate the other would
+              have excluded. The matcher re-applies the clearance
+              requirement to the fully merged candidate set — after both
+              search paths have contributed and before reranking or
+              scoring — so a clearance-ineligible candidate can never reach
+              the scored results, regardless of which search method
+              surfaced them.
+            </p>
+          </div>
+          <p className="text-sm leading-relaxed">
+            Minimum years of experience is deliberately handled
+            differently: it's a <em>soft</em> signal, not a hard gate — an
+            under-experienced candidate can still be scored, but a
+            deterministic guardrail caps how high their LLM score can go, so
+            they can't out-rank a genuinely qualified candidate through
+            keyword inflation alone.
+          </p>
+        </SubSection>
+
+        <SubSection title="LLM scoring">
+          <p className="text-sm leading-relaxed mb-3">
+            The final shortlist (~10 candidates) is scored by Claude against
+            each candidate's full résumé text — not a thin summary — using
+            an evidence-based rubric. Every score comes with a rationale
+            that cites specific résumé content, not just a number.
+          </p>
+          <div className="grid sm:grid-cols-2 gap-2">
+            {[
+              { label: "Role & experience alignment", pts: "40 pts" },
+              { label: "Skills & certifications", pts: "30 pts" },
+              { label: "Years of experience", pts: "15 pts" },
+              { label: "Clearance, location & industry", pts: "15 pts" },
+            ].map((r) => (
+              <div
+                key={r.label}
+                className="flex items-center justify-between px-3 py-2 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10"
+              >
+                <span className="text-xs text-foreground/70">{r.label}</span>
+                <Pill color="violet">{r.pts}</Pill>
+              </div>
+            ))}
+          </div>
+        </SubSection>
+
+        <SubSection title="Configuration & tuning">
+          <p className="text-sm mb-3">
+            Each retrieval stage can be toggled per-request via query
+            parameters — used by the evaluation harness (
+            <Mono>scripts/eval_matching.py</Mono>) to measure each feature's
+            individual contribution to match quality.
+          </p>
+          <CodeBlock>{`?vector=true|false   # semantic résumé-chunk retrieval (default: true)
+?rerank=true|false   # Cohere cross-encoder reordering (default: true)
+?expand=true|false   # lookup-table synonym expansion (default: false)
+?limit=N             # number of ranked results to return`}</CodeBlock>
+          <p className="text-sm mt-3">
+            Every match response includes a <Mono>telemetry</Mono> block
+            (candidate counts per stage, LLM/embedding calls, token usage,
+            latency) so quality and cost can be measured directly rather
+            than assumed.
+          </p>
+        </SubSection>
+      </Section>
+
       {/* Auth */}
       <Section
         title="Authentication & Authorization"
@@ -1194,6 +1418,18 @@ aws cloudfront create-invalidation \\
               script: "run_dedup.py",
               desc: "Invokes the lookup-dedup Lambda. Always preview with --dry-run first.",
               usage: "python scripts/run_dedup.py --dry-run",
+            },
+            {
+              script: "backfill_embeddings.py",
+              desc: "One-time backfill: chunks + embeds every résumé into the talent-chunks kNN index used by semantic match retrieval.",
+              usage:
+                "python scripts/backfill_embeddings.py --table <talent-profiles-table> --endpoint <opensearch-endpoint>",
+            },
+            {
+              script: "eval_matching.py",
+              desc: "Ablation harness for the matcher — A/B's vector/rerank/expand toggles across all JDs, reporting quality + measured cost per feature.",
+              usage:
+                "python scripts/eval_matching.py --function <match-lambda> --jd-table <jd-table> --runs 2",
             },
           ].map(({ script, desc, usage }, i, arr) => (
             <div

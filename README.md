@@ -4,6 +4,7 @@ An AI-powered talent management platform. Resumes uploaded to OneDrive are autom
 
 ## Repository Structure
 
+
 | Directory | Description |
 |-----------|-------------|
 | [frontend/web/](frontend/web/) | React + TypeScript SPA (dashboard, search, candidate management) |
@@ -42,6 +43,8 @@ OneDrive Folder
 ```
 
 **Search:** `GET /talents` queries OpenSearch with prefix matching on name, fuzzy matching on summary/resume text, and exact-term filters on skills, certifications, clearance, and location. Results include highlighted excerpt fragments.
+
+**Matching:** `POST /job-descriptions/{pk}/match` ranks candidates against a job description through a hybrid retrieve→rerank→score pipeline (hard filters, lexical + semantic vector recall, a cross-encoder reranker, then LLM scoring with evidence-based rationale on a small final shortlist). See [docs/match.md](docs/match.md) for the full design, the experiments behind each decision, and cost/latency tradeoffs.
 
 **Auth:** Microsoft Entra ID federated through AWS Cognito. JWT tokens validated by API Gateway on every request.
 
@@ -109,6 +112,7 @@ aws cloudfront create-invalidation --distribution-id <id> --paths "/*"
 | Frontend setup & components | [frontend/web/README.md](frontend/web/README.md) |
 | Infrastructure & deployment | [infra/README.md](infra/README.md) |
 | Operational scripts | [scripts/README.md](scripts/README.md) |
+| Candidate matching system (design + experiments) | [docs/match.md](docs/match.md) |
 
 ## Contributing
 

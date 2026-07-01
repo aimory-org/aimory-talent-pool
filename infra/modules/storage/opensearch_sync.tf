@@ -137,3 +137,20 @@ resource "aws_iam_role_policy" "opensearch_sync_es" {
     }]
   })
 }
+
+# Bedrock access for résumé chunk embeddings (Phase 2a — Titan Text Embeddings v2).
+resource "aws_iam_role_policy" "opensearch_sync_bedrock" {
+  name = "${var.project_name}-${var.environment}-opensearch-sync-bedrock"
+  role = aws_iam_role.opensearch_sync_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = ["bedrock:InvokeModel"]
+      Resource = [
+        "arn:aws:bedrock:*::foundation-model/amazon.titan-embed-text-v2:0",
+      ]
+    }]
+  })
+}
