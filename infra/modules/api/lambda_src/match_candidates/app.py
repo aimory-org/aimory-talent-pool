@@ -10,10 +10,8 @@ Match candidates against a job description.
 import concurrent.futures
 import json
 import os
-import re
 import time
 from decimal import Decimal
-from difflib import SequenceMatcher
 
 import boto3
 from opensearchpy import AWSV4SignerAuth, OpenSearch, RequestsHttpConnection
@@ -127,30 +125,6 @@ def _meets_hard_requirements(jd, candidate):
     return True
 
 
-_SKILL_NOISE_TOKENS = {
-    "skill",
-    "skills",
-    "framework",
-    "frameworks",
-    "methodology",
-    "methodologies",
-    "development",
-    "delivery",
-    "experience",
-    "knowledge",
-    "proficiency",
-    "tools",
-    "tool",
-    "platform",
-    "platforms",
-    "technologies",
-    "technology",
-    "hands",
-    "on",
-    "and",
-}
-
-
 def _to_list(value):
     """Normalize comma-delimited or list fields into a clean string list."""
     if value is None:
@@ -171,83 +145,20 @@ def _to_float(value):
         return None
 
 
-def _skill_tokens(skill):
-    """Return normalized tokens for fuzzy skill matching."""
-    if not skill:
-        return set()
-
-    clean = str(skill).lower().replace("&", " and ")
-    clean = re.sub(r"[^a-z0-9\s]", " ", clean)
-    tokens = []
-    for raw in clean.split():
-        tok = raw.strip()
-        if not tok or tok in _SKILL_NOISE_TOKENS:
-            continue
-        if len(tok) > 4 and tok.endswith("ies"):
-            tok = tok[:-3] + "y"
-        elif len(tok) > 4 and tok.endswith("s"):
-            tok = tok[:-1]
-        tokens.append(tok)
-    return set(tokens)
-
-
-def _skills_semantically_match(required_skill, candidate_skill):
-    """Return True when two skill phrases appear semantically equivalent for matching."""
-    req_raw = str(required_skill or "").strip().lower()
-    cand_raw = str(candidate_skill or "").strip().lower()
-    if not req_raw or not cand_raw:
-        return False
-    if req_raw == cand_raw:
-        return True
-
-    req_tokens = _skill_tokens(required_skill)
-    cand_tokens = _skill_tokens(candidate_skill)
-    if not req_tokens or not cand_tokens:
-        return False
-
-    # Require meaningful tokens — very short token sets match too broadly
-    if len(req_tokens) == 1 and len(cand_tokens) == 1:
-        # Single-token skills must match exactly (e.g. "AI" != "BI")
-        return req_tokens == cand_tokens
-
-    overlap = len(req_tokens & cand_tokens)
-    overlap_req = overlap / max(1, len(req_tokens))
-    if overlap_req >= 0.80:
-        return True
-
-    req_phrase = " ".join(sorted(req_tokens))
-    cand_phrase = " ".join(sorted(cand_tokens))
-    phrase_similarity = SequenceMatcher(None, req_phrase, cand_phrase).ratio()
-    return overlap_req >= 0.6 and phrase_similarity >= 0.85
-
-
-def _count_missing_required_skills(required_skills, candidate_skills):
-    """Count required skills that have no semantic match in candidate skills."""
-    missing = 0
-    for req_skill in required_skills:
-        if not any(_skills_semantically_match(req_skill, cand_skill) for cand_skill in candidate_skills):
-            missing += 1
-    return missing
-
-
 def _apply_score_guardrails(jd, candidate, score, rationale):
-    """Apply deterministic caps so skills-only matches do not over-score misaligned candidates."""
+    """Apply deterministic caps for FACTUAL constraints only (clearance, years).
+
+    Skill fit is judged by the LLM from the full résumé, NOT by lexical skill-tag matching:
+    the old missing-required-skills cap counted JD skills absent from the candidate's *tags*
+    and capped strong candidates to "partial" (e.g. a 25-yr Senior Systems Engineer flagged as
+    missing "Trade Studies"/"Functional Analysis" because those exact tags weren't extracted).
+    Same brittleness as the removed title cap — guardrails enforce facts, not keyword overlap.
+    """
     capped_score = max(0, min(100, int(score)))
     cap = 100
     reasons = []
 
-    # Penalize missing required skills even when overall skill overlap is high.
-    required_skills = _to_list(jd.get("required_skills"))
-    candidate_skills = _to_list(candidate.get("skill_names"))
-    missing_required = _count_missing_required_skills(required_skills, candidate_skills)
-    if missing_required >= 2:
-        cap = min(cap, 65)
-        reasons.append("missing multiple required skills")
-    elif missing_required == 1:
-        cap = min(cap, 78)
-        reasons.append("missing one required skill")
-
-    # Penalize years-of-experience gaps.
+    # Penalize years-of-experience gaps (a factual, numeric constraint).
     min_exp = _to_float(jd.get("min_experience_years"))
     cand_exp = _to_float(candidate.get("years_of_experience"))
     if min_exp is not None and cand_exp is not None and cand_exp < min_exp:

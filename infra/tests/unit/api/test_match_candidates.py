@@ -165,9 +165,9 @@ class TestMatchCandidatesHandler:
 
         body = json.loads(resp["body"])
         assert len(body["matches"]) == 1
-        # Bob is below required experience (cap 75) and missing a required skill (cap 78),
-        # so the deterministic guardrails still cap his inflated score at 75.
-        # (The old lexical job-title cap of 70 was intentionally removed.)
+        # Bob is 3y below the JD's 5y minimum → experience-shortfall guardrail caps at 75.
+        # (The lexical job-title and missing-skills caps were intentionally removed; only
+        # factual constraints — clearance rank, years — still cap.)
         assert body["matches"][0]["score"] <= 75
 
     @patch("app.bedrock_agent")

@@ -151,19 +151,40 @@ summary + responsibilities + skills.
 
 ---
 
-## 3. Why job title isn't a hard requirement
+## 3. Why lexical matching never gates the score (title *or* skills)
 
-An earlier version of the matcher capped a candidate's score if their job title didn't
-closely match the JD's title, using simple text-similarity heuristics. That was removed: it
-penalized candidates whose title genuinely differs from the JD's wording but who do the same
-work (e.g. "Software Developer" vs. "Software Engineer" vs. "Computer Scientist" — often
-functionally interchangeable). Instead:
+Deterministic score caps enforce **facts** — clearance rank and years of experience — and
+nothing else. Two earlier lexical guardrails were removed because they mechanically punished
+good candidates for wording, which is exactly the judgment the LLM should make from the résumé:
 
-- Job title is still stored, indexed, and shown to the LLM — it's a **positive signal**, just
-  not a gate.
-- Equivalence between differently-worded roles is now handled by matching against
+**The job-title cap.** An earlier version capped a candidate's score if their job title didn't
+closely match the JD's title (text-similarity heuristics). It penalized candidates whose title
+genuinely differs from the JD's wording but who do the same work ("Software Developer" vs.
+"Software Engineer" vs. "Computer Scientist" — often functionally interchangeable). Removed.
+
+**The missing-required-skills cap.** A later-discovered instance of the same bug: the matcher
+counted how many of the JD's required skills were absent from the candidate's *extracted skill
+tags* and capped the score to "partial" (≤65 for 2+, ≤78 for 1). Because JDs list granular
+sub-skills that are rarely all extracted as literal tags, this capped *every* strong candidate.
+A real example: a 25-year Senior Systems Engineer was force-capped to "partial" as "missing"
+Trade Studies, Functional Analysis, V&V, etc. — none of which any candidate's tags would ever
+spell out in full. Removed; the lexical helpers it relied on were deleted.
+
+In both cases:
+- Job title and skills are still stored, indexed, and shown to the LLM — they're **positive
+  signals**, just not gates.
+- Equivalence between differently-worded roles/skills is handled by matching against
   **responsibilities**, not titles (§2.5), and by the LLM's evidence-based rubric, which
-  explicitly credits differently-worded but equivalent skills and experience.
+  explicitly credits differently-worded but equivalent skills and experience. Validated by
+  hand: on a "Senior Systems Engineer" (GEOINT) JD, the LLM correctly scored a candidate
+  titled "Systems Engineer" as 58/partial by reading past the title collision — his actual work
+  is IT operations / config management, not the JD's GEOINT SE methodology.
+
+**Frontend note.** The Match Insights panel previously showed removed-from-consideration skills
+as red "Missing skill: X" chips computed the same lexical way — which *looked* authoritative and
+misrepresented good candidates. It now shows amber "Not in tags: X" chips with a caption
+clarifying the exact skill isn't in the candidate's extracted tags (the résumé may still
+demonstrate it) and that the AI score is based on the full résumé, not these tags.
 
 ---
 
