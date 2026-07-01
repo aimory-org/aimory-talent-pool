@@ -283,14 +283,24 @@ resource "aws_iam_role_policy" "api_bedrock" {
 
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Sid    = "InvokeBedrockModel"
-      Effect = "Allow"
-      Action = ["bedrock:InvokeModel", "bedrock:Converse"]
-      Resource = [
-        "arn:aws:bedrock:*::foundation-model/*",
-        "arn:aws:bedrock:*:*:inference-profile/*",
-      ]
-    }]
+    Statement = [
+      {
+        Sid    = "InvokeBedrockModel"
+        Effect = "Allow"
+        Action = ["bedrock:InvokeModel", "bedrock:Converse"]
+        Resource = [
+          "arn:aws:bedrock:*::foundation-model/*",
+          "arn:aws:bedrock:*:*:inference-profile/*",
+        ]
+      },
+      {
+        # Rerank does not authorize against the foundation-model ARN the way InvokeModel
+        # does, so it needs its own statement. Rerank is a read-only inference call.
+        Sid      = "RerankCandidates"
+        Effect   = "Allow"
+        Action   = ["bedrock:Rerank"]
+        Resource = ["*"]
+      },
+    ]
   })
 }

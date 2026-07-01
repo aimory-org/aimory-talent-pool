@@ -155,7 +155,7 @@ describe("JdDetailPanel", () => {
     await waitFor(() => {
       expect(screen.getByText("Match Breakdown")).toBeInTheDocument();
     });
-    expect(screen.getByText(/Missing skill: Python/i)).toBeInTheDocument();
+    expect(screen.getByText(/Not in tags: Python/i)).toBeInTheDocument();
     expect(screen.getByText(/Not Matching/i)).toBeInTheDocument();
   });
 

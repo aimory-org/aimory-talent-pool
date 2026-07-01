@@ -1774,18 +1774,18 @@ export function ProfileDetailPanel({
                         {matchInsights.missingRequiredSkills.map((skill) => (
                           <span
                             key={`missing-required-skill-${skill}`}
-                            className="px-2 py-0.5 rounded text-[11px] border bg-red-500/15 border-red-500/25 text-red-700 dark:text-red-300"
+                            className="px-2 py-0.5 rounded text-[11px] border bg-amber-500/15 border-amber-500/25 text-amber-700 dark:text-amber-300"
                           >
-                            Missing skill: {skill}
+                            Not in tags: {skill}
                           </span>
                         ))}
                         {matchInsights.missingRequiredCertifications.map(
                           (cert) => (
                             <span
                               key={`missing-required-cert-${cert}`}
-                              className="px-2 py-0.5 rounded text-[11px] border bg-red-500/15 border-red-500/25 text-red-700 dark:text-red-300"
+                              className="px-2 py-0.5 rounded text-[11px] border bg-amber-500/15 border-amber-500/25 text-amber-700 dark:text-amber-300"
                             >
-                              Missing cert: {cert}
+                              Not in tags: {cert}
                             </span>
                           ),
                         )}
@@ -1806,6 +1806,16 @@ export function ProfileDetailPanel({
                             </p>
                           )}
                       </div>
+                      {(matchInsights.missingRequiredSkills.length > 0 ||
+                        matchInsights.missingRequiredCertifications.length >
+                          0) && (
+                        <p className="text-[10px] text-foreground/40 italic leading-snug">
+                          "Not in tags" means the exact skill/cert isn't in this
+                          candidate's extracted tags — the résumé may still
+                          demonstrate it. The AI match score is based on the full
+                          résumé, not these tags.
+                        </p>
+                      )}
                     </div>
                   </div>
 

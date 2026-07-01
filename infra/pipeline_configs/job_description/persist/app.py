@@ -111,7 +111,15 @@ def _validate_jd(jd):
         "industry_category",
         "job_title",
     }
-    allowed = required | {"is_valid", "rejection_reason", "salary_range", "description_summary"}
+    allowed = required | {
+        "is_valid",
+        "rejection_reason",
+        "salary_range",
+        "description_summary",
+        "responsibilities",
+        "seniority",
+        "domain",
+    }
     missing = required - jd.keys()
     if missing:
         raise ValueError(f"Missing required keys: {sorted(missing)}")
@@ -226,6 +234,12 @@ def handler(event, context):
     pk = str(uuid.uuid4())
     now = datetime.now(timezone.utc).isoformat()
 
+    # Full normalized JD text (mirrors resume_text) — richer query signal for matching than
+    # the 500-char summary, for both the LLM scorer and the embedding/rerank query.
+    jd_text = ""
+    if event.get("normalized") and event["normalized"].get("text"):
+        jd_text = event["normalized"]["text"]
+
     # Denormalized fields for filtering/search
     all_skills = list(jd.get("required_skills") or []) + list(jd.get("desired_skills") or [])
     skill_names = ",".join(all_skills) if all_skills else ""
@@ -253,6 +267,10 @@ def handler(event, context):
         "job_title": jd.get("job_title") or "Unknown",
         "salary_range": jd.get("salary_range"),
         "description_summary": jd.get("description_summary"),
+        "responsibilities": jd.get("responsibilities") or [],
+        "seniority": jd.get("seniority"),
+        "domain": jd.get("domain"),
+        "jd_text": jd_text,
         "skill_names": skill_names,
         "cert_names": cert_names,
         "created_at": now,

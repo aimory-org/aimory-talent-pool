@@ -7,6 +7,7 @@ Handles REMOVE → delete document
 Creates the index with explicit mappings on first run (idempotent).
 """
 
+import json
 import os
 from decimal import Decimal
 
@@ -17,7 +18,17 @@ from opensearchpy import AWSV4SignerAuth, OpenSearch, RequestsHttpConnection
 OPENSEARCH_ENDPOINT = os.environ["OPENSEARCH_ENDPOINT"]
 INDEX_NAME = "talent-profiles"
 
+# --- Semantic search (Phase 2a): résumé chunk embeddings -----------------------
+# Chunks live in a SIBLING index so kNN settings never touch the main profile index.
+CHUNK_INDEX = "talent-chunks"
+EMBED_MODEL_ID = os.environ.get("EMBED_MODEL_ID", "amazon.titan-embed-text-v2:0")
+EMBED_DIM = int(os.environ.get("EMBED_DIM", "512"))
+# Fixed-window chunking (Fork A). ~1400 chars ≈ ~350 tokens, ~200 char overlap.
+CHUNK_CHARS = int(os.environ.get("CHUNK_CHARS", "1400"))
+CHUNK_OVERLAP = int(os.environ.get("CHUNK_OVERLAP", "200"))
+
 _deserializer = TypeDeserializer()
+_bedrock = boto3.client("bedrock-runtime", region_name=os.environ.get("AWS_REGION", "us-east-1"))
 
 
 def _get_client():
@@ -87,6 +98,101 @@ def _ensure_index(client):
     print(f"Created index: {INDEX_NAME}")
 
 
+def _ensure_chunk_index(client):
+    """Create the sibling kNN chunk index if it doesn't exist (idempotent)."""
+    if client.indices.exists(index=CHUNK_INDEX):
+        return
+    client.indices.create(
+        index=CHUNK_INDEX,
+        body={
+            "settings": {"index": {"knn": True}},
+            "mappings": {
+                "properties": {
+                    "parent_pk": {"type": "keyword"},
+                    "chunk_index": {"type": "integer"},
+                    "chunk_type": {"type": "keyword"},
+                    "text": {"type": "text"},
+                    "vector": {
+                        "type": "knn_vector",
+                        "dimension": EMBED_DIM,
+                        "method": {
+                            "name": "hnsw",
+                            "space_type": "cosinesimil",
+                            "engine": "lucene",
+                        },
+                    },
+                }
+            },
+        },
+    )
+    print(f"Created index: {CHUNK_INDEX}")
+
+
+def _chunk_text(text, size=CHUNK_CHARS, overlap=CHUNK_OVERLAP):
+    """Split text into overlapping fixed-size character windows (Fork A)."""
+    text = (text or "").strip()
+    if not text:
+        return []
+    chunks = []
+    start, n = 0, len(text)
+    step = max(1, size - overlap)
+    while start < n:
+        chunks.append(text[start : start + size])
+        if start + size >= n:
+            break
+        start += step
+    return chunks
+
+
+def _embed(text):
+    """Return a normalized embedding vector for a single chunk via Titan v2."""
+    resp = _bedrock.invoke_model(
+        modelId=EMBED_MODEL_ID,
+        body=json.dumps({"inputText": text[:8000], "dimensions": EMBED_DIM, "normalize": True}),
+    )
+    return json.loads(resp["body"].read())["embedding"]
+
+
+def _delete_chunks(client, pk):
+    """Remove all chunk docs for a candidate (idempotent)."""
+    try:
+        client.delete_by_query(
+            index=CHUNK_INDEX,
+            body={"query": {"term": {"parent_pk": pk}}},
+            conflicts="proceed",
+            refresh=True,
+            ignore=[404],
+        )
+    except Exception as e:
+        print(f"Chunk cleanup failed for {pk}: {e}")
+
+
+def _sync_chunks(client, pk, resume_text):
+    """Re-chunk and re-embed a candidate's résumé into the chunk index.
+
+    Best-effort: an embedding failure on one chunk is logged and skipped; it never
+    blocks the main profile document from being indexed.
+    """
+    _delete_chunks(client, pk)
+    chunks = _chunk_text(resume_text)
+    if not chunks:
+        return 0
+    actions = []
+    for i, chunk in enumerate(chunks):
+        try:
+            vector = _embed(chunk)
+        except Exception as e:
+            print(f"Embed failed for {pk} chunk {i}: {e}")
+            continue
+        actions.append({"index": {"_index": CHUNK_INDEX, "_id": f"{pk}::{i}"}})
+        actions.append(
+            {"parent_pk": pk, "chunk_index": i, "chunk_type": "resume", "text": chunk, "vector": vector}
+        )
+    if actions:
+        client.bulk(body=actions, refresh=False)
+    return len(actions) // 2
+
+
 def _deserialize(dynamo_item):
     """Convert DynamoDB typed JSON (e.g. {'S': 'foo'}) to plain Python values."""
     return {k: _deserializer.deserialize(v) for k, v in dynamo_item.items()}
@@ -123,6 +229,7 @@ def _prepare_document(item):
 def handler(event, context):
     client = _get_client()
     _ensure_index(client)
+    _ensure_chunk_index(client)
 
     processed = 0
     for record in event.get("Records", []):
@@ -139,6 +246,18 @@ def handler(event, context):
             client.index(index=INDEX_NAME, id=pk, body=item)
             print(f"Indexed: {pk}")
 
+            # Re-embed résumé chunks only when resume_text actually changed, so
+            # recruiter edits (status/notes/tags) don't trigger needless re-embedding.
+            resume_text = item.get("resume_text") or ""
+            old_image = record["dynamodb"].get("OldImage")
+            old_resume = _deserialize(old_image).get("resume_text") or "" if old_image else ""
+            if resume_text and (event_name == "INSERT" or resume_text != old_resume):
+                try:
+                    n = _sync_chunks(client, pk, resume_text)
+                    print(f"Embedded {n} chunks for {pk}")
+                except Exception as e:
+                    print(f"Chunk sync failed for {pk}: {e}")
+
         elif event_name == "REMOVE":
             old_image = record["dynamodb"].get("OldImage")
             if not old_image:
@@ -150,6 +269,7 @@ def handler(event, context):
                 print(f"Deleted: {pk}")
             except Exception as e:
                 print(f"Delete failed for {pk}: {e}")
+            _delete_chunks(client, pk)
 
         processed += 1
 

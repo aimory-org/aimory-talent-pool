@@ -104,4 +104,22 @@ Summary:
   and broad "soft-skill" language.
 - Store in the "description_summary" field.
 
+Responsibilities (MOST IMPORTANT for matching):
+- Extract 3-8 concise statements of what the role actually requires the person to DO —
+  the core day-to-day duties, scope of ownership, and mission.
+- Phrase each as a capability/activity a candidate's résumé could demonstrate, e.g.
+  "Design and maintain CI/CD pipelines for classified workloads", not vague fluff.
+- These are matched directly against candidate experience, so make them specific and
+  evidence-oriented. Exclude boilerplate and generic soft-skill language.
+- Store in the "responsibilities" array.
+
+Seniority:
+- Determine the role's seniority level (Junior, Mid, Senior, Lead, Principal, Manager,
+  Director, Executive). Store in "seniority", or null if genuinely unclear.
+
+Domain:
+- Determine the primary mission/domain of the role (e.g. "Signals Intelligence",
+  "Cybersecurity Operations", "Systems Engineering", "Financial Audit").
+- Store in "domain", or null if unclear.
+
 - If a field cannot be determined, use null (or empty array [] for lists).

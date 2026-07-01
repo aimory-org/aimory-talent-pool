@@ -147,9 +147,11 @@ locals {
       memory  = 512
       layers  = [var.opensearch_layer_arn]
       env = {
-        JOB_DESCRIPTIONS_TABLE = var.job_descriptions_table_name
-        OPENSEARCH_ENDPOINT    = var.opensearch_endpoint
-        BEDROCK_MODEL_ID       = var.bedrock_model_id
+        JOB_DESCRIPTIONS_TABLE  = var.job_descriptions_table_name
+        OPENSEARCH_ENDPOINT     = var.opensearch_endpoint
+        BEDROCK_MODEL_ID        = var.match_model_id
+        SKILLS_LOOKUP_TABLE     = var.lookup_tables.skills.name
+        JOB_TITLES_LOOKUP_TABLE = var.lookup_tables.job_titles.name
       }
     }
     get_jd_upload_url = {
