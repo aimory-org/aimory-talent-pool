@@ -65,6 +65,33 @@ flowchart LR
 | **Union scoring set** | Selects which candidates the LLM scores as the **union** of each retrieval leg's best (lexical-best ∪ vector-best), rather than the top-N of one blended ranking. | Guarantees a strong single-signal candidate still reaches the LLM — a great structured-skills match with a terse résumé, or a great semantic match worded differently from the skill tags. See [§2.4](#24-choosing-who-the-llm-scores-union-based-selection). |
 | **LLM scoring** | Claude scores the shortlist (~12 candidates) against the JD using an evidence-based rubric, producing a 0-100 score and a rationale citing specific résumé content. | The only stage that reasons in natural language about *why* a candidate fits — reserved for a small, fixed-size shortlist so cost never scales with pool size. It is the real precision judge. |
 
+### 2.0 What actually runs today (the deployed default)
+
+The diagram and table above show every stage the system *has*, including the two optional
+ones. Stripped to what a real match request executes with default settings, the live pipeline
+is:
+
+1. **Build the enriched JD query** (`_jd_query_text`, [§2.6](#26-the-job-description-side)) —
+   job title + seniority + domain + summary + responsibilities + skills.
+2. **Lexical search** against structured candidate fields, with clearance and
+   minimum-experience filters applied natively in the query.
+3. **Vector search** — embed the JD query and k-NN the résumé-chunk index
+   ([§2.2](#22-chunking--embeddings)); the top chunk per candidate sets their vector rank.
+4. **RRF fusion** of the two ranked lists ([§2.1](#21-two-ways-to-search-fused-together)) —
+   this fused order is what determines the returned display order.
+5. **Clearance safety gate** re-applied to the merged set
+   ([§6](#6-a-real-bug-we-found-and-fixed-the-clearance-safety-gate)).
+6. **Union selection** of the scoring shortlist ([§2.4](#24-choosing-who-the-llm-scores-union-based-selection)):
+   8 lexical-best slots + 4 reserved vector-only slots = 12 candidates (`SCORING_LIMIT`).
+7. **LLM scoring** — Claude scores all 12 against the full résumé in a single concurrent wave
+   (~15s, ~$0.12/match), and those scores decide the final ranking returned to the user.
+
+**Not in this path:** the reranker ([§2.3](#23-the-reranker-optional-off-by-default)) and
+lookup-table expansion ([§4](#4-lookup-table-query-expansion-optional-off-by-default)) are both
+implemented and available per request (`?rerank=true`, `?expand=true`) but off by default —
+the reranker until the pool outgrows what retrieval + LLM scoring handle directly, and
+expansion because its measured benefit didn't justify an extra LLM call per match.
+
 ### 2.1 Two ways to search, fused together
 
 **Lexical search** matches exact terms against structured candidate fields. It's precise and
