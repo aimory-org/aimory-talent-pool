@@ -582,18 +582,13 @@ are recruiter-reviewable and currently lean lexical — see §8.
   currently lean lexical, so on this set vector reads roughly neutral; expanding the set and
   correcting labels (especially adding genuine wording-mismatch winners) would give vector a
   fairer test and sharpen the config comparison.
-- **Graded semantic scoring on the lookup tables (from a user idea).** Today skill matching is
-  effectively binary: the lexical leg matches literal `skill_names` (with Phase 2b synonym
-  expansion, also binary), and graded relatedness is left entirely to the LLM scorer reading
-  the full résumé. A middle ground: run semantic similarity over the skills/titles **lookup
-  tables** and assign a *graded* score to related-but-not-exact skills (e.g. "Tableau" scoring
-  partial credit toward a "Power BI" requirement), then feed that as a **weighted `should`
-  clause** into the prefilter — retrieval still searches directly for the JD's skills, but with
-  measured leeway instead of exact-match-or-nothing. This would sit between exact lexical
-  matching and full résumé-chunk vector search, and could raise recall of candidates whose
-  skills are adjacent to (not identical to) the JD's. Worth prototyping behind a toggle and
-  measuring on the golden set before making it a default; care needed so it boosts recall into
-  scoring without re-introducing the dilution that §7.6 Finding B fixed.
+- **Graded semantic scoring on the lookup tables (from a user idea).** Skill matching is
+  effectively binary today — the lexical leg matches literal `skill_names` (Phase 2b synonym
+  expansion is also binary), and all graded relatedness is left to the LLM scorer. A middle
+  ground is to run semantic similarity over the skills/titles **lookup tables** and give a
+  *graded* score to related-but-not-exact skills, feeding it as a **weighted `should` clause**
+  into the prefilter. Detailed design, motivation, and risks in
+  [§8.1](#81-graded-semantic-skill-matching-on-the-lookup-tables-proposal).
 - **Chunking is a simple fixed-window strategy.** It can split a résumé mid-sentence or blend
   two sections together. Good enough to drive recall; a smarter, structure-aware chunker is a
   future improvement, not a current problem.
@@ -634,6 +629,78 @@ are recruiter-reviewable and currently lean lexical — see §8.
   implemented as part of this build because it cannot be tested while the quota is currently
   exhausted — verifying a scoring-path change blind, under the very failure condition it's
   meant to handle, risks introducing a real regression instead of fixing one.
+
+### 8.1 Graded semantic skill matching on the lookup tables (proposal)
+
+**The gap.** Skill matching today is binary. The lexical prefilter (`_build_prefilter_query`)
+matches a candidate's literal `skill_names` against the JD's required skills; Phase 2b synonym
+expansion widens that set but is still all-or-nothing (a term is either in the expanded set or
+it isn't). The only place *graded* relatedness is currently judged is the LLM scorer, which
+reads the full résumé and can credit "Tableau" toward a "Power BI" requirement — but that
+happens **after** retrieval has already decided who reaches scoring. So a candidate whose
+skills are *adjacent* to the JD's (not identical, not a known synonym) can be under-ranked by
+the prefilter and fall below the scoring cut before the LLM ever sees them. This is a recall
+problem at the retrieval stage, and it's invisible to the LLM scorer by construction.
+
+**The idea (Ben's).** Keep searching directly for the JD's skills against the lookup tables —
+but instead of exact-match-or-nothing, run **semantic similarity over the lookup-table entries**
+and assign related-but-not-exact skills a **graded score**. A "Power BI" requirement would then
+match "Power BI" at 1.0, a close cousin like "Tableau" or "Looker" at, say, 0.7, and an
+unrelated skill at ~0. That graded score becomes a **weighted `should` clause** in the
+OpenSearch prefilter, so a candidate with adjacent skills gets a proportional retrieval boost —
+enough to lift genuinely-relevant people into the scored set — rather than being treated as a
+non-match. It occupies the middle ground between exact lexical matching (precise but brittle to
+wording) and full résumé-chunk vector search (recovers wording mismatches but is diffuse over
+whole résumés rather than focused on the specific skills the JD asked for).
+
+**How it would work, concretely.**
+1. **Offline: embed the lookup tables.** Precompute an embedding for every canonical entry in
+   the skills lookup table (`aimory-talent-pool-dev-skills-lookup`) — and optionally the job
+   titles lookup — using the same Titan embedding model already in use. This is a one-time /
+   on-change batch job (the tables are small and change rarely), so it adds **no per-match
+   embedding cost**.
+2. **Per match: expand each JD skill into a graded neighbor set.** For each required skill on
+   the JD, k-NN the lookup embeddings to get the top-N nearest canonical skills with their
+   cosine similarities, keeping only those above a threshold (e.g. ≥ 0.6). This yields, per JD
+   skill, a small map of `related_skill -> weight`.
+3. **Per match: fold the graded weights into the prefilter.** Add the related skills as
+   `should` clauses on `skill_names`, each `boost`ed by its similarity weight, alongside the
+   existing exact-match clauses (which stay at full weight). Exact matches still dominate;
+   adjacent skills contribute proportionally. Hard filters (clearance, §6) are untouched.
+4. **Leave scoring to the LLM.** The graded signal only decides *who gets retrieved into the
+   scored set* — it never caps or sets the final score. The LLM remains the precision judge,
+   exactly as today.
+
+**Why this is promising.** It directly targets retrieval recall for the wording-mismatch case,
+using a focused, skill-level signal (not the diffuse whole-résumé vector), at effectively zero
+added per-match cost (lookup embeddings are precomputed; the per-match k-NN is tiny). It's also
+naturally explainable — you can show *why* a candidate was boosted ("matched 'Power BI'
+requirement via 'Tableau' at 0.71"), which the résumé-chunk vector leg cannot.
+
+**Risks and open questions (must be measured, not assumed).**
+- **Dilution regression.** §7.6 Finding B showed that naively adding retrieval weight can push
+  strong single-leg candidates below the scoring cut. Graded `should` boosts must be tuned (and
+  probably capped in aggregate) so they *add* recall without displacing exact-skill matches.
+  This must be validated against the golden set, and the graded signal should route through the
+  union-selection logic (§2.4), not a raw fused top-N.
+- **Threshold and weight calibration.** The similarity cutoff and the boost curve
+  (linear? squared? capped?) need empirical tuning — too generous and unrelated skills leak in,
+  too strict and it does nothing.
+- **Embedding quality on short strings.** Skill names are 1-3 words; general-purpose embeddings
+  can conflate surface-similar but semantically different terms (e.g. "Java" vs "JavaScript",
+  "Security Clearance" vs "Security Engineering"). A curated denylist or a manual review of the
+  nearest-neighbor graph may be needed.
+- **Overlap with Phase 2b and the LLM.** Some of this benefit may already be captured by
+  synonym expansion (for exact synonyms) and the LLM scorer (for candidates who reach scoring).
+  The measurable question is whether the *retrieval-stage* recall gain for adjacent-skill
+  candidates is real and additive, or whether the existing two mechanisms already cover most of
+  it.
+
+**Recommendation.** Prototype behind a per-request toggle (mirroring `?vector=` / `?rerank=`),
+measure recall@k on the golden set (§7.6) with the labels corrected to include genuine
+adjacent-skill winners, and only promote to default if it improves recall without
+re-introducing dilution or hurting latency. Tracked in
+[issue #227](https://github.com/aimory-org/aimory-talent-pool/issues/227).
 
 ---
 
