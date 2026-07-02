@@ -134,8 +134,6 @@ module "api" {
   github_repo          = var.github_repo
   github_workflow_file = var.github_workflow_file
 
-  bedrock_model_id = var.bedrock_model_id
-
   cors_allowed_origins = concat(
     ["http://localhost:5173"],
     [for url in var.cognito_callback_urls : url if url != "http://localhost:5173"],
