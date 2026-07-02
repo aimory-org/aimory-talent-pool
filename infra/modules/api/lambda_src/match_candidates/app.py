@@ -83,7 +83,7 @@ RERANK_DEFAULT = os.environ.get("RERANK_DEFAULT", "false")
 SKILLS_LOOKUP_TABLE = os.environ.get("SKILLS_LOOKUP_TABLE", "")
 JOB_TITLES_LOOKUP_TABLE = os.environ.get("JOB_TITLES_LOOKUP_TABLE", "")
 EXPAND_DEFAULT = os.environ.get("EXPAND_DEFAULT", "false")
-_lookup_cache = {}
+_lookup_cache: dict[str, list[str]] = {}
 
 
 class DecimalEncoder(json.JSONEncoder):
