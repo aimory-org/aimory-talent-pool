@@ -45,9 +45,7 @@ SCORING_BATCH = int(os.environ.get("SCORING_BATCH", "2"))
 # Bedrock call regardless of SCORING_LIMIT. Default = ceil(SCORING_LIMIT / SCORING_BATCH). A
 # straggler batch spilling into a second wave was pushing full-budget requests past the API
 # Gateway 30s cap (frontend 503s); one wave keeps a full 12-candidate score at ~one call.
-MAX_SCORING_WORKERS = int(
-    os.environ.get("MAX_SCORING_WORKERS", str(-(-SCORING_LIMIT // SCORING_BATCH)))
-)
+MAX_SCORING_WORKERS = int(os.environ.get("MAX_SCORING_WORKERS", str(-(-SCORING_LIMIT // SCORING_BATCH))))
 # Default number of results to return
 DEFAULT_RETURN_LIMIT = 10
 # Max characters of résumé text sent to the LLM per candidate (~3k tokens). Kept modest
@@ -790,9 +788,7 @@ def handler(event, context):
         # (see _union_score_pks). Vector ADDS recall — it can't demote a strong lexical
         # (structured-skill) match out of scoring, which was the RRF-fusion dilution bug.
         cand_by_pk = {c["pk"]: c for c in candidates if c.get("pk")}
-        score_pks = _union_score_pks(
-            lexical_pks, vector_pks, set(cand_by_pk), SCORING_LIMIT, VEC_SCORE_SLOTS
-        )
+        score_pks = _union_score_pks(lexical_pks, vector_pks, set(cand_by_pk), SCORING_LIMIT, VEC_SCORE_SLOTS)
         to_score = [cand_by_pk[pk] for pk in score_pks]
         score_map, llm_usage = _score_candidates(jd, to_score)
 
