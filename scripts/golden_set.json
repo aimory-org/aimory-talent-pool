@@ -1,0 +1,255 @@
+{
+  "_README": "Golden-set labels for matcher recall eval. Each entry is a custom JD plus the candidates a recruiter considers genuine top matches. tier 'must' = should clearly be surfaced/scored near the top; tier 'should' = strong match whose JOB TITLE is off (so it leans on skill + semantic résumé match, not the title boost) — these are the cases that expose lexical-only gaps. DRAFT LABELS by the assistant — Ben to review/correct the pk lists and tiers. Run with scripts/eval_golden.py.",
+  "jds": [
+    {
+      "id": "golden-data-analyst",
+      "title": "Data Analyst (Excel / BI)",
+      "job_title": "Data Analyst",
+      "seniority": "Mid",
+      "domain": "Data Analysis",
+      "description_summary": "Data analyst focused on Excel-based analysis, translating datasets into trends and actionable business insights, and building reporting/dashboards for stakeholders.",
+      "required_skills": ["Data Analysis", "Microsoft Excel"],
+      "desired_skills": ["Power BI", "SQL", "Tableau", "Data Visualization"],
+      "responsibilities": [
+        "Interpret datasets and identify trends to support business decisions",
+        "Perform data cleaning and analysis using advanced Excel functions",
+        "Build reports and dashboards to communicate insights to stakeholders",
+        "Query and validate data across sources"
+      ],
+      "jd_text": "We are seeking a Data Analyst to interpret datasets, identify trends, and translate raw data into actionable business insights. The role centers on advanced Microsoft Excel analysis, building dashboards and reports (Power BI/Tableau), and querying data with SQL. You will clean and validate data, surface trends, and communicate findings clearly to technical and non-technical stakeholders.",
+      "expected": [
+        {
+          "tier": "must",
+          "name": "Sarah M. Burnett",
+          "pk": "aimory-talent-pool-dev-resumes-290088417978#resumes/raw/2025-10-17_Sarah Burnett Oct 2025.pdf"
+        },
+        {
+          "tier": "must",
+          "name": "Purva D Evarakonda",
+          "pk": "aimory-talent-pool-dev-resumes-290088417978#resumes/raw/2025-09-17_R - ApurvaDeva.pdf"
+        },
+        {
+          "tier": "must",
+          "name": "Priya Markurthi",
+          "pk": "aimory-talent-pool-dev-resumes-290088417978#resumes/raw/2025-08-13_Priya_Resume.docx"
+        },
+        {
+          "tier": "must",
+          "name": "Gage Horsch",
+          "pk": "aimory-talent-pool-dev-resumes-290088417978#resumes/raw/Horsch - Resume (20260311).pdf"
+        },
+        {
+          "tier": "should",
+          "name": "Maria Coombe (title: Program Director)",
+          "pk": "aimory-talent-pool-dev-resumes-290088417978#resumes/raw/Maria Coombe PM Operations Leader FSP VA 2025-05.docx"
+        },
+        {
+          "tier": "should",
+          "name": "Wendy R Bridgewater (title: Senior Intelligence Executive)",
+          "pk": "aimory-talent-pool-dev-resumes-290088417978#resumes/raw/2025-04-08_WRB 2024 (A).docx"
+        },
+        {
+          "tier": "should",
+          "name": "Riley Coburn (title: Data Scientist)",
+          "pk": "aimory-talent-pool-dev-resumes-290088417978#resumes/raw/2025-07-09_Riley_Coburn_Resume.pdf"
+        }
+      ]
+    },
+    {
+      "id": "golden-bi-dashboards-LEXICALSTRESS",
+      "title": "BI / Dashboard Developer (deliberate lexical-stress: JD wording differs from candidates' canonical skills)",
+      "job_title": "Business Intelligence Developer",
+      "seniority": "Mid",
+      "domain": "Business Intelligence",
+      "description_summary": "Build interactive dashboards and self-service reporting; turn business questions into visual analytics. Emphasis on dashboard development and data storytelling for decision-makers.",
+      "required_skills": ["Business Intelligence", "Dashboard Development"],
+      "desired_skills": ["Reporting Automation", "Data Storytelling"],
+      "responsibilities": [
+        "Design and ship interactive dashboards for business stakeholders",
+        "Turn ambiguous business questions into visual analytics",
+        "Automate recurring reports and data refreshes",
+        "Tell clear stories with data to drive decisions"
+      ],
+      "jd_text": "Seeking a Business Intelligence Developer to design and ship interactive dashboards and self-service reporting. You will translate business questions into visual analytics, automate recurring reports, and present data-driven stories to decision-makers. Experience delivering dashboards (Power BI, Tableau) and modeling data for reporting is essential. NOTE: this JD deliberately uses skill wording ('Business Intelligence', 'Dashboard Development') that differs from the pool's canonical skill tags (e.g. 'Power BI', 'Tableau', 'Data Visualization') to test whether semantic retrieval recovers candidates the lexical term-match misses.",
+      "expected": [
+        {
+          "tier": "must",
+          "name": "Priya Markurthi (BI Manager)",
+          "pk": "aimory-talent-pool-dev-resumes-290088417978#resumes/raw/2025-08-13_Priya_Resume.docx"
+        },
+        {
+          "tier": "must",
+          "name": "Maria Coombe (Power BI/Tableau)",
+          "pk": "aimory-talent-pool-dev-resumes-290088417978#resumes/raw/Maria Coombe PM Operations Leader FSP VA 2025-05.docx"
+        },
+        {
+          "tier": "must",
+          "name": "Sarah M. Burnett (Tableau/Data Viz)",
+          "pk": "aimory-talent-pool-dev-resumes-290088417978#resumes/raw/2025-10-17_Sarah Burnett Oct 2025.pdf"
+        },
+        {
+          "tier": "should",
+          "name": "Gage Horsch (Power BI)",
+          "pk": "aimory-talent-pool-dev-resumes-290088417978#resumes/raw/Horsch - Resume (20260311).pdf"
+        },
+        {
+          "tier": "should",
+          "name": "Wendy R Bridgewater (Power BI/Excel)",
+          "pk": "aimory-talent-pool-dev-resumes-290088417978#resumes/raw/2025-04-08_WRB 2024 (A).docx"
+        }
+      ]
+    },
+    {
+      "id": "golden-cybersecurity-analyst",
+      "title": "Cybersecurity / SOC Analyst",
+      "job_title": "Cybersecurity Analyst",
+      "seniority": "Mid",
+      "domain": "Cybersecurity",
+      "description_summary": "Detect, investigate, and respond to security incidents. Monitor for threats, run vulnerability assessments, and harden networks. Hands-on incident response and threat analysis.",
+      "required_skills": ["Cybersecurity", "Incident Response"],
+      "desired_skills": [
+        "Network Security",
+        "Penetration Testing",
+        "Vulnerability Management",
+        "Threat Intelligence"
+      ],
+      "responsibilities": [
+        "Monitor, detect, and investigate security incidents",
+        "Lead incident response and containment",
+        "Run vulnerability assessments and remediation",
+        "Analyze threats and harden network defenses"
+      ],
+      "jd_text": "We need a Cybersecurity Analyst to monitor, detect, and respond to security incidents in a mission environment. Responsibilities include incident response and containment, vulnerability assessment and remediation, network security hardening, penetration testing support, and threat intelligence analysis. Strong hands-on defensive security skills required.",
+      "expected": [
+        {
+          "tier": "must",
+          "name": "Rania Soussi (Sr Cybersecurity Consultant)",
+          "pk": "aimory-talent-pool-dev-resumes-290088417978#resumes/raw/2025-06-02_Rania Soussi Resume 2025.pdf"
+        },
+        {
+          "tier": "must",
+          "name": "Joseph Czopek (Cybersecurity PM)",
+          "pk": "aimory-talent-pool-dev-resumes-290088417978#resumes/raw/2026-01-13_Joseph.Czopek.Resume.2026.pdf"
+        },
+        {
+          "tier": "must",
+          "name": "Mark Ginevan Ii (Cybersecurity Director)",
+          "pk": "aimory-talent-pool-dev-resumes-290088417978#resumes/raw/2025-08-14_Mark Ginevan II Resume 2025-05-06.docx"
+        },
+        {
+          "tier": "must",
+          "name": "Gregory Outlaw (Cybersecurity Director)",
+          "pk": "aimory-talent-pool-dev-resumes-290088417978#resumes/raw/2026-01-21_Gregory Outlaw resume.pdf"
+        },
+        {
+          "tier": "must",
+          "name": "Monica Harris (ISSM)",
+          "pk": "aimory-talent-pool-dev-resumes-290088417978#resumes/raw/MonicaHarris120325.pdf"
+        },
+        {
+          "tier": "should",
+          "name": "Andrew Pennington (title: IT Helpdesk Specialist)",
+          "pk": "aimory-talent-pool-dev-resumes-290088417978#resumes/raw/2025-09-08_Andrew Pennington.docx"
+        },
+        {
+          "tier": "should",
+          "name": "Robert Carr (title: Senior Systems Engineer)",
+          "pk": "aimory-talent-pool-dev-resumes-290088417978#resumes/raw/2025-12-08_Senior Systems Engineer_Robert Carr Resume .pdf"
+        }
+      ]
+    },
+    {
+      "id": "golden-software-engineer",
+      "title": "Software Engineer (Python / AWS)",
+      "seniority": "Mid",
+      "job_title": "Software Engineer",
+      "domain": "Software Engineering",
+      "description_summary": "Build and deploy backend software services in Python/Java on AWS. Design APIs, write SQL-backed data layers, and ship cloud-native applications.",
+      "required_skills": ["Python", "Software Development"],
+      "desired_skills": [
+        "Java",
+        "SQL",
+        "Amazon Web Services",
+        "Cloud Computing"
+      ],
+      "responsibilities": [
+        "Design and build backend services in Python/Java",
+        "Deploy cloud-native applications on AWS",
+        "Implement SQL-backed data layers and APIs",
+        "Write tested, maintainable production code"
+      ],
+      "jd_text": "Seeking a Software Engineer to design and build backend services in Python and Java, deploy cloud-native applications on AWS, and implement SQL-backed data layers and APIs. You will write tested, maintainable production code and collaborate on system design. Strong software development fundamentals and cloud experience required.",
+      "expected": [
+        {
+          "tier": "must",
+          "name": "Jerri Y. Ricks (Software Engineer)",
+          "pk": "aimory-talent-pool-dev-resumes-290088417978#resumes/raw/2025-10-22_RicksJerri-resume.pdf"
+        },
+        {
+          "tier": "must",
+          "name": "Jack D. Nickerson (Software Developer)",
+          "pk": "aimory-talent-pool-dev-resumes-290088417978#resumes/raw/2026-02-10_Jack_Nickerson_Resume.pdf"
+        },
+        {
+          "tier": "must",
+          "name": "Benjamin Cassatt (Software Engineer)",
+          "pk": "aimory-talent-pool-dev-resumes-290088417978#resumes/raw/2026-06-27_Benjamin_Cassatt_Resume (6-11-2026 real).docx"
+        },
+        {
+          "tier": "should",
+          "name": "Joshua M. (title: Cryptanalytic Computer Scientist)",
+          "pk": "aimory-talent-pool-dev-resumes-290088417978#resumes/raw/2026-02-06_Joshua M. Resume.pdf"
+        },
+        {
+          "tier": "should",
+          "name": "George Everitt (title: Machine Learning Scientist)",
+          "pk": "aimory-talent-pool-dev-resumes-290088417978#resumes/raw/2025-09-14_George Everitt Professional Resume 2025.pdf"
+        }
+      ]
+    },
+    {
+      "id": "golden-ml-scientist",
+      "title": "Machine Learning Scientist",
+      "seniority": "Senior",
+      "job_title": "Machine Learning Scientist",
+      "domain": "Machine Learning",
+      "description_summary": "Design, train, and evaluate machine learning models. Apply data science and AI techniques in Python to production problems; communicate model results to stakeholders.",
+      "required_skills": ["Machine Learning", "Python"],
+      "desired_skills": ["Artificial Intelligence", "Data Science", "SQL"],
+      "responsibilities": [
+        "Design, train, and evaluate machine learning models",
+        "Apply data science and statistical methods to real problems",
+        "Prototype AI solutions in Python",
+        "Communicate model results and tradeoffs to stakeholders"
+      ],
+      "jd_text": "We are hiring a Machine Learning Scientist to design, train, and evaluate ML models and apply data science and AI techniques in Python. You will prototype solutions, run statistical analysis, evaluate model performance, and communicate results and tradeoffs to stakeholders. Strong ML, statistics, and Python skills required.",
+      "expected": [
+        {
+          "tier": "must",
+          "name": "George Everitt (Machine Learning Scientist)",
+          "pk": "aimory-talent-pool-dev-resumes-290088417978#resumes/raw/2025-09-14_George Everitt Professional Resume 2025.pdf"
+        },
+        {
+          "tier": "must",
+          "name": "Riley Coburn (Data Scientist)",
+          "pk": "aimory-talent-pool-dev-resumes-290088417978#resumes/raw/2025-07-09_Riley_Coburn_Resume.pdf"
+        },
+        {
+          "tier": "should",
+          "name": "Angela Tran (title: Student, ML/AI/DS)",
+          "pk": "aimory-talent-pool-dev-resumes-290088417978#resumes/raw/2026-01-20_Tran-Resume (31).pdf"
+        },
+        {
+          "tier": "should",
+          "name": "Julian Kolev (title: Senior Economist, ML/DS)",
+          "pk": "aimory-talent-pool-dev-resumes-290088417978#resumes/raw/2025-11-03_J_Kolev_resume_2025_10_31.pdf"
+        },
+        {
+          "tier": "should",
+          "name": "Joshua M. (title: Cryptanalytic Computer Scientist)",
+          "pk": "aimory-talent-pool-dev-resumes-290088417978#resumes/raw/2026-02-06_Joshua M. Resume.pdf"
+        }
+      ]
+    }
+  ]
+}
