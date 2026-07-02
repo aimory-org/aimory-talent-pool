@@ -112,21 +112,24 @@ resource "aws_cognito_user_pool_client" "web" {
   generate_secret = false
 
   # Supported identity providers
-  supported_identity_providers = [
-    # "COGNITO", # Uncomment to allow native Cognito email/password sign-in
-    aws_cognito_identity_provider.microsoft.provider_name,
-  ]
+  supported_identity_providers = concat(
+    [aws_cognito_identity_provider.microsoft.provider_name],
+    var.enable_test_user ? ["COGNITO"] : [],
+  )
 
   # OAuth 2.0 settings
   allowed_oauth_flows                  = ["code"]
   allowed_oauth_flows_user_pool_client = true
   allowed_oauth_scopes                 = ["email", "openid", "profile", "aws.cognito.signin.user.admin"]
 
-  # Explicit auth flows for Amplify
-  explicit_auth_flows = [
-    "ALLOW_REFRESH_TOKEN_AUTH",
-    "ALLOW_USER_SRP_AUTH",
-  ]
+  # Explicit auth flows for Amplify.
+  # ALLOW_USER_PASSWORD_AUTH is only added when a native test user is enabled
+  # (E2E testing) - it has no effect on the Entra-federated OAuth login used
+  # by real users.
+  explicit_auth_flows = concat(
+    ["ALLOW_REFRESH_TOKEN_AUTH", "ALLOW_USER_SRP_AUTH"],
+    var.enable_test_user ? ["ALLOW_USER_PASSWORD_AUTH"] : [],
+  )
 
   # Callback URLs (frontend app URLs)
   callback_urls = var.callback_urls
@@ -150,6 +153,57 @@ resource "aws_cognito_user_pool_client" "web" {
   enable_token_revocation = true
 
   depends_on = [aws_cognito_identity_provider.microsoft]
+}
+
+# -----------------------------------------------------------------------------
+# Native test user - for headless E2E auth only (Entra federation can't be
+# driven by CI). Not created unless enable_test_user is set (dev/test envs).
+# -----------------------------------------------------------------------------
+
+resource "aws_cognito_user" "e2e_test" {
+  count        = var.enable_test_user ? 1 : 0
+  user_pool_id = aws_cognito_user_pool.main.id
+  username     = var.test_user_email
+
+  attributes = {
+    email          = var.test_user_email
+    email_verified = "true"
+  }
+
+  # Don't send a welcome email to a test mailbox
+  message_action = "SUPPRESS"
+
+  lifecycle {
+    precondition {
+      condition     = var.test_user_email != "" && var.test_user_password != ""
+      error_message = "test_user_email and test_user_password must be set when enable_test_user is true (missing GitHub secrets E2E_TEST_USER_EMAIL / E2E_TEST_USER_PASSWORD?)."
+    }
+  }
+}
+
+# aws_cognito_user can only set a temporary password (status FORCE_CHANGE_PASSWORD).
+# Force it permanent so E2E sign-in doesn't have to handle a NEW_PASSWORD_REQUIRED
+# challenge on every run.
+resource "null_resource" "e2e_test_password" {
+  count = var.enable_test_user ? 1 : 0
+
+  triggers = {
+    user_pool_id  = aws_cognito_user_pool.main.id
+    username      = var.test_user_email
+    password_hash = sha256(var.test_user_password)
+  }
+
+  provisioner "local-exec" {
+    command = "aws cognito-idp admin-set-user-password --user-pool-id \"$USER_POOL_ID\" --username \"$TEST_USERNAME\" --password \"$TEST_PASSWORD\" --permanent"
+
+    environment = {
+      USER_POOL_ID  = aws_cognito_user_pool.main.id
+      TEST_USERNAME = var.test_user_email
+      TEST_PASSWORD = var.test_user_password
+    }
+  }
+
+  depends_on = [aws_cognito_user.e2e_test]
 }
 
 # -----------------------------------------------------------------------------

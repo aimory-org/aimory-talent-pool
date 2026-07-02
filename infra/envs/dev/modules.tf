@@ -37,6 +37,11 @@ module "cognito" {
   entra_client_id     = var.entra_client_id
   entra_client_secret = var.entra_client_secret
   entra_tenant_id     = var.entra_tenant_id
+
+  # Native test user for headless E2E auth (dev only)
+  enable_test_user   = var.enable_e2e_test_user
+  test_user_email    = var.e2e_test_user_email
+  test_user_password = var.e2e_test_user_password
 }
 
 module "resume_pipeline" {
