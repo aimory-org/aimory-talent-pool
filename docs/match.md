@@ -26,9 +26,12 @@ The system solves this with a **retrieve → score** pipeline: cheaply narrow
 thousands of candidates down to a shortlist using fast search techniques (lexical + semantic
 retrieval), then spend the expensive, careful AI reasoning on only that small shortlist. This
 keeps quality high and cost proportional to the shortlist size, not the size of the whole
-talent pool. An optional cross-encoder **reranker** stage exists for when the pool grows large
-enough to need it, but is currently **off by default** — see [§2.3](#23-the-reranker-optional-off-by-default)
-and [§7.6](#76-post-ship-recall-investigation-reranker-off--union-scoring) for why.
+talent pool. Two optional stages exist but are currently **off by default**: a cross-encoder
+**reranker** for when the pool grows large enough to need it — see
+[§2.3](#23-the-reranker-optional-off-by-default) and
+[§7.6](#76-post-ship-recall-investigation-reranker-off--union-scoring) for why — and
+**lookup-table query expansion**, which adds canonical synonyms to the lexical query but
+measured out as too small and inconsistent a win for its cost ([§4](#4-lookup-table-query-expansion-optional-off-by-default)).
 
 ---
 
@@ -36,7 +39,9 @@ and [§7.6](#76-post-ship-recall-investigation-reranker-off--union-scoring) for 
 
 ```mermaid
 flowchart LR
-    JD[Job Description] --> LEX[Lexical Search<br/>structured fields]
+    JD[Job Description] --> EXPAND[Lookup-Table Expansion<br/>LLM synonym picks<br/>OFF by default]
+    EXPAND --> LEX[Lexical Search<br/>structured fields]
+    JD --> LEX
     JD --> VEC[Vector Search<br/>résumé chunks]
     LEX --> FUSE[RRF Fusion]
     VEC --> FUSE
@@ -45,11 +50,13 @@ flowchart LR
     RERANK --> UNION[Union Scoring Set<br/>lexical-best ∪ vector-best]
     UNION --> SCORE[LLM Scoring<br/>Claude, evidence-based]
     SCORE --> OUT[Ranked Results<br/>score + rationale]
+    style EXPAND stroke-dasharray: 5 5
     style RERANK stroke-dasharray: 5 5
 ```
 
 | Stage | What it does | Why |
 |---|---|---|
+| **Lookup-table expansion** *(optional, off by default)* | An LLM picks tight canonical synonyms for the JD's skills and job title from the existing lookup tables (e.g. "Software Engineer" ⇄ "Software Developer") and adds them as extra structured-field search terms for the lexical leg. | Recovers exact-synonym wording mismatches at the lexical stage without touching free-text résumé bodies. Measured benefit was small and inconsistent for the cost of an extra LLM call per match, so it is off by default ([§4](#4-lookup-table-query-expansion-optional-off-by-default)). |
 | **Lexical search** | OpenSearch query against structured fields (`skill_names`, `job_title`, `industry_category`) with hard filters for clearance and minimum experience. | Fast, precise, and enforces hard requirements natively. Misses candidates whose résumé uses different wording than the JD. |
 | **Vector search** | Embeds the JD's role signal and searches a k-NN index of résumé chunks by semantic similarity. | Recovers candidates the lexical leg misses because of wording differences (e.g. "Computer Scientist" for a "Software Engineer" role). |
 | **RRF fusion** | Merges the two ranked lists using each candidate's *position* in each list (not raw scores, which aren't comparable across methods). | A candidate both methods agree on rises to the top; a candidate only one method found still gets a fair shot. |
