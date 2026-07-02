@@ -28,13 +28,24 @@ bedrock = boto3.client("bedrock-runtime", region_name=AWS_REGION)
 
 # How many candidates to pull from OpenSearch pre-filter
 PRE_FILTER_LIMIT = int(os.environ.get("PRE_FILTER_LIMIT", "50"))
-# How many candidates to send to Bedrock for scoring. Scoring is parallelized (see
-# _score_candidates), so wall-clock ≈ one batch regardless of this number — we can score
-# more candidates without blowing the API Gateway 30s cap.
-SCORING_LIMIT = int(os.environ.get("SCORING_LIMIT", "10"))
+# Total candidates to send to Bedrock for scoring (the budget). Scoring is parallelized (see
+# _score_candidates), so wall-clock ≈ a couple of batches regardless of this number — we can
+# score a wider set without blowing the API Gateway 30s cap.
+SCORING_LIMIT = int(os.environ.get("SCORING_LIMIT", "12"))
+# Of that budget, how many slots are RESERVED for vector-only recall (candidates the semantic
+# leg surfaced that the lexical leg didn't rank). The rest go to the lexical order. See
+# _union_score_pks: the scored set is the UNION of each leg's best, so the vector leg can only
+# ADD recall — it can't demote a strong lexical (structured-skill) match out of scoring, which
+# was the RRF-fusion dilution bug that buried terse-résumé candidates like a data-skilled
+# Finance Manager. Set to 0 to score purely by lexical order.
+VEC_SCORE_SLOTS = int(os.environ.get("VEC_SCORE_SLOTS", "4"))
 # Candidates per Bedrock call, and how many calls run concurrently.
 SCORING_BATCH = int(os.environ.get("SCORING_BATCH", "2"))
-MAX_SCORING_WORKERS = int(os.environ.get("MAX_SCORING_WORKERS", "5"))
+# Enough workers to run EVERY scoring batch in a single concurrent wave, so wall-clock ≈ one
+# Bedrock call regardless of SCORING_LIMIT. Default = ceil(SCORING_LIMIT / SCORING_BATCH). A
+# straggler batch spilling into a second wave was pushing full-budget requests past the API
+# Gateway 30s cap (frontend 503s); one wave keeps a full 12-candidate score at ~one call.
+MAX_SCORING_WORKERS = int(os.environ.get("MAX_SCORING_WORKERS", str(-(-SCORING_LIMIT // SCORING_BATCH))))
 # Default number of results to return
 DEFAULT_RETURN_LIMIT = 10
 # Max characters of résumé text sent to the LLM per candidate (~3k tokens). Kept modest
@@ -57,10 +68,14 @@ RERANK_MODEL_ARN = os.environ.get(
 )
 RERANK_INPUT = int(os.environ.get("RERANK_INPUT", "60"))  # max candidates to rerank
 RERANK_CHARS_CAP = int(os.environ.get("RERANK_CHARS_CAP", "6000"))  # résumé chars per rerank doc
-# Reranker ON by default: with the enriched JD query (responsibilities[] + jd_text), the
-# ablation flipped from ~neutral (-0.10, thin 500-char JD) to +2.46 top-5 points — the single
-# biggest quality lever. Toggle off per-request with ?rerank=false (used by the ablation eval).
-RERANK_DEFAULT = os.environ.get("RERANK_DEFAULT", "true")
+# Reranker OFF by default. At this pool size (~128) the reranker is a scale tool with no
+# recall to add — retrieval already surfaces everyone and the LLM is the real precision judge.
+# It scores only `job_title + resume_text` (blind to the structured skill_names), so it
+# over-rewards long résumé prose and buries terse-but-perfectly-matched candidates (e.g. a
+# Data Analyst JD ranked a Finance Manager with all 3 required skills at #13 because his
+# résumé was short). Lexical+vector fusion → LLM scoring orders this corpus better. Re-enable
+# per-request with ?rerank=true; revisit as a default when the pool grows to thousands.
+RERANK_DEFAULT = os.environ.get("RERANK_DEFAULT", "false")
 
 # --- Lookup-grounded query expansion (Phase 2b) --------------------------------
 # Ask the LLM which CANONICAL lookup skills/titles are equivalent to the JD's, then match
@@ -68,7 +83,7 @@ RERANK_DEFAULT = os.environ.get("RERANK_DEFAULT", "true")
 SKILLS_LOOKUP_TABLE = os.environ.get("SKILLS_LOOKUP_TABLE", "")
 JOB_TITLES_LOOKUP_TABLE = os.environ.get("JOB_TITLES_LOOKUP_TABLE", "")
 EXPAND_DEFAULT = os.environ.get("EXPAND_DEFAULT", "false")
-_lookup_cache = {}
+_lookup_cache: dict[str, list[str]] = {}
 
 
 class DecimalEncoder(json.JSONEncoder):
@@ -391,6 +406,45 @@ def _rrf_order(lexical_pks, vector_pks, k=RRF_K):
     return sorted(scores, key=scores.get, reverse=True)
 
 
+def _union_score_pks(lexical_pks, vector_pks, allowed, budget, vec_reserve):
+    """Select which candidates the LLM scores: the UNION of each retrieval leg's best.
+
+    The LLM (which reads the structured skills AND the full résumé) is the real precision
+    judge, so retrieval only needs high RECALL into the scored set. Filling the budget from
+    lexical's top AND vector's top guarantees that a strong single-signal candidate still
+    reaches the LLM — a great structured-skills match with a terse résumé (weak in the vector
+    leg), or a great semantic match worded differently from the skill tags (weak in the
+    lexical leg). This replaces feeding the LLM the top-N of one blended RRF ranking, where a
+    candidate present in both legs got ~double weight and pushed strong single-leg candidates
+    below the scoring cut (the dilution that buried a data-skilled Finance Manager at #19).
+
+    Order: lexical slots first, then up to `vec_reserve` vector-only candidates, then backfill
+    any remaining budget with more lexical. The LLM's scores decide the final rank.
+    """
+    lex = [pk for pk in lexical_pks if pk in allowed]
+    vec = [pk for pk in vector_pks if pk in allowed]
+    lex_slots = max(0, budget - vec_reserve)
+    chosen = list(lex[:lex_slots])
+    seen = set(chosen)
+    added_vec = 0
+    for pk in vec:  # vector-only recall, capped at vec_reserve
+        if added_vec >= vec_reserve or len(chosen) >= budget:
+            break
+        if pk in seen:
+            continue
+        chosen.append(pk)
+        seen.add(pk)
+        added_vec += 1
+    for pk in lex[lex_slots:]:  # backfill leftover budget with more lexical
+        if len(chosen) >= budget:
+            break
+        if pk in seen:
+            continue
+        chosen.append(pk)
+        seen.add(pk)
+    return chosen
+
+
 def _fetch_candidates_by_pk(os_client, pks):
     """mget candidate profile docs by pk; returns {pk: _source}."""
     if not pks:
@@ -695,9 +749,7 @@ def handler(event, context):
             print(f"OpenSearch query error: {e}")
             hits = []
 
-        lexical_sources = {
-            h["_source"]["pk"]: h["_source"] for h in hits if (h.get("_source") or {}).get("pk")
-        }
+        lexical_sources = {h["_source"]["pk"]: h["_source"] for h in hits if (h.get("_source") or {}).get("pk")}
         lexical_pks = list(lexical_sources.keys())  # already ordered by lexical _score
 
         # 2b. Semantic (vector) retrieval — surfaces candidates the lexical leg missed.
@@ -732,8 +784,12 @@ def handler(event, context):
             )
             candidates = [by_pk[pk] for pk in blended if pk in by_pk]
 
-        # 3. Score top candidates with Bedrock (parallel)
-        to_score = candidates[:SCORING_LIMIT]
+        # 3. Select the candidates to LLM-score as the UNION of each retrieval leg's best
+        # (see _union_score_pks). Vector ADDS recall — it can't demote a strong lexical
+        # (structured-skill) match out of scoring, which was the RRF-fusion dilution bug.
+        cand_by_pk = {c["pk"]: c for c in candidates if c.get("pk")}
+        score_pks = _union_score_pks(lexical_pks, vector_pks, set(cand_by_pk), SCORING_LIMIT, VEC_SCORE_SLOTS)
+        to_score = [cand_by_pk[pk] for pk in score_pks]
         score_map, llm_usage = _score_candidates(jd, to_score)
 
         # 4. Build results — merge scores with candidate data
@@ -789,6 +845,7 @@ def handler(event, context):
             "expanded_skills": len(extra_skills),
             "expanded_titles": len(extra_titles),
             "candidates_scored": sum(1 for r in results if r["score"] is not None),
+            "score_set_size": len(to_score),
             "llm_calls": llm_usage["calls"],
             "llm_input_tokens": llm_usage["in"],
             "llm_output_tokens": llm_usage["out"],

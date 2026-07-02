@@ -185,9 +185,7 @@ def _sync_chunks(client, pk, resume_text):
             print(f"Embed failed for {pk} chunk {i}: {e}")
             continue
         actions.append({"index": {"_index": CHUNK_INDEX, "_id": f"{pk}::{i}"}})
-        actions.append(
-            {"parent_pk": pk, "chunk_index": i, "chunk_type": "resume", "text": chunk, "vector": vector}
-        )
+        actions.append({"parent_pk": pk, "chunk_index": i, "chunk_type": "resume", "text": chunk, "vector": vector})
     if actions:
         client.bulk(body=actions, refresh=False)
     return len(actions) // 2

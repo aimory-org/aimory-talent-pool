@@ -22,10 +22,13 @@ fits this job?"* Doing that well is harder than it sounds:
 - **Cost matters.** Reading every résumé in full detail with an AI model for every search
   would be slow and expensive if the pool grows into the thousands.
 
-The system solves this with a **retrieve → rerank → score** pipeline: cheaply narrow
-thousands of candidates down to a shortlist using fast search techniques, then spend the
-expensive, careful AI reasoning on only that small shortlist. This keeps quality high and
-cost proportional to the shortlist size, not the size of the whole talent pool.
+The system solves this with a **retrieve → score** pipeline: cheaply narrow
+thousands of candidates down to a shortlist using fast search techniques (lexical + semantic
+retrieval), then spend the expensive, careful AI reasoning on only that small shortlist. This
+keeps quality high and cost proportional to the shortlist size, not the size of the whole
+talent pool. An optional cross-encoder **reranker** stage exists for when the pool grows large
+enough to need it, but is currently **off by default** — see [§2.3](#23-the-reranker-optional-off-by-default)
+and [§7.6](#76-post-ship-recall-investigation-reranker-off--union-scoring) for why.
 
 ---
 
@@ -38,9 +41,11 @@ flowchart LR
     LEX --> FUSE[RRF Fusion]
     VEC --> FUSE
     FUSE --> GATE[Hard Filters<br/>clearance safety gate]
-    GATE --> RERANK[Reranker<br/>Cohere cross-encoder]
-    RERANK --> SCORE[LLM Scoring<br/>Claude, evidence-based]
+    GATE --> RERANK[Reranker<br/>Cohere cross-encoder<br/>OFF by default]
+    RERANK --> UNION[Union Scoring Set<br/>lexical-best ∪ vector-best]
+    UNION --> SCORE[LLM Scoring<br/>Claude, evidence-based]
     SCORE --> OUT[Ranked Results<br/>score + rationale]
+    style RERANK stroke-dasharray: 5 5
 ```
 
 | Stage | What it does | Why |
@@ -49,8 +54,9 @@ flowchart LR
 | **Vector search** | Embeds the JD's role signal and searches a k-NN index of résumé chunks by semantic similarity. | Recovers candidates the lexical leg misses because of wording differences (e.g. "Computer Scientist" for a "Software Engineer" role). |
 | **RRF fusion** | Merges the two ranked lists using each candidate's *position* in each list (not raw scores, which aren't comparable across methods). | A candidate both methods agree on rises to the top; a candidate only one method found still gets a fair shot. |
 | **Hard filters** | Re-applies the JD's non-negotiable requirements (clearance) to the *fused* candidate set. | The vector leg has no filter clause of its own — see [§6](#6-a-real-bug-we-found-and-fixed-the-clearance-safety-gate) for why this step exists and what happens without it. |
-| **Reranker** | Cohere's cross-encoder model (via Bedrock) reads each candidate's full résumé side-by-side with the JD and reorders the set by genuine relevance. | Catches nuance that keyword/embedding matching alone misses — it's reading real text, not comparing vectors. |
-| **LLM scoring** | Claude scores the top ~10 candidates against the JD using an evidence-based rubric, producing a 0-100 score and a rationale citing specific résumé content. | The only stage that reasons in natural language about *why* a candidate fits — reserved for a small, fixed-size shortlist so cost never scales with pool size. |
+| **Reranker** *(optional, off by default)* | Cohere's cross-encoder model (via Bedrock) reads each candidate's full résumé side-by-side with the JD and reorders the set by genuine relevance. | A *scale* tool: valuable when retrieval returns far more candidates than can be LLM-scored. At the current pool size it added no recall and mis-ranked terse-résumé candidates, so it is off by default ([§7.6](#76-post-ship-recall-investigation-reranker-off--union-scoring)). |
+| **Union scoring set** | Selects which candidates the LLM scores as the **union** of each retrieval leg's best (lexical-best ∪ vector-best), rather than the top-N of one blended ranking. | Guarantees a strong single-signal candidate still reaches the LLM — a great structured-skills match with a terse résumé, or a great semantic match worded differently from the skill tags. See [§2.4](#24-choosing-who-the-llm-scores-union-based-selection). |
+| **LLM scoring** | Claude scores the shortlist (~12 candidates) against the JD using an evidence-based rubric, producing a 0-100 score and a rationale citing specific résumé content. | The only stage that reasons in natural language about *why* a candidate fits — reserved for a small, fixed-size shortlist so cost never scales with pool size. It is the real precision judge. |
 
 ### 2.1 Two ways to search, fused together
 
@@ -81,9 +87,13 @@ methods is rewarded — while a candidate found strongly by only one method stil
 This is the mechanism, not raw score averaging, because a lexical `_score` and a vector
 cosine-similarity aren't on the same scale and can't be compared directly.
 
-RRF is used twice: once to fuse lexical + vector candidates, and again to blend the
-reranker's reordering back with the pre-rerank fusion order — so a single bad reranker call
-can only nudge the ranking, never wipe out a well-fused candidate entirely.
+RRF fuses the lexical + vector candidate lists into one ranked set. When the reranker is
+enabled (it is off by default — [§2.3](#23-the-reranker-optional-off-by-default)), RRF is used
+a second time to blend the reranker's reordering back with the pre-rerank fusion order — so a
+single bad reranker call can only nudge the ranking, never wipe out a well-fused candidate
+entirely. Note that the fused *order* determines the returned display order, but which
+candidates get LLM-scored is decided by union selection, not by taking the top-N of this fused
+list — see [§2.4](#24-choosing-who-the-llm-scores-union-based-selection).
 
 ### 2.2 Chunking & embeddings
 
@@ -98,24 +108,68 @@ This is a simple, fixed-window chunking strategy (no attempt to respect sentence
 boundaries) — good enough to power recall, with a known limitation that a chunk can split
 mid-sentence or blend two résumé sections together.
 
-### 2.3 The reranker
+### 2.3 The reranker (optional, off by default)
 
-Before any candidate reaches the LLM, **Cohere Rerank 3.5** (via Bedrock) reads each
-candidate's *full* résumé text side-by-side with the JD's focused role signal and produces a
-single relevance score per candidate — a genuinely different mechanism from both lexical
-matching and vector similarity (it's a cross-encoder: the model attends to the JD and résumé
-jointly, rather than comparing two independently-computed representations). Its reordering is
-blended back into the fusion order via RRF rather than replacing it outright.
+**Cohere Rerank 3.5** (via Bedrock) is a cross-encoder: it reads each candidate's full résumé
+text side-by-side with the JD's focused role signal and produces a single relevance score per
+candidate — a genuinely different mechanism from both lexical matching and vector similarity
+(the model attends to the JD and résumé jointly, rather than comparing two
+independently-computed representations). When enabled, its reordering is blended back into the
+fusion order via RRF rather than replacing it outright.
 
-One design detail mattered a lot in testing: **the reranker must read the same granularity of
-text the LLM ultimately judges on.** Early on it was fed a thin résumé summary and made
-results *worse* — its picks diverged from what the LLM (reading the full résumé) preferred.
-Switching the reranker to read full résumé text (capped at 6,000 characters) fixed this; see
-[§7](#7-experiments--results).
+**It is off by default at the current scale**, and understanding why is important:
 
-### 2.4 LLM scoring
+- A reranker's real value is as a *scale* tool — cheaply ordering a large retrieved set
+  (hundreds to thousands) so the expensive LLM only scores the genuine top few. At the current
+  pool size (~128 candidates), retrieval already surfaces essentially everyone relevant, and
+  the LLM — which reads both the structured skills *and* the full résumé — is the real
+  precision judge. The reranker had no recall to add.
+- Worse, it *mis-ranked* on this corpus. The reranker scores `job_title + resume_text` only —
+  it is **blind to the structured `skill_names`** — so it over-rewards long, keyword-rich
+  résumé prose and under-rewards terse résumés even when they are a perfect structured-skill
+  match. On a live "Data Analyst" query it ranked a candidate holding *all three* required
+  skills (but a short résumé) at #13, below the scoring cut, while a candidate with only one of
+  the skills but a long finance résumé topped the list. Adding the structured skills into the
+  reranker document barely moved the result (a few hundred characters against ~6,000 of prose).
+  Full investigation: [§7.6](#76-post-ship-recall-investigation-reranker-off--union-scoring).
 
-The final shortlist (~10 candidates, chosen by the reranker) is scored by Claude against each
+An earlier design note still holds and is why, *if* re-enabled, it reads full résumé text
+(capped at 6,000 characters) rather than a thin summary: **the reranker must read the same
+granularity of text the LLM ultimately judges on**, or its picks diverge from the LLM's.
+
+Re-enable per request with `?rerank=true`, or globally by setting `RERANK_DEFAULT=true` — the
+right move once the pool grows large enough that retrieval returns far more candidates than
+`SCORING_LIMIT`.
+
+### 2.4 Choosing who the LLM scores: union-based selection
+
+The retrieval legs decide *which* candidates are worth the expensive LLM scoring. Rather than
+taking the top-N of one blended RRF ranking, the matcher scores the **union of each leg's
+best**: the top of the lexical order *plus* a reserved allocation for vector-only candidates,
+backfilled with more lexical to fill the budget (`_union_score_pks` in the matcher).
+
+```python
+# budget = SCORING_LIMIT (12); vec_reserve = VEC_SCORE_SLOTS (4)
+lex_slots = budget - vec_reserve          # 8 guaranteed lexical slots
+chosen    = lexical_best[:lex_slots]
+chosen   += up_to(vec_reserve) vector-only candidates not already chosen
+chosen   += backfill from remaining lexical up to budget
+```
+
+Why this and not the top-N of the fused ranking: RRF gives a candidate `1/(k+rank)` **per list
+they appear in**, so a candidate present in *both* legs gets ~double weight and can push a
+strong *single-leg* candidate below the scoring cut. That is exactly what buried the
+data-skilled candidate above — strong lexically (all three skills) but, with a terse résumé,
+absent from the vector leg's top set, so the fused ranking demoted him out of scoring
+entirely. Union selection guarantees each leg's best reach the LLM: **the vector leg can only
+*add* recall, never demote a strong lexical (structured-skill) match out of scoring**, and vice
+versa. The LLM's scores then decide the final rank. See
+[§7.6](#76-post-ship-recall-investigation-reranker-off--union-scoring) for the before/after
+recall measurement.
+
+### 2.5 LLM scoring
+
+The shortlist selected above (~12 candidates) is scored by Claude against each
 candidate's *full* résumé text — not a summary — with an evidence-based rubric:
 
 | Rubric component | Points |
@@ -130,7 +184,7 @@ Scoring is parallelized (multiple concurrent Bedrock calls, small batches) so wa
 stays roughly constant regardless of shortlist size, which matters because of the next
 section.
 
-### 2.5 The job description side
+### 2.6 The job description side
 
 Early versions of the system queried against a thin, 500-character JD summary — the same
 "lossy compression" problem that thin résumé summaries caused on the candidate side. The JD
@@ -174,7 +228,7 @@ In both cases:
 - Job title and skills are still stored, indexed, and shown to the LLM — they're **positive
   signals**, just not gates.
 - Equivalence between differently-worded roles/skills is handled by matching against
-  **responsibilities**, not titles (§2.5), and by the LLM's evidence-based rubric, which
+  **responsibilities**, not titles (§2.6), and by the LLM's evidence-based rubric, which
   explicitly credits differently-worded but equivalent skills and experience. Validated by
   hand: on a "Senior Systems Engineer" (GEOINT) JD, the LLM correctly scored a candidate
   titled "Systems Engineer" as 58/partial by reading past the title collision — his actual work
@@ -224,16 +278,18 @@ Key environment variables (`infra/modules/api/lambda_src/match_candidates/app.py
 |---|---|---|
 | `BEDROCK_MODEL_ID` | `us.anthropic.claude-sonnet-4-6` | Scoring model (dedicated `match_model_id` Terraform var — separate from the résumé/JD extraction model). |
 | `PRE_FILTER_LIMIT` | `50` | Candidates pulled from the lexical prefilter. |
-| `SCORING_LIMIT` | `10` | Candidates sent to the LLM for scoring (fixed cost regardless of pool size). |
+| `SCORING_LIMIT` | `12` | Candidates sent to the LLM for scoring (fixed cost regardless of pool size). Selected by union of retrieval legs — see §2.4. |
+| `VEC_SCORE_SLOTS` | `4` | Of the `SCORING_LIMIT` budget, slots reserved for vector-only candidates so the semantic leg can *add* recall without displacing strong lexical matches (§2.4). |
 | `RESUME_CHARS_CAP` | `12000` | Résumé characters sent to the LLM per candidate (~3k tokens). |
 | `KNN_CHUNK_HITS` / `VECTOR_CANDIDATES` | `100` / `50` | k-NN chunk hits pulled, and how many candidates the vector leg contributes. |
-| `RERANK_INPUT` / `RERANK_CHARS_CAP` | `60` / `6000` | Candidates sent to the reranker, and résumé characters per reranked document. |
-| `RERANK_DEFAULT` | `true` | Reranker on by default (see §7 for why). |
+| `RERANK_INPUT` / `RERANK_CHARS_CAP` | `60` / `6000` | Candidates sent to the reranker (when enabled), and résumé characters per reranked document. |
+| `RERANK_DEFAULT` | `false` | Reranker **off** by default at the current pool size — added no recall and mis-ranked terse-résumé candidates (see §2.3 and §7.6). Set `true` (or `?rerank=true`) once the pool is large enough to need scale-time reordering. |
 | `EXPAND_DEFAULT` | `false` | Query expansion off by default (see §7). |
 
-Every match response includes a `telemetry` block — candidate counts per stage, LLM/embed
-call counts, token usage, and latency — so quality and cost decisions can be made from
-measurement, not assumption.
+Every match response includes a `telemetry` block — candidate counts per stage, the
+`score_set_size` (how many candidates the union selection sent to the LLM), LLM/embed call
+counts, token usage, and latency — so quality and cost decisions can be made from measurement,
+not assumption.
 
 ---
 
@@ -288,6 +344,15 @@ candidate surfaced *only* by the vector leg is stripped before ever reaching LLM
 
 ## 7. Experiments & Results
 
+> **Update — post-ship (read [§7.6](#76-post-ship-recall-investigation-reranker-off--union-scoring) first).**
+> §7.2–§7.5 below are the *development-era* experiments, and two of their conclusions were
+> later reversed by a recall-focused investigation using a **human-labeled golden set**: the
+> reranker is now **off by default** (§2.3), and the scored shortlist is chosen by **union
+> selection**, not the top-N of the fused ranking (§2.4). The mean-LLM-score methodology in
+> §7.1 is also now understood to be invalid for comparing *configurations* (see §7.6). The
+> sections are kept as decision-history; where they say the reranker is the deployed default,
+> that is historical.
+
 ### 7.1 Methodology and its limits
 
 Quality is measured as the **mean LLM score of the top-5 returned candidates**, averaged
@@ -296,9 +361,10 @@ averaged (LLM-as-judge scoring is noisy — the same candidate can score meaning
 differently between runs, so single-JD, single-run deltas are not trustworthy; only
 multi-run, multi-JD aggregates are). This is a proxy metric, not ground truth: it tells us
 whether a change makes the *LLM's own judgment* more favorable, not whether it makes
-*objectively better hiring decisions*. A true precision/recall measurement would need a
-human-labeled golden set (a recruiter marking which candidates are actually good fits per
-JD) — not built yet; see [§8](#8-known-limitations--future-work).
+*objectively better hiring decisions*. A recruiter-labeled golden set was later built to
+measure recall@k directly — the correct way to compare configurations — see
+[§7.6](#76-post-ship-recall-investigation-reranker-off--union-scoring) and
+[§8](#8-known-limitations--future-work).
 
 **A specific trap to avoid:** comparing the *new* system's absolute scores against the
 *original* (pre-rebuild) matcher's absolute scores is not valid, even though both produce a
@@ -326,7 +392,7 @@ it was made:
 Vector retrieval was a clear, cheap win. The reranker looked like a wash — reading a thin
 JD summary, its picks didn't reliably improve on fusion order alone.
 
-**Post-JD-enrichment** (rich JD query — `responsibilities[]` + full context, §2.5):
+**Post-JD-enrichment** (rich JD query — `responsibilities[]` + full context, §2.6):
 
 | Arm | Quality | Δ |
 |---|---|---|
@@ -334,10 +400,13 @@ JD summary, its picks didn't reliably improve on fusion order alone.
 | + vector | 40.2 | +0.72 |
 | + reranker | 42.6 | **+2.46** |
 
-Once the reranker had a rich query to work with, it became the single biggest lever — this is
-why `RERANK_DEFAULT` was flipped back to `true`. (Absolute scores dropped between the two
-tables above — that's confounded by JD re-extraction and a stricter rubric change alongside
-metric noise, not a real regression; only the within-table deltas are meaningful.)
+Once the reranker had a rich query to work with, it became the single biggest lever in this
+mean-score metric — which is why `RERANK_DEFAULT` was set to `true` at the time. This
+conclusion was **later reversed** (§7.6): the mean-score metric rewarded the reranker for
+surfacing long, keyword-rich résumés, which is not the same as better recall of genuinely
+qualified candidates. (Absolute scores dropped between the two tables above — that's confounded
+by JD re-extraction and a stricter rubric change alongside metric noise, not a real
+regression; only the within-table deltas are meaningful.)
 
 ### 7.3 Final validated results (post clearance-fix, all 10 JDs, 2 runs each)
 
@@ -393,7 +462,7 @@ extra LLM call. It stays off by default.
 |---|---|---|---|---|
 | Lexical search (baseline) | — | — | included in $0.12 base | Always on — fast, precise, enforces hard filters natively |
 | + Vector retrieval | +0.9 | +0.3 | ~$0.0001 (1 embed call) | **On by default** — cheap, catches wording-mismatch candidates |
-| + Reranker | +1.9 | **+3.2** | ~$0.002 (1 rerank call, ~60 docs) | **On by default** — biggest lever, especially on specialized/niche roles |
+| + Reranker | +1.9 | **+3.2** | ~$0.002 (1 rerank call, ~60 docs) | *Was* on by default on this metric; **now off** — the metric over-credited it and it hurt recall of terse-résumé matches (§7.6). Kept behind `?rerank=true` for scale. |
 | + Query expansion | -0.3 | mixed, <±0.5 | ~$0.01 (1 extra LLM call) | **Off by default** — inconsistent benefit, real added cost/latency |
 
 ### 7.4 A concrete walk-through
@@ -421,10 +490,11 @@ are anonymized below (this repository is public); the underlying facts are real.
   against the JD), but landed on Candidate B, not the best-fit Candidate A.
 
 After the clearance-gate fix, **Candidate D is excluded from every configuration**, and the
-deployed default (vector + reranker) now correctly surfaces **Candidate A** — the genuinely
-best, eligible candidate — as the top match. This single example is what motivated re-running
-the full grid (§7.3) to confirm the fix's effect generalizes rather than being one JD's
-coincidence.
+system (vector on, reranker off per §7.6) now correctly surfaces **Candidate A** — the
+genuinely best, eligible candidate — as the top match. This single example is what motivated
+re-running the full grid (§7.3) to confirm the fix's effect generalizes rather than being one
+JD's coincidence. (This is the same "Data & Excel Analyst" JD whose recall regression later
+drove the reranker-off + union-scoring fixes in §7.6.)
 
 ### 7.5 Cost
 
@@ -436,42 +506,100 @@ Verified provider rates (2026-07-01):
 | Cohere Rerank 3.5 | $2.00 / 1,000 search units (1 unit = 1 query + ≤100 doc chunks) |
 | Titan Text Embeddings v2 | ~$0.02 / MTok (negligible at this scale) |
 
-Measured per-match cost, deployed default (vector + reranker on, expansion off), from live
-telemetry: ~28.5k input + ~2k output tokens for LLM scoring, ~60 documents to the reranker (1
-search unit), 1 JD embedding call.
+Measured per-match cost, current default (vector on, reranker off, expansion off), from live
+telemetry: ~28.5k input + ~2k output tokens for LLM scoring across a ~12-candidate shortlist,
+1 JD embedding call. The reranker is off by default, so its ~$0.002/match does not apply
+unless re-enabled with `?rerank=true`.
 
 ```
 LLM scoring:      28,500 × $3/M  +  2,000 × $15/M   ≈ $0.086 + $0.030  = $0.116
-Reranker:         1 search unit × $2/1,000                             = $0.002
+Reranker:         off by default (≈ $0.002/match when enabled)         = $0.000
 JD embedding:     ~500 tokens × $0.02/M                                ≈ negligible
 ────────────────────────────────────────────────────────────────────────────────
 Total:                                                                 ≈ $0.12 / match
 ```
 
-**~95% of per-match cost is LLM scoring** — this is intentional: it's the one stage doing the
-expensive natural-language reasoning, held to a small fixed shortlist (`SCORING_LIMIT=10`) so
+**~95%+ of per-match cost is LLM scoring** — this is intentional: it's the one stage doing the
+expensive natural-language reasoning, held to a small fixed shortlist (`SCORING_LIMIT=12`) so
 cost never scales with talent-pool size. One-time embedding backfill for the full candidate
 pool at the time of this build (128 candidates → 805 résumé chunks) cost roughly $0.006
 total.
+
+### 7.6 Post-ship recall investigation (reranker off + union scoring)
+
+A live "Data & Excel Analyst" query surfaced the wrong #1: a Finance Manager holding only one
+of the three required skills (but a long, keyword-rich résumé) topped the list, while a
+candidate holding **all three** required skills — Data Analysis, Power BI, Microsoft Excel —
+sat at **#13, below the scoring cut**, because his résumé was terse. This is exactly the kind
+of error the mean-LLM-score metric (§7.1) is blind to, so the investigation switched to
+**recall@k against human-labeled expected winners** — the correct way to compare
+configurations. Two independent causes were found and fixed:
+
+**Finding A — the reranker was mis-ranking, not adding recall.** Cohere Rerank scores
+`job_title + resume_text` only; it never sees the structured `skill_names`, so it over-rewards
+long résumé prose. Ablations (`?rerank=` toggle) showed: pure lexical ranked the data-skilled
+candidate #1; lexical+vector ranked him #1; **adding the reranker dropped him to #13** and
+floated the long-résumé Finance Manager to #1. Injecting the structured skills into the rerank
+document barely moved him (a few hundred characters against ~6,000 of prose: #34 → #28 in the
+full pool). At ~128 candidates the reranker had no recall to add and actively hurt, so
+`RERANK_DEFAULT` was set to **`false`** (§2.3). Turning it off immediately put the data-skilled
+candidate back at #1 (78) live.
+
+**Finding B — equal-weight RRF diluted strong single-leg candidates.** Even with the reranker
+off, a golden-set run showed **+vector scoring *worse* than lexical alone** (must-tier
+recall@10 fell to ~71% from ~88%). Cause: RRF awards `1/(k+rank)` *per list a candidate appears
+in*, so a candidate in **both** legs gets ~2× weight and can push a strong **single-leg**
+candidate below the scoring cut. Taking the top-N of that fused ranking therefore dropped
+skill-perfect-but-terse candidates out of scoring entirely. Fix: score the **union** of each
+leg's best (`_union_score_pks`, §2.4) with `VEC_SCORE_SLOTS=4` reserved for vector-only recall,
+and bump `SCORING_LIMIT` 10 → 12. Re-running the golden eval, must-tier +vector recovered to
+88% (ties lexical — dilution eliminated) with clean semantic recoveries (e.g. one expected
+candidate moved lexical #12 → +vector #5). The honest status: **vector no longer hurts**, and
+on the current draft (lexical-leaning) labels it is roughly neutral-to-positive; the clearest
+win is on wording-mismatch JDs. The reranker stays available behind `?rerank=true` for when the
+pool grows large enough to need scale-time reordering.
+
+**Finding C — full-budget requests were tripping the 30s gateway cap (503s).** With
+`SCORING_LIMIT=12` and batches of 2, scoring produced 6 Bedrock calls but the pool ran only 5
+concurrently, so a straggler 6th batch ran in a **second wave** and pushed full-budget requests
+to ~30.7s — over API Gateway's hard 30s cap, surfacing as a frontend **503**. Fix: size the
+worker pool to `ceil(SCORING_LIMIT / SCORING_BATCH)` so every batch runs in a **single
+concurrent wave**. A full 12-candidate score now completes in ~15s live (6 concurrent calls,
+one wave), well under the cap, with no change to cost or recall.
+
+**Tooling:** `scripts/eval_golden.py` + `scripts/golden_set.json` provide the recall@k harness
+(arms: `lexical`, `+vector`, `+rerank`; `--sleep` spacing to avoid Bedrock daily-quota
+throttling noise, which otherwise shows up as spurious unscored "misses"). The golden labels
+are recruiter-reviewable and currently lean lexical — see §8.
 
 ---
 
 ## 8. Known limitations & future work
 
-- **No human-labeled golden set.** All quality numbers above are LLM-as-judge — they measure
-  whether the *LLM's own opinion* improved, which is a reasonable proxy but not ground truth.
-  A recruiter-labeled set of "actually good fits" per JD would enable real precision/recall
-  measurement.
-- **LLM-judge scoring is noisy.** The same candidate can score meaningfully differently
-  between runs; only aggregates across multiple JDs and runs are trustworthy, never a
-  single-JD, single-run delta.
+- **Golden set exists but labels are still draft.** `scripts/golden_set.json` gives 5
+  recruiter-style JDs with must/should-tier expected winners, and `scripts/eval_golden.py`
+  measures recall@k against them — the correct metric for comparing configurations. The labels
+  currently lean lexical, so on this set vector reads roughly neutral; expanding the set and
+  correcting labels (especially adding genuine wording-mismatch winners) would give vector a
+  fairer test and sharpen the config comparison.
+- **Graded semantic scoring on the lookup tables (from a user idea).** Skill matching is
+  effectively binary today — the lexical leg matches literal `skill_names` (Phase 2b synonym
+  expansion is also binary), and all graded relatedness is left to the LLM scorer. A middle
+  ground is to run semantic similarity over the skills/titles **lookup tables** and give a
+  *graded* score to related-but-not-exact skills, feeding it as a **weighted `should` clause**
+  into the prefilter. Detailed design, motivation, and risks in
+  [§8.1](#81-graded-semantic-skill-matching-on-the-lookup-tables-proposal).
 - **Chunking is a simple fixed-window strategy.** It can split a résumé mid-sentence or blend
   two sections together. Good enough to drive recall; a smarter, structure-aware chunker is a
   future improvement, not a current problem.
 - **API Gateway's 30-second hard timeout** (HTTP APIs cannot be configured beyond this,
-  unlike REST APIs) sets a firm ceiling on total match latency. This is currently managed by
-  parallelizing LLM scoring calls and keeping the scored shortlist small — there is limited
-  remaining headroom if scoring is made more thorough per candidate.
+  unlike REST APIs) sets a firm ceiling on total match latency. This is managed by
+  parallelizing LLM scoring into a **single concurrent wave** (worker pool sized to
+  `ceil(SCORING_LIMIT / SCORING_BATCH)`, §7.6 Finding C) and keeping the scored shortlist
+  small — a full 12-candidate score lands at ~15s. Headroom is finite: making per-candidate
+  scoring more thorough (larger résumé cap, bigger batches) or raising `SCORING_LIMIT` past
+  what fits one wave will push back toward the cap. If it bites again, dial `SCORING_LIMIT`
+  back or reduce `RESUME_CHARS_CAP` before adding scoring depth.
 - **Bedrock's daily token quota is a real operational risk — and it was hit during this
   build's own validation.** This AWS account's operative quota for Claude Sonnet 4.6 via the
   cross-region inference profile in use (`us.anthropic.claude-sonnet-4-6`) is **10.8M
@@ -502,6 +630,78 @@ total.
   exhausted — verifying a scoring-path change blind, under the very failure condition it's
   meant to handle, risks introducing a real regression instead of fixing one.
 
+### 8.1 Graded semantic skill matching on the lookup tables (proposal)
+
+**The gap.** Skill matching today is binary. The lexical prefilter (`_build_prefilter_query`)
+matches a candidate's literal `skill_names` against the JD's required skills; Phase 2b synonym
+expansion widens that set but is still all-or-nothing (a term is either in the expanded set or
+it isn't). The only place *graded* relatedness is currently judged is the LLM scorer, which
+reads the full résumé and can credit "Tableau" toward a "Power BI" requirement — but that
+happens **after** retrieval has already decided who reaches scoring. So a candidate whose
+skills are *adjacent* to the JD's (not identical, not a known synonym) can be under-ranked by
+the prefilter and fall below the scoring cut before the LLM ever sees them. This is a recall
+problem at the retrieval stage, and it's invisible to the LLM scorer by construction.
+
+**The idea (Ben's).** Keep searching directly for the JD's skills against the lookup tables —
+but instead of exact-match-or-nothing, run **semantic similarity over the lookup-table entries**
+and assign related-but-not-exact skills a **graded score**. A "Power BI" requirement would then
+match "Power BI" at 1.0, a close cousin like "Tableau" or "Looker" at, say, 0.7, and an
+unrelated skill at ~0. That graded score becomes a **weighted `should` clause** in the
+OpenSearch prefilter, so a candidate with adjacent skills gets a proportional retrieval boost —
+enough to lift genuinely-relevant people into the scored set — rather than being treated as a
+non-match. It occupies the middle ground between exact lexical matching (precise but brittle to
+wording) and full résumé-chunk vector search (recovers wording mismatches but is diffuse over
+whole résumés rather than focused on the specific skills the JD asked for).
+
+**How it would work, concretely.**
+1. **Offline: embed the lookup tables.** Precompute an embedding for every canonical entry in
+   the skills lookup table (`aimory-talent-pool-dev-skills-lookup`) — and optionally the job
+   titles lookup — using the same Titan embedding model already in use. This is a one-time /
+   on-change batch job (the tables are small and change rarely), so it adds **no per-match
+   embedding cost**.
+2. **Per match: expand each JD skill into a graded neighbor set.** For each required skill on
+   the JD, k-NN the lookup embeddings to get the top-N nearest canonical skills with their
+   cosine similarities, keeping only those above a threshold (e.g. ≥ 0.6). This yields, per JD
+   skill, a small map of `related_skill -> weight`.
+3. **Per match: fold the graded weights into the prefilter.** Add the related skills as
+   `should` clauses on `skill_names`, each `boost`ed by its similarity weight, alongside the
+   existing exact-match clauses (which stay at full weight). Exact matches still dominate;
+   adjacent skills contribute proportionally. Hard filters (clearance, §6) are untouched.
+4. **Leave scoring to the LLM.** The graded signal only decides *who gets retrieved into the
+   scored set* — it never caps or sets the final score. The LLM remains the precision judge,
+   exactly as today.
+
+**Why this is promising.** It directly targets retrieval recall for the wording-mismatch case,
+using a focused, skill-level signal (not the diffuse whole-résumé vector), at effectively zero
+added per-match cost (lookup embeddings are precomputed; the per-match k-NN is tiny). It's also
+naturally explainable — you can show *why* a candidate was boosted ("matched 'Power BI'
+requirement via 'Tableau' at 0.71"), which the résumé-chunk vector leg cannot.
+
+**Risks and open questions (must be measured, not assumed).**
+- **Dilution regression.** §7.6 Finding B showed that naively adding retrieval weight can push
+  strong single-leg candidates below the scoring cut. Graded `should` boosts must be tuned (and
+  probably capped in aggregate) so they *add* recall without displacing exact-skill matches.
+  This must be validated against the golden set, and the graded signal should route through the
+  union-selection logic (§2.4), not a raw fused top-N.
+- **Threshold and weight calibration.** The similarity cutoff and the boost curve
+  (linear? squared? capped?) need empirical tuning — too generous and unrelated skills leak in,
+  too strict and it does nothing.
+- **Embedding quality on short strings.** Skill names are 1-3 words; general-purpose embeddings
+  can conflate surface-similar but semantically different terms (e.g. "Java" vs "JavaScript",
+  "Security Clearance" vs "Security Engineering"). A curated denylist or a manual review of the
+  nearest-neighbor graph may be needed.
+- **Overlap with Phase 2b and the LLM.** Some of this benefit may already be captured by
+  synonym expansion (for exact synonyms) and the LLM scorer (for candidates who reach scoring).
+  The measurable question is whether the *retrieval-stage* recall gain for adjacent-skill
+  candidates is real and additive, or whether the existing two mechanisms already cover most of
+  it.
+
+**Recommendation.** Prototype behind a per-request toggle (mirroring `?vector=` / `?rerank=`),
+measure recall@k on the golden set (§7.6) with the labels corrected to include genuine
+adjacent-skill winners, and only promote to default if it improves recall without
+re-introducing dilution or hurting latency. Tracked in
+[issue #227](https://github.com/aimory-org/aimory-talent-pool/issues/227).
+
 ---
 
 ## 9. Where things live
@@ -514,5 +714,6 @@ total.
 | Résumé chunking + embedding sync | `infra/modules/storage/lambda_src/sync_to_opensearch/app.py` |
 | One-time embedding backfill | `scripts/backfill_embeddings.py` |
 | JD extraction (schema/prompt/persist) | `infra/pipeline_configs/job_description/{schema.json,prompt.txt,persist/app.py}` |
-| Ablation / evaluation harness | `scripts/eval_matching.py` |
+| Ablation / evaluation harness (mean-LLM-score; see §7.1 caveats) | `scripts/eval_matching.py` |
+| Recall@k golden-set harness + labels (§7.6) | `scripts/eval_golden.py`, `scripts/golden_set.json` |
 | In-app technical reference | Help Center → Technical Reference → **Matching** tab (frontend) |

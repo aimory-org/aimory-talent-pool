@@ -109,12 +109,6 @@ variable "github_workflow_file" {
   default     = "merge-deploy.yml"
 }
 
-variable "bedrock_model_id" {
-  type        = string
-  description = "Bedrock model ID used by the extraction pipeline (shared)."
-  default     = "us.anthropic.claude-sonnet-4-20250514-v1:0"
-}
-
 variable "match_model_id" {
   type        = string
   description = "Bedrock model ID for candidate-matching LLM scoring (revamped matcher, full-résumé). Separate from extraction so the two can be upgraded independently. Sonnet 5 is not yet access-enabled for this account (Anthropic use-case form pending); using 4.6 until then."

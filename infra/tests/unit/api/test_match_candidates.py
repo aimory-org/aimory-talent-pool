@@ -378,6 +378,53 @@ class TestVectorRetrieval:
             assert app._embed_jd_query({"description_summary": "x"}) is None
 
 
+class TestUnionScorePks:
+    def setup_method(self):
+        _load_lambda("modules/api/lambda_src/match_candidates")
+
+    def test_lexical_top_always_protected(self, job_descriptions_table):
+        import app
+
+        # A candidate strong lexically but ABSENT from the vector list must still be scored.
+        lex = ["a", "b", "c", "d"]
+        vec = ["z", "y", "x"]
+        allowed = set(lex + vec)
+        out = app._union_score_pks(lex, vec, allowed, budget=4, vec_reserve=2)
+        # lex_slots = budget - vec_reserve = 2 → a,b guaranteed; then 2 vector-only z,y
+        assert out[:2] == ["a", "b"]
+        assert "z" in out and "y" in out
+        assert len(out) == 4
+
+    def test_vector_only_recall_added(self, job_descriptions_table):
+        import app
+
+        lex = ["a", "b"]
+        vec = ["v1", "v2", "v3"]
+        out = app._union_score_pks(lex, vec, set(lex + vec), budget=5, vec_reserve=3)
+        assert set(out) == {"a", "b", "v1", "v2", "v3"}
+
+    def test_backfills_with_lexical_when_vector_short(self, job_descriptions_table):
+        import app
+
+        lex = ["a", "b", "c", "d", "e"]
+        vec = ["v1"]
+        out = app._union_score_pks(lex, vec, set(lex + vec), budget=4, vec_reserve=3)
+        # 1 vector-only (v1) + backfill lexical to budget 4
+        assert "v1" in out
+        assert len([p for p in out if p in lex]) == 3
+        assert len(out) == 4
+
+    def test_respects_allowed_filter(self, job_descriptions_table):
+        import app
+
+        lex = ["a", "b", "c"]
+        vec = ["v1", "v2"]
+        allowed = {"a", "c", "v2"}  # b and v1 filtered out (e.g. failed hard requirements)
+        out = app._union_score_pks(lex, vec, allowed, budget=5, vec_reserve=2)
+        assert set(out) == {"a", "c", "v2"}
+        assert "b" not in out and "v1" not in out
+
+
 class TestReranker:
     def setup_method(self):
         _load_lambda("modules/api/lambda_src/match_candidates")
