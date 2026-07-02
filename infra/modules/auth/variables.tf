@@ -37,3 +37,23 @@ variable "entra_tenant_id" {
   type        = string
 }
 
+# Native test user (headless E2E auth - dev/test only)
+variable "enable_test_user" {
+  description = "Create a native (non-federated) Cognito test user for headless E2E auth. Never enable in prod."
+  type        = bool
+  default     = false
+}
+
+variable "test_user_email" {
+  description = "Email/username for the native E2E test user (required if enable_test_user is true)"
+  type        = string
+  default     = ""
+}
+
+variable "test_user_password" {
+  description = "Permanent password for the native E2E test user (required if enable_test_user is true)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+

@@ -107,6 +107,27 @@ variable "entra_tenant_id" {
   }
 }
 
+# Native test user for headless E2E auth (Playwright). Dev only - never wire
+# these into a prod environment.
+variable "enable_e2e_test_user" {
+  description = "Create a native Cognito test user for E2E tests"
+  type        = bool
+  default     = false
+}
+
+variable "e2e_test_user_email" {
+  description = "Email/username for the E2E test user"
+  type        = string
+  default     = ""
+}
+
+variable "e2e_test_user_password" {
+  description = "Permanent password for the E2E test user"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
 variable "github_pat_param" {
   description = "SSM parameter containing the GitHub token for deployment history"
   type        = string

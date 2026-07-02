@@ -16,6 +16,9 @@
 #   TF_VAR_ENTRA_CLIENT_SECRET – Microsoft Entra ID client secret
 #   TF_VAR_ENTRA_TENANT_ID     – Microsoft Entra ID tenant ID
 #   DEPLOYMENTS_PAT            – GitHub token used by /deployments API (stored in SSM)
+#   E2E_TEST_USER_EMAIL        – native Cognito test user for headless Playwright auth (dev only)
+#   E2E_TEST_USER_PASSWORD     – permanent password for the E2E test user (min 12 chars, see
+#                                infra/modules/auth password_policy)
 #
 # Required GitHub Variables (repository or environment "dev"):
 #   TF_VAR_COGNITO_CALLBACK_URLS – JSON list, e.g. '["http://localhost:5173","https://xxxxx.cloudfront.net"]'
@@ -90,6 +93,10 @@ jobs:
       TF_VAR_entra_tenant_id: ${{ secrets.TF_VAR_ENTRA_TENANT_ID }}
       TF_VAR_cognito_callback_urls: ${{ vars.TF_VAR_COGNITO_CALLBACK_URLS }}
       TF_VAR_cognito_logout_urls: ${{ vars.TF_VAR_COGNITO_LOGOUT_URLS }}
+      # Native Cognito test user for headless E2E auth (dev only - see infra/modules/auth)
+      TF_VAR_enable_e2e_test_user: "true"
+      TF_VAR_e2e_test_user_email: ${{ secrets.E2E_TEST_USER_EMAIL }}
+      TF_VAR_e2e_test_user_password: ${{ secrets.E2E_TEST_USER_PASSWORD }}
 
     steps:
       - name: Checkout
@@ -370,6 +377,64 @@ jobs:
           RUN_STALE_CHECKER_INTEGRATION: "0"
 
   # ═══════════════════════════════════════════════════════════════════════════
+  # Post-Deployment E2E Tests (Playwright)
+  #
+  # Runs critical-path browser tests against the live deployed dev site.
+  # Auth is via a native Cognito test user (USER_PASSWORD_AUTH), not the real
+  # Microsoft Entra ID login screen, since CI can't drive that headlessly -
+  # see infra/modules/auth and frontend/web/e2e/auth.setup.ts.
+  #
+  # Non-blocking (continue-on-error) while the suite is new/small - it alerts
+  # via the uploaded report but does not fail the deploy or trigger rollback.
+  # Graduate to blocking once the suite is stable (issue #38).
+  # ═══════════════════════════════════════════════════════════════════════════
+  e2e-tests:
+    name: E2E Tests (Playwright)
+    needs: [terraform, frontend]
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    env:
+      BASE_URL: https://${{ needs.terraform.outputs.distribution_domain }}
+      COGNITO_CLIENT_ID: ${{ needs.terraform.outputs.cognito_web_client_id }}
+      AWS_REGION: us-east-1
+      E2E_TEST_USER_EMAIL: ${{ secrets.E2E_TEST_USER_EMAIL }}
+      E2E_TEST_USER_PASSWORD: ${{ secrets.E2E_TEST_USER_PASSWORD }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/web/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend/web
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: frontend/web
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright tests
+        working-directory: frontend/web
+        run: npx playwright test
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report-${{ github.sha }}
+          path: |
+            frontend/web/playwright-report/
+            frontend/web/test-results/
+          retention-days: 14
+
+  # ═══════════════════════════════════════════════════════════════════════════
   # Automatic Rollback
   #
   # Triggered only when smoke-test fails. Strategy:
@@ -400,6 +465,9 @@ jobs:
       TF_VAR_entra_tenant_id: ${{ secrets.TF_VAR_ENTRA_TENANT_ID }}
       TF_VAR_cognito_callback_urls: ${{ vars.TF_VAR_COGNITO_CALLBACK_URLS }}
       TF_VAR_cognito_logout_urls: ${{ vars.TF_VAR_COGNITO_LOGOUT_URLS }}
+      TF_VAR_enable_e2e_test_user: "true"
+      TF_VAR_e2e_test_user_email: ${{ secrets.E2E_TEST_USER_EMAIL }}
+      TF_VAR_e2e_test_user_password: ${{ secrets.E2E_TEST_USER_PASSWORD }}
 
     steps:
       - name: Resolve rollback target SHA
