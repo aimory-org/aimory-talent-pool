@@ -1,7 +1,7 @@
 /**
  * React hooks for fetching and managing talent data.
  */
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { listTalents, updateTalent, bulkUpdateTalents, type ListTalentsParams } from "@/lib/api";
 import type { TalentProfile, CandidateStatus } from "@/types/talent";
 
@@ -39,21 +39,31 @@ export function useTalents(options: UseTalentsOptions = {}): UseTalentsResult {
 
   const filtersKey = JSON.stringify(filters);
 
+  // Monotonic id per fetch so a slow response can't clobber a newer one
+  // (e.g. a slow OpenSearch query landing after the user already cleared
+  // the search and the unfiltered list came back).
+  const fetchSeqRef = useRef(0);
+
   const fetchTalents = useCallback(async () => {
     if (!enabled) return;
 
+    const seq = ++fetchSeqRef.current;
     setIsLoading(true);
     setError(null);
 
     try {
       const response = await listTalents(filters);
+      if (seq !== fetchSeqRef.current) return; // stale response - discard
       setTalents(response.items);
     } catch (err) {
+      if (seq !== fetchSeqRef.current) return;
       setError(
         err instanceof Error ? err : new Error("Failed to fetch talents"),
       );
     } finally {
-      setIsLoading(false);
+      if (seq === fetchSeqRef.current) {
+        setIsLoading(false);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, filtersKey]);
