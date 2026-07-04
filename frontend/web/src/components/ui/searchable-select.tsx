@@ -94,7 +94,7 @@ function SearchableSelect({
           "flex h-9 w-full cursor-pointer items-center rounded-lg border border-black/10 px-3 text-sm shadow-sm transition-colors dark:border-white/10",
           "bg-black/5 dark:bg-white/5",
           "hover:border-black/20 hover:bg-black/8 dark:hover:border-white/20 dark:hover:bg-white/8",
-          open && "border-indigo-500/50 ring-2 ring-inset ring-indigo-500/30",
+          open && "border-ring ring-2 ring-inset ring-ring/30",
           disabled && "cursor-not-allowed opacity-50",
         )}
         onClick={handleOpen}
@@ -141,7 +141,7 @@ function SearchableSelect({
       </div>
 
       {open && (
-        <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-48 overflow-auto rounded-lg border border-black/10 dark:border-white/10 bg-white dark:bg-slate-800 shadow-lg">
+        <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-48 overflow-auto rounded-lg border border-black/10 dark:border-white/10 bg-popover shadow-lg">
           {filtered.length > 0 ? (
             filtered.map((option) => (
               <div
@@ -149,9 +149,9 @@ function SearchableSelect({
                 onClick={() => handleSelect(option.value)}
                 className={cn(
                   "cursor-pointer px-3 py-2 text-sm text-foreground transition-colors",
-                  "hover:bg-indigo-500/10 hover:text-indigo-700 dark:hover:text-indigo-300",
+                  "hover:bg-accent hover:text-accent-foreground",
                   option.value === value &&
-                    "bg-indigo-500/10 font-medium text-indigo-700 dark:text-indigo-300",
+                    "bg-accent font-medium text-accent-foreground",
                 )}
               >
                 {option.label}

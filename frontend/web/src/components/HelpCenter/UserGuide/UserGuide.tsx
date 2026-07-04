@@ -31,7 +31,7 @@ function Section({
   return (
     <section id={sectionId} className="mb-12 scroll-mt-6">
       <div className="flex items-center gap-3 mb-4">
-        <div className="p-2 bg-indigo-500/20 rounded-lg text-indigo-600 dark:text-indigo-400">
+        <div className="p-2 bg-accent rounded-lg text-accent-foreground">
           {icon}
         </div>
         <h2 className="text-2xl font-semibold text-foreground">{title}</h2>
@@ -60,7 +60,7 @@ function SubSection({
 
 function Callout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mt-4 p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-foreground/80">
+    <div className="mt-4 p-4 bg-accent border border-transparent rounded-lg text-accent-foreground">
       {children}
     </div>
   );
@@ -68,7 +68,7 @@ function Callout({ children }: { children: React.ReactNode }) {
 
 function Timeline({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mt-6 space-y-4 relative before:absolute before:left-4 before:top-2 before:bottom-2 before:w-0.5 before:bg-black/10 dark:before:bg-white/10">
+    <div className="mt-6 space-y-4 relative before:absolute before:left-4 before:top-2 before:bottom-2 before:w-0.5 before:bg-border">
       {children}
     </div>
   );
@@ -85,7 +85,7 @@ function TimelineStep({
 }) {
   return (
     <div className="flex gap-4 relative">
-      <div className="w-8 h-8 rounded-full bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-semibold text-sm shrink-0">
+      <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-accent-foreground font-semibold text-sm shrink-0">
         {number}
       </div>
       <div className="pb-4">
@@ -96,25 +96,25 @@ function TimelineStep({
   );
 }
 
+// Mirrors the app's actual restrained status palette (see
+// TalentDashboard/constants.ts) so this documentation matches what
+// recruiters see in the real Status column.
 function StatusCard({
   status,
   color,
   description,
 }: {
   status: string;
-  color: "blue" | "green" | "purple" | "teal" | "yellow" | "red";
+  color: "neutral" | "neutral-filled" | "accent" | "success" | "warning" | "destructive";
   description: string;
 }) {
   const colorClasses: Record<typeof color, string> = {
-    blue: "bg-blue-500/20 border-blue-500/30 text-blue-600 dark:text-blue-400",
-    green:
-      "bg-emerald-500/20 border-emerald-500/30 text-emerald-600 dark:text-emerald-400",
-    purple:
-      "bg-purple-500/20 border-purple-500/30 text-purple-600 dark:text-purple-400",
-    teal: "bg-teal-500/20 border-teal-500/30 text-teal-600 dark:text-teal-400",
-    yellow:
-      "bg-amber-500/20 border-amber-500/30 text-amber-600 dark:text-amber-400",
-    red: "bg-red-500/20 border-red-500/30 text-red-600 dark:text-red-400",
+    neutral: "bg-transparent border-border-strong text-muted-foreground",
+    "neutral-filled": "bg-muted-foreground/10 border-transparent text-foreground/80",
+    accent: "bg-accent border-transparent text-accent-foreground",
+    success: "bg-success/12 border-success/25 text-success",
+    warning: "bg-warning/12 border-warning/25 text-warning",
+    destructive: "bg-destructive/12 border-destructive/25 text-destructive",
   };
 
   return (
@@ -133,7 +133,7 @@ function FAQ({
   children: React.ReactNode;
 }) {
   return (
-    <div className="mt-4 p-4 bg-black/5 dark:bg-slate-700/50 rounded-lg">
+    <div className="mt-4 p-4 bg-secondary rounded-lg">
       <h4 className="font-medium text-foreground mb-2">{question}</h4>
       <p className="text-foreground/60">{children}</p>
     </div>
@@ -237,32 +237,32 @@ export function UserGuide() {
         <div className="grid gap-3 mt-4">
           <StatusCard
             status="Potential Candidate"
-            color="blue"
+            color="neutral"
             description="Newly added to the system. Resume has been processed but no action taken yet."
           />
           <StatusCard
             status="Active Candidate"
-            color="green"
+            color="accent"
             description="Currently being considered for opportunities. Actively in your pipeline."
           />
           <StatusCard
             status="Placed with us"
-            color="teal"
+            color="success"
             description="Successfully placed by us. Kept for future reference."
           />
           <StatusCard
             status="Placed at Other Company"
-            color="purple"
+            color="neutral-filled"
             description="Was already placed elsewhere when reviewed."
           />
           <StatusCard
             status="Stale Candidate"
-            color="yellow"
+            color="warning"
             description="No activity for an extended period. May need to re-engage or refresh their info."
           />
           <StatusCard
             status="Do Not Contact"
-            color="red"
+            color="destructive"
             description="Should not be reached out to. Could be due to their request, bad fit, or other reasons."
           />
         </div>

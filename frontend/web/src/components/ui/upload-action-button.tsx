@@ -16,7 +16,7 @@ export function UploadActionButton({
     <Button
       type="button"
       className={cn(
-        "h-9 px-3 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium transition-all",
+        "h-9 px-3 rounded-lg bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-medium transition-all",
         className,
       )}
       {...props}

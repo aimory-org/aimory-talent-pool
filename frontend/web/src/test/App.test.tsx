@@ -248,7 +248,7 @@ describe("App Authentication", () => {
         ).not.toBeInTheDocument();
       });
 
-      expect(screen.getByText("Talent Pool")).toBeInTheDocument();
+      expect(screen.getByText("Recruiting Hub")).toBeInTheDocument();
       expect(screen.getByText("Welcome back")).toBeInTheDocument();
     });
 

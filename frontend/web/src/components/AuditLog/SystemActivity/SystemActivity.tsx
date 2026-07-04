@@ -54,6 +54,9 @@ interface SystemEvent {
 const SYSTEM_EMAILS = new Set(["pipeline@system", "dedup@system"]);
 const DEDUP_RUN_PK = "SYSTEM#LOOKUP_DEDUP_RUN";
 
+// Four event categories collapsed to one consistent neutral treatment —
+// the icon (GitBranch/Zap/Layers/RefreshCw) differentiates the category,
+// not a unique hue per type.
 const TYPE_CONFIG: Record<
   SystemEventType,
   {
@@ -67,60 +70,54 @@ const TYPE_CONFIG: Record<
   deploy: {
     label: "Deploy",
     icon: <GitBranch className="w-3.5 h-3.5" />,
-    badge:
-      "bg-violet-500/10 text-violet-700 dark:text-violet-300 border-violet-500/20",
-    dot: "bg-violet-500",
-    bgIcon:
-      "bg-linear-to-br from-violet-500/20 to-purple-500/10 text-violet-600 dark:text-violet-400",
+    badge: "bg-accent text-accent-foreground border-transparent",
+    dot: "bg-primary",
+    bgIcon: "bg-accent text-accent-foreground",
   },
   pipeline: {
     label: "Pipeline",
     icon: <Zap className="w-3.5 h-3.5" />,
-    badge:
-      "bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/20",
-    dot: "bg-indigo-500",
-    bgIcon:
-      "bg-linear-to-br from-indigo-500/20 to-blue-500/10 text-indigo-600 dark:text-indigo-400",
+    badge: "bg-accent text-accent-foreground border-transparent",
+    dot: "bg-primary",
+    bgIcon: "bg-accent text-accent-foreground",
   },
   dedup: {
     label: "Dedup",
     icon: <Layers className="w-3.5 h-3.5" />,
-    badge:
-      "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20",
-    dot: "bg-amber-500",
-    bgIcon:
-      "bg-linear-to-br from-amber-500/20 to-orange-500/10 text-amber-600 dark:text-amber-400",
+    badge: "bg-accent text-accent-foreground border-transparent",
+    dot: "bg-primary",
+    bgIcon: "bg-accent text-accent-foreground",
   },
   reprocess: {
     label: "Reprocess",
     icon: <RefreshCw className="w-3.5 h-3.5" />,
-    badge:
-      "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20",
-    dot: "bg-emerald-500",
-    bgIcon:
-      "bg-linear-to-br from-emerald-500/20 to-teal-500/10 text-emerald-600 dark:text-emerald-400",
+    badge: "bg-accent text-accent-foreground border-transparent",
+    dot: "bg-primary",
+    bgIcon: "bg-accent text-accent-foreground",
   },
 };
 
+// Deploy conclusion IS meaningfully semantic (did the build pass?) — keep
+// distinct colors here, mapped to the app's restrained set.
 const CONCLUSION_CONFIG: Record<
   DeployConclusion,
   { icon: ReactNode; color: string }
 > = {
   success: {
     icon: <CheckCircle2 className="w-4 h-4" />,
-    color: "text-emerald-500",
+    color: "text-success",
   },
   failure: {
     icon: <XCircle className="w-4 h-4" />,
-    color: "text-red-500",
+    color: "text-destructive",
   },
   cancelled: {
     icon: <Clock className="w-4 h-4" />,
-    color: "text-amber-500",
+    color: "text-warning",
   },
   in_progress: {
     icon: <Loader2 className="w-4 h-4 animate-spin" />,
-    color: "text-indigo-500",
+    color: "text-primary",
   },
 };
 
@@ -407,15 +404,15 @@ function LatestDeployBanner({ deploy }: { deploy: SystemEvent }) {
     <div
       className={`flex items-center gap-4 p-4 rounded-2xl border mb-6 ${
         isSuccess
-          ? "bg-emerald-500/8 border-emerald-500/20"
-          : "bg-red-500/8 border-red-500/20"
+          ? "bg-success/8 border-success/20"
+          : "bg-destructive/8 border-destructive/20"
       }`}
     >
       <div
         className={`p-2 rounded-xl ${
           isSuccess
-            ? "bg-emerald-500/15 text-emerald-500"
-            : "bg-red-500/15 text-red-500"
+            ? "bg-success/15 text-success"
+            : "bg-destructive/15 text-destructive"
         }`}
       >
         {conclusion?.icon}
@@ -423,13 +420,7 @@ function LatestDeployBanner({ deploy }: { deploy: SystemEvent }) {
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-foreground">
           Latest deploy:{" "}
-          <span
-            className={
-              isSuccess
-                ? "text-emerald-600 dark:text-emerald-400"
-                : "text-red-600 dark:text-red-400"
-            }
-          >
+          <span className={isSuccess ? "text-success" : "text-destructive"}>
             {isSuccess ? "Successful" : "Failed"}
           </span>
         </p>
@@ -447,7 +438,7 @@ function LatestDeployBanner({ deploy }: { deploy: SystemEvent }) {
           href={deploy.run_url}
           target="_blank"
           rel="noopener noreferrer"
-          className="shrink-0 flex items-center gap-1.5 text-xs font-medium text-indigo-500 hover:text-indigo-600 transition-colors px-3 py-1.5 rounded-lg border border-indigo-500/20 bg-indigo-500/8 hover:bg-indigo-500/15"
+          className="shrink-0 flex items-center gap-1.5 text-xs font-medium text-primary hover:opacity-80 transition-opacity px-3 py-1.5 rounded-lg bg-accent"
         >
           <ExternalLink className="w-3.5 h-3.5" />
           View
@@ -598,7 +589,7 @@ export function SystemActivity() {
       {latestDeploy && <LatestDeployBanner deploy={latestDeploy} />}
 
       {(deploymentsError || auditError) && (
-        <div className="flex items-center gap-2 p-3 mb-4 rounded-2xl border border-red-500/20 bg-red-500/8 text-sm text-red-600 dark:text-red-400">
+        <div className="flex items-center gap-2 p-3 mb-4 rounded-2xl border border-destructive/20 bg-destructive/8 text-sm text-destructive">
           <AlertCircle className="h-4 w-4 shrink-0" />
           System activity could not be fully loaded.
         </div>
@@ -611,7 +602,7 @@ export function SystemActivity() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search commits, candidates, or event details..."
-            className="w-full h-10 pl-10 pr-4 rounded-xl bg-black/5 dark:bg-white/5 border border-black/7 dark:border-white/7 text-sm text-foreground placeholder-foreground/30 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/30 transition-all"
+            className="w-full h-10 pl-10 pr-4 rounded-xl bg-secondary border border-border text-sm text-foreground placeholder-foreground/30 focus:outline-none focus:ring-2 focus:ring-ring/40 focus:border-ring transition-colors"
           />
           {search && (
             <button
@@ -626,13 +617,13 @@ export function SystemActivity() {
         <div className="relative">
           <button
             onClick={() => setShowFilter((v) => !v)}
-            className="flex items-center gap-2 h-10 px-4 rounded-xl border border-black/7 dark:border-white/7 bg-black/5 dark:bg-white/5 text-sm font-medium text-foreground/60 hover:text-foreground hover:bg-black/10 dark:hover:bg-white/10 transition-all"
+            className="flex items-center gap-2 h-10 px-4 rounded-xl border border-border bg-secondary text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
           >
             <span>{currentFilter?.label}</span>
             <ChevronDown className="h-3.5 w-3.5" />
           </button>
           {showFilter && (
-            <div className="absolute right-0 mt-2 w-44 rounded-xl border border-black/7 dark:border-white/7 bg-white dark:bg-slate-800 shadow-xl shadow-black/10 z-20 py-1 animate-slide-in-up">
+            <div className="absolute right-0 mt-2 w-44 rounded-xl border border-border bg-popover shadow-lg z-20 py-1 animate-slide-in-up">
               {TYPE_FILTERS.map((filterOption) => (
                 <button
                   key={filterOption.value}
@@ -642,8 +633,8 @@ export function SystemActivity() {
                   }}
                   className={`w-full text-left px-4 py-2 text-sm transition-colors ${
                     typeFilter === filterOption.value
-                      ? "text-indigo-600 dark:text-indigo-400 bg-indigo-500/10"
-                      : "text-foreground/60 hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5"
+                      ? "text-primary bg-accent"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary"
                   }`}
                 >
                   {filterOption.label}
@@ -656,7 +647,7 @@ export function SystemActivity() {
         <button
           onClick={() => void refreshAll()}
           title="Refresh activity"
-          className="h-10 w-10 shrink-0 rounded-xl border border-black/7 dark:border-white/7 bg-black/5 dark:bg-white/5 text-foreground/60 hover:text-foreground hover:bg-black/10 dark:hover:bg-white/10 transition-all flex items-center justify-center"
+          className="h-10 w-10 shrink-0 rounded-xl border border-border bg-secondary text-muted-foreground hover:text-foreground hover:bg-accent transition-colors flex items-center justify-center"
         >
           {isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -700,7 +691,7 @@ export function SystemActivity() {
             return (
               <div
                 key={event.id}
-                className="animate-fade-in flex gap-3 p-4 rounded-2xl border border-black/6 dark:border-white/6 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm hover:border-indigo-500/20 hover:bg-white/80 dark:hover:bg-slate-800/80 transition-all duration-200"
+                className="animate-fade-in flex gap-3 p-4 rounded-2xl border border-border/60 bg-card hover:bg-secondary transition-colors duration-150"
                 style={{ animationDelay: `${index * 30}ms` }}
               >
                 {/* Icon */}
@@ -754,7 +745,7 @@ export function SystemActivity() {
                           </span>
                         )}
                         {event.commit_sha && (
-                          <span className="flex items-center gap-1 text-xs font-mono text-foreground/40 bg-black/5 dark:bg-white/5 px-1.5 py-0.5 rounded">
+                          <span className="flex items-center gap-1 text-xs font-mono text-foreground/40 bg-secondary px-1.5 py-0.5 rounded">
                             <GitCommit className="w-3 h-3" />
                             {event.commit_sha}
                           </span>
@@ -778,7 +769,7 @@ export function SystemActivity() {
                             href={event.run_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-1 text-xs text-indigo-500 hover:text-indigo-600 transition-colors"
+                            className="flex items-center gap-1 text-xs text-primary hover:opacity-80 transition-opacity"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <ExternalLink className="w-3 h-3" />
@@ -789,7 +780,7 @@ export function SystemActivity() {
                     )}
 
                     {event.type === "pipeline" && (
-                      <span className="flex items-center gap-1 text-xs font-medium text-emerald-500">
+                      <span className="flex items-center gap-1 text-xs font-medium text-success">
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         Processed
                       </span>
@@ -797,14 +788,14 @@ export function SystemActivity() {
 
                     {event.type === "dedup" && (
                       <>
-                        <span className="text-xs px-2 py-0.5 rounded-full border font-medium bg-slate-500/10 text-slate-600 dark:text-slate-300 border-slate-500/20">
+                        <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-secondary text-muted-foreground">
                           {event.dedup_trigger === "manual" ? "Manual" : "Scheduled"}
                         </span>
                         {event.dedup_merged != null && (
                           <span
                             className={`flex items-center gap-1 text-xs font-medium ${
                               event.dedup_merged > 0
-                                ? "text-amber-600 dark:text-amber-400"
+                                ? "text-warning"
                                 : "text-foreground/40"
                             }`}
                           >

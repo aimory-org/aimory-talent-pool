@@ -84,18 +84,16 @@ describe("StatsCards", () => {
     expect(grid?.children).toHaveLength(4);
   });
 
-  it("has correct color coding for each card type", () => {
+  it("renders every card on the shared neutral card surface", () => {
     const { container } = render(<StatsCards stats={defaultStats} />);
 
-    // Check for presence of color classes using attribute contains selector
-    expect(
-      container.querySelector("[class*='from-emerald-500']"),
-    ).toBeInTheDocument(); // Potential
-    expect(
-      container.querySelector("[class*='from-indigo-500']"),
-    ).toBeInTheDocument(); // Active
-    expect(
-      container.querySelector("[class*='from-violet-500']"),
-    ).toBeInTheDocument(); // Placed
+    // All stat tiles use the same token-based surface — no per-card color coding.
+    const grid = container.querySelector(".grid");
+    const cards = Array.from(grid?.children ?? []);
+    expect(cards.length).toBeGreaterThan(0);
+    cards.forEach((card) => {
+      expect(card).toHaveClass("bg-card");
+      expect(card).toHaveClass("border-border");
+    });
   });
 });

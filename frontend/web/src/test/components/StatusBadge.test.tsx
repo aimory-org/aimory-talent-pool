@@ -24,37 +24,37 @@ describe("StatusBadge", () => {
   it("applies correct styling for Potential Candidate", () => {
     render(<StatusBadge status="Potential Candidate" />);
     const badge = screen.getByText("Potential Candidate");
-    expect(badge).toHaveClass("bg-emerald-500/12");
+    expect(badge).toHaveClass("bg-transparent");
   });
 
   it("applies correct styling for Active Candidate", () => {
     render(<StatusBadge status="Active Candidate" />);
     const badge = screen.getByText("Active Candidate");
-    expect(badge).toHaveClass("bg-indigo-500/12");
+    expect(badge).toHaveClass("bg-accent");
   });
 
   it("applies correct styling for Placed at Other Company", () => {
     render(<StatusBadge status="Placed at Other Company" />);
     const badge = screen.getByText("Placed at Other Company");
-    expect(badge).toHaveClass("bg-violet-500/12");
+    expect(badge).toHaveClass("bg-muted-foreground/20");
   });
 
   it("applies correct styling for Placed with us", () => {
     render(<StatusBadge status="Placed with us" />);
     const badge = screen.getByText("Placed with us");
-    expect(badge).toHaveClass("bg-teal-500/12");
+    expect(badge).toHaveClass("bg-success/12");
   });
 
   it("applies correct styling for Stale Candidate", () => {
     render(<StatusBadge status="Stale Candidate" />);
     const badge = screen.getByText("Stale Candidate");
-    expect(badge).toHaveClass("bg-amber-500/12");
+    expect(badge).toHaveClass("bg-warning/12");
   });
 
   it("applies correct styling for Do Not Contact", () => {
     render(<StatusBadge status="Do Not Contact" />);
     const badge = screen.getByText("Do Not Contact");
-    expect(badge).toHaveClass("bg-red-500/12");
+    expect(badge).toHaveClass("bg-destructive/12");
   });
 
   it("renders as a span element", () => {

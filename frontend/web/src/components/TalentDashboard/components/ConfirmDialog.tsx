@@ -36,11 +36,11 @@ export function ConfirmDialog({ isOpen, count, onConfirm, onCancel }: ConfirmDia
         onClick={handleCancel}
       />
       <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md mx-auto px-4">
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-black/10 dark:border-white/10 shadow-2xl p-6">
+        <div className="bg-card rounded-2xl border border-border shadow-xl p-6">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-red-500/10 border border-red-500/20">
-                <AlertTriangle className="h-5 w-5 text-red-500" />
+              <div className="p-2 rounded-xl bg-destructive/10">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
               </div>
               <h2 className="text-lg font-semibold text-foreground">
                 Delete {count} {count === 1 ? "candidate" : "candidates"}?
@@ -48,13 +48,13 @@ export function ConfirmDialog({ isOpen, count, onConfirm, onCancel }: ConfirmDia
             </div>
             <button
               onClick={handleCancel}
-              className="text-foreground/40 hover:text-foreground transition-colors"
+              className="text-muted-foreground hover:text-foreground transition-colors"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
 
-          <p className="text-sm text-foreground/60 mb-4">
+          <p className="text-sm text-muted-foreground mb-4">
             This will permanently delete {count}{" "}
             {count === 1 ? "candidate" : "candidates"} and{" "}
             {count === 1 ? "their resume" : "their resumes"} from storage. This
@@ -64,7 +64,7 @@ export function ConfirmDialog({ isOpen, count, onConfirm, onCancel }: ConfirmDia
           {needsDoubleConfirm && (
             <div className="mb-4">
               <p className="text-sm text-foreground/70 mb-2">
-                Type <span className="font-mono font-bold text-red-500">delete</span> to confirm:
+                Type <span className="font-mono font-bold text-destructive">delete</span> to confirm:
               </p>
               <input
                 type="text"
@@ -73,7 +73,7 @@ export function ConfirmDialog({ isOpen, count, onConfirm, onCancel }: ConfirmDia
                 onKeyDown={(e) => { if (e.key === "Enter") handleConfirm(); }}
                 placeholder="delete"
                 autoFocus
-                className="w-full h-10 px-3 rounded-lg border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500/50"
+                className="w-full h-10 px-3 rounded-lg border border-border bg-secondary text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-destructive/40 focus:border-destructive"
               />
             </div>
           )}
@@ -81,14 +81,14 @@ export function ConfirmDialog({ isOpen, count, onConfirm, onCancel }: ConfirmDia
           <div className="flex gap-3 justify-end">
             <button
               onClick={handleCancel}
-              className="px-4 py-2 rounded-lg border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 text-foreground/70 hover:text-foreground hover:bg-black/10 dark:hover:bg-white/10 transition-all text-sm font-medium"
+              className="px-4 py-2 rounded-lg border border-border bg-secondary text-foreground/70 hover:text-foreground hover:bg-accent transition-colors text-sm font-medium"
             >
               Cancel
             </button>
             <button
               onClick={handleConfirm}
               disabled={!canConfirm}
-              className="px-4 py-2 rounded-lg bg-red-500 text-white text-sm font-medium hover:bg-red-600 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-red-500/25"
+              className="px-4 py-2 rounded-lg bg-destructive text-white text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Delete {count} {count === 1 ? "candidate" : "candidates"}
             </button>

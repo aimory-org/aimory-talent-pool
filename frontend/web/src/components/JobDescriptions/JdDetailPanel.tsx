@@ -39,33 +39,32 @@ interface JdDetailPanelProps {
   onArchived?: () => void;
 }
 
+// Match-quality scale collapsed to the app's restrained semantic set: success
+// (excellent) / primary (good) / warning (partial or weak) / destructive
+// (poor) — the label text carries the finer distinction, not a unique hue.
 function ScoreBadge({ score }: { score: number | null }) {
   if (score == null)
     return (
       <span className="text-xs text-foreground/30 italic">not scored</span>
     );
-  let color = "bg-red-500/15 text-red-600 dark:text-red-300 border-red-500/25";
-  let labelColor = "text-red-500/70 dark:text-red-400/70";
+  let color = "bg-destructive/15 text-destructive border-destructive/25";
+  let labelColor = "text-destructive/70";
   let label = "Poor";
   if (score >= 90) {
-    color =
-      "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/25";
-    labelColor = "text-emerald-600/80 dark:text-emerald-400/80";
+    color = "bg-success/15 text-success border-success/25";
+    labelColor = "text-success/80";
     label = "Excellent";
   } else if (score >= 70) {
-    color =
-      "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/25";
-    labelColor = "text-indigo-600/80 dark:text-indigo-400/80";
+    color = "bg-accent text-accent-foreground border-transparent";
+    labelColor = "text-accent-foreground/80";
     label = "Good";
   } else if (score >= 50) {
-    color =
-      "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/25";
-    labelColor = "text-amber-600/80 dark:text-amber-400/80";
+    color = "bg-warning/15 text-warning border-warning/25";
+    labelColor = "text-warning/80";
     label = "Partial";
   } else if (score >= 30) {
-    color =
-      "bg-orange-500/15 text-orange-700 dark:text-orange-300 border-orange-500/25";
-    labelColor = "text-orange-600/80 dark:text-orange-400/80";
+    color = "bg-warning/10 text-warning border-warning/20";
+    labelColor = "text-warning/70";
     label = "Weak";
   }
   return (
@@ -92,8 +91,8 @@ function SkillTags({
   if (!skills.length) return null;
   const colors =
     variant === "required"
-      ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 border-indigo-500/20"
-      : "bg-amber-500/10 text-amber-600 dark:text-amber-300 border-amber-500/20";
+      ? "bg-accent text-accent-foreground"
+      : "bg-secondary text-muted-foreground";
   return (
     <div>
       <p className="text-[11px] font-semibold uppercase tracking-wider text-foreground/40 mb-1.5">
@@ -103,7 +102,7 @@ function SkillTags({
         {skills.map((s) => (
           <span
             key={s}
-            className={`inline-flex px-2 py-0.5 rounded text-[11px] font-medium border ${colors}`}
+            className={`inline-flex px-2 py-0.5 rounded text-[11px] font-medium ${colors}`}
           >
             {s}
           </span>
@@ -222,30 +221,6 @@ export function JdDetailPanel({
   const fmtSalary = (n: number | null) =>
     n != null ? `$${n.toLocaleString()}` : null;
 
-  const t = jd.archived
-    ? {
-        headerBg: "from-violet-600/5 to-purple-600/5",
-        iconGradient: "from-violet-500/40 to-purple-600/40",
-        iconBorder: "border-violet-500/20",
-        iconText: "text-violet-700 dark:text-violet-400",
-        iconGlow: "from-violet-500/30 to-purple-600/30",
-        btnBg: "bg-violet-600/10",
-        btnBorder: "border-violet-600/20",
-        btnText: "text-violet-700 dark:text-violet-400",
-        btnHover: "hover:bg-violet-600/20",
-      }
-    : {
-        headerBg: "from-indigo-500/5 to-violet-500/5",
-        iconGradient: "from-indigo-400/40 to-violet-500/40",
-        iconBorder: "border-indigo-400/20",
-        iconText: "text-indigo-600 dark:text-indigo-400",
-        iconGlow: "from-indigo-400/30 to-violet-500/30",
-        btnBg: "bg-indigo-500/10",
-        btnBorder: "border-indigo-500/20",
-        btnText: "text-indigo-600 dark:text-indigo-300",
-        btnHover: "hover:bg-indigo-500/20",
-      };
-
   // Profile detail view — shows the candidate profile panel
   if (selectedProfile) {
     return (
@@ -266,11 +241,11 @@ export function JdDetailPanel({
   // Document viewer — full-screen file viewer with JD summary sidebar
   if (showDocument && documentUrl) {
     return (
-      <div className="fixed inset-y-0 right-0 w-full bg-white/95 dark:bg-slate-800/95 backdrop-blur-lg border-l border-black/10 dark:border-white/10 shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300">
+      <div className="fixed inset-y-0 right-0 w-full bg-card backdrop-blur-sm border-l border-border shadow-xl z-50 flex flex-col animate-in slide-in-from-right duration-300">
         {/* Top bar */}
-        <div className="flex-none bg-white/95 dark:bg-slate-800/95 backdrop-blur-lg border-b border-black/10 dark:border-white/10 px-4 py-3 flex items-center justify-between">
+        <div className="flex-none bg-card border-b border-border px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={`h-8 w-8 rounded-full bg-linear-to-br ${t.iconGlow} flex items-center justify-center border border-black/10 dark:border-white/10 ${t.iconText}`}>
+            <div className="h-8 w-8 rounded-full bg-accent flex items-center justify-center text-accent-foreground">
               <FileText className="h-4 w-4" />
             </div>
             <div>
@@ -285,14 +260,14 @@ export function JdDetailPanel({
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowDocument(false)}
-              className={`px-3 py-1.5 rounded-lg ${t.btnBg} border ${t.btnBorder} ${t.btnText} ${t.btnHover} transition-colors text-sm font-medium flex items-center gap-1.5`}
+              className="px-3 py-1.5 rounded-lg bg-accent text-accent-foreground hover:bg-accent/70 transition-colors text-sm font-medium flex items-center gap-1.5"
             >
               <FileText className="h-3.5 w-3.5" />
               Back to Details
             </button>
             <button
               onClick={onClose}
-              className="p-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors text-foreground/60 hover:text-foreground"
+              className="p-2 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
             >
               <X className="h-5 w-5" />
             </button>
@@ -300,7 +275,7 @@ export function JdDetailPanel({
         </div>
         {/* Split content: document (left) + summary sidebar (right) */}
         <div className="flex-1 flex min-h-0">
-          <div className="flex-1 bg-white dark:bg-slate-900 border-r border-black/10 dark:border-white/10">
+          <div className="flex-1 bg-background border-r border-border">
             <iframe
               src={documentUrl}
               className="w-full h-full border-0"
@@ -308,7 +283,7 @@ export function JdDetailPanel({
             />
           </div>
           {/* Summary sidebar */}
-          <div className="w-96 shrink-0 overflow-y-auto bg-white/50 dark:bg-slate-800/50">
+          <div className="w-96 shrink-0 overflow-y-auto bg-secondary/40">
             <div className="p-4 space-y-4">
               <div className="grid grid-cols-1 gap-2">
                 {jd.job_title && (
@@ -372,11 +347,11 @@ export function JdDetailPanel({
   }
 
   return (
-    <div className="fixed inset-y-0 right-0 w-full max-w-lg z-50 flex flex-col bg-white dark:bg-slate-900 border-l border-black/10 dark:border-white/10 shadow-2xl animate-slide-in-right">
+    <div className="fixed inset-y-0 right-0 w-full max-w-lg z-50 flex flex-col bg-card border-l border-border shadow-xl animate-slide-in-right">
       {/* Header */}
-      <div className={`flex items-center justify-between px-5 py-4 border-b border-black/10 dark:border-white/10 bg-linear-to-r ${t.headerBg}`}>
+      <div className="flex items-center justify-between px-5 py-4 border-b border-border">
         <div className="flex items-center gap-3 min-w-0">
-          <div className={`shrink-0 h-10 w-10 rounded-full bg-linear-to-br ${t.iconGradient} flex items-center justify-center border ${t.iconBorder} ${t.iconText}`}>
+          <div className="shrink-0 h-10 w-10 rounded-full bg-accent flex items-center justify-center text-accent-foreground">
             <FileText className="h-5 w-5" />
           </div>
           <div className="min-w-0">
@@ -393,9 +368,9 @@ export function JdDetailPanel({
         </div>
         <button
           onClick={onClose}
-          className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+          className="p-2 rounded-lg hover:bg-secondary transition-colors"
         >
-          <X className="h-5 w-5 text-foreground/50" />
+          <X className="h-5 w-5 text-muted-foreground" />
         </button>
       </div>
 
@@ -406,7 +381,7 @@ export function JdDetailPanel({
           <button
             onClick={handleViewDocument}
             disabled={documentLoading}
-            className={`w-full px-4 py-3 rounded-xl ${t.btnBg} border ${t.btnBorder} ${t.btnText} ${t.btnHover} disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-medium flex items-center justify-center gap-2`}
+            className="w-full px-4 py-3 rounded-xl bg-accent text-accent-foreground hover:bg-accent/70 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium flex items-center justify-center gap-2"
           >
             {documentLoading ? (
               <>
@@ -491,13 +466,13 @@ export function JdDetailPanel({
 
         {/* Possible Duplicate Warning */}
         {jd.possible_duplicate_of && (
-          <div className="bg-amber-500/10 rounded-xl p-4 border border-amber-500/30">
+          <div className="bg-warning/10 rounded-xl p-4 border border-warning/30">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-amber-700 dark:text-amber-300 text-sm font-medium">
+                <p className="text-warning text-sm font-medium">
                   ⚠ Possible duplicate of another job description
                 </p>
-                <p className="text-amber-600/70 dark:text-amber-400/70 text-xs mt-1 break-all">
+                <p className="text-warning/70 text-xs mt-1 break-all">
                   {jd.possible_duplicate_of}
                 </p>
               </div>
@@ -512,7 +487,7 @@ export function JdDetailPanel({
                     alert("Failed to dismiss duplicate flag.");
                   }
                 }}
-                className="shrink-0 px-2.5 py-1 rounded-lg text-xs font-medium border border-amber-500/30 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 transition-colors"
+                className="shrink-0 px-2.5 py-1 rounded-lg text-xs font-medium border border-warning/30 text-warning hover:bg-warning/20 transition-colors"
                 title="Dismiss duplicate flag"
               >
                 Dismiss
@@ -522,16 +497,16 @@ export function JdDetailPanel({
         )}
 
         {/* Candidate matching section */}
-        <div className="border-t border-black/10 dark:border-white/10 pt-5">
+        <div className="border-t border-border pt-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-foreground flex items-center gap-2">
-              <Users className="h-4 w-4 text-indigo-500" />
+              <Users className="h-4 w-4 text-primary" />
               Candidate Matches
             </h3>
             <button
               onClick={handleMatch}
               disabled={isMatching}
-              className="px-3 py-1.5 rounded-lg bg-indigo-500/20 border border-indigo-500/30 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-medium flex items-center gap-2"
+              className="px-3 py-1.5 rounded-lg bg-accent text-accent-foreground hover:bg-accent/70 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium flex items-center gap-2"
             >
               {isMatching ? (
                 <>
@@ -548,8 +523,8 @@ export function JdDetailPanel({
           </div>
 
           {matchError && (
-            <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-3 mb-3">
-              <p className="text-sm text-red-600 dark:text-red-300">
+            <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 mb-3">
+              <p className="text-sm text-destructive">
                 {matchError}
               </p>
             </div>
@@ -566,23 +541,23 @@ export function JdDetailPanel({
               {/* Score legend */}
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-foreground/40 mb-3">
                 <span>
-                  <span className="inline-block w-2 h-2 rounded-full bg-emerald-500/60 mr-1" />
+                  <span className="inline-block w-2 h-2 rounded-full bg-success/60 mr-1" />
                   90-100 Excellent
                 </span>
                 <span>
-                  <span className="inline-block w-2 h-2 rounded-full bg-indigo-500/60 mr-1" />
+                  <span className="inline-block w-2 h-2 rounded-full bg-primary/60 mr-1" />
                   70-89 Good
                 </span>
                 <span>
-                  <span className="inline-block w-2 h-2 rounded-full bg-amber-500/60 mr-1" />
+                  <span className="inline-block w-2 h-2 rounded-full bg-warning/60 mr-1" />
                   50-69 Partial
                 </span>
                 <span>
-                  <span className="inline-block w-2 h-2 rounded-full bg-orange-500/60 mr-1" />
+                  <span className="inline-block w-2 h-2 rounded-full bg-warning/40 mr-1" />
                   30-49 Weak
                 </span>
                 <span>
-                  <span className="inline-block w-2 h-2 rounded-full bg-red-500/60 mr-1" />
+                  <span className="inline-block w-2 h-2 rounded-full bg-destructive/60 mr-1" />
                   0-29 Poor
                 </span>
               </div>
@@ -592,26 +567,26 @@ export function JdDetailPanel({
                   key={m.pk}
                   onClick={() => handleProfileClick(m)}
                   disabled={profileLoading === m.pk}
-                  className="w-full text-left rounded-xl border border-black/6 dark:border-white/6 p-3 bg-white/40 dark:bg-slate-800/40 hover:bg-indigo-500/5 hover:border-indigo-500/20 transition-all group cursor-pointer"
+                  className="w-full text-left rounded-xl border border-border/60 p-3 bg-card hover:bg-secondary transition-colors group cursor-pointer"
                 >
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2 min-w-0">
                       {profileLoading === m.pk ? (
-                        <div className="shrink-0 h-7 w-7 rounded-full bg-indigo-500/10 flex items-center justify-center">
-                          <Loader2 className="h-3.5 w-3.5 animate-spin text-indigo-500" />
+                        <div className="shrink-0 h-7 w-7 rounded-full bg-accent flex items-center justify-center">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin text-accent-foreground" />
                         </div>
                       ) : (
-                        <div className="shrink-0 h-7 w-7 rounded-full bg-linear-to-br from-indigo-500/40 to-violet-600/40 flex items-center justify-center text-indigo-600 dark:text-indigo-300 text-xs font-semibold border border-indigo-500/20">
+                        <div className="shrink-0 h-7 w-7 rounded-full bg-accent flex items-center justify-center text-accent-foreground text-xs font-semibold">
                           {(m.name || "?").charAt(0).toUpperCase()}
                         </div>
                       )}
-                      <span className="font-medium text-sm text-foreground truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors">
+                      <span className="font-medium text-sm text-foreground truncate group-hover:text-primary transition-colors">
                         {m.name || "Unknown"}
                       </span>
                     </div>
                     <div className="flex items-center gap-1">
                       <ScoreBadge score={m.score} />
-                      <ChevronRight className="h-3.5 w-3.5 text-foreground/20 group-hover:text-indigo-500 transition-colors" />
+                      <ChevronRight className="h-3.5 w-3.5 text-foreground/20 group-hover:text-primary transition-colors" />
                     </div>
                   </div>
                   <div className="flex items-center gap-3 text-xs text-foreground/50 ml-9">
@@ -623,7 +598,7 @@ export function JdDetailPanel({
                     {m.location_state && <span>• {m.location_state}</span>}
                   </div>
                   {m.rationale && (
-                    <p className="text-xs text-foreground/50 mt-2 ml-9 leading-relaxed bg-black/2 dark:bg-white/2 rounded-lg px-2.5 py-2 border border-black/4 dark:border-white/4">
+                    <p className="text-xs text-foreground/50 mt-2 ml-9 leading-relaxed bg-secondary rounded-lg px-2.5 py-2 border border-border/60">
                       {m.rationale}
                     </p>
                   )}
@@ -635,26 +610,26 @@ export function JdDetailPanel({
       </div>
 
       {/* Footer actions */}
-      <div className="px-5 py-3 border-t border-black/10 dark:border-white/10 bg-gray-50/50 dark:bg-slate-800/50 space-y-2">
+      <div className="px-5 py-3 border-t border-border bg-secondary/40 space-y-2">
         {archiveError && (
-          <p className="text-xs text-red-500 dark:text-red-400">{archiveError}</p>
+          <p className="text-xs text-destructive">{archiveError}</p>
         )}
         {showDeleteConfirm ? (
           <div className="flex items-center justify-between">
-            <p className="text-sm text-red-600 dark:text-red-400 font-medium">
+            <p className="text-sm text-destructive font-medium">
               Delete this job description?
             </p>
             <div className="flex gap-2">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="px-3 py-1.5 rounded-lg text-sm font-medium text-foreground/60 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                className="px-3 py-1.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-secondary transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className="px-3 py-1.5 rounded-lg text-sm font-medium bg-red-500/20 border border-red-500/30 text-red-600 dark:text-red-300 hover:bg-red-500/30 disabled:opacity-50 transition-all flex items-center gap-1.5"
+                className="px-3 py-1.5 rounded-lg text-sm font-medium bg-destructive text-white hover:opacity-90 disabled:opacity-50 transition-opacity flex items-center gap-1.5"
               >
                 {isDeleting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                 Delete
@@ -666,11 +641,7 @@ export function JdDetailPanel({
             <button
               onClick={handleArchiveToggle}
               disabled={isArchiving}
-              className={`flex items-center gap-1.5 text-sm font-medium disabled:opacity-50 transition-colors ${
-                jd.archived
-                  ? "text-violet-500 dark:text-violet-400 hover:text-violet-600 dark:hover:text-violet-300"
-                  : "text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300"
-              }`}
+              className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground disabled:opacity-50 transition-colors"
             >
               {isArchiving ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -683,7 +654,7 @@ export function JdDetailPanel({
             </button>
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="flex items-center gap-1.5 text-sm text-red-500/70 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+              className="flex items-center gap-1.5 text-sm text-destructive/70 hover:text-destructive transition-colors"
             >
               <Trash2 className="h-3.5 w-3.5" />
               Delete

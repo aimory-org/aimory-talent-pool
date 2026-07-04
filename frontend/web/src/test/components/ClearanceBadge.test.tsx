@@ -29,31 +29,31 @@ describe("ClearanceBadge", () => {
   it("applies correct styling for Secret", () => {
     render(<ClearanceBadge level="Secret" />);
     const badge = screen.getByText("Secret");
-    expect(badge).toHaveClass("bg-amber-500/15");
+    expect(badge).toHaveClass("bg-secondary");
   });
 
   it("applies correct styling for TS", () => {
     render(<ClearanceBadge level="TS" />);
     const badge = screen.getByText("TS");
-    expect(badge).toHaveClass("bg-orange-500/15");
+    expect(badge).toHaveClass("bg-secondary");
   });
 
   it("applies correct styling for TS/SCI", () => {
     render(<ClearanceBadge level="TS/SCI" />);
     const badge = screen.getByText("TS/SCI");
-    expect(badge).toHaveClass("bg-rose-500/15");
+    expect(badge).toHaveClass("bg-accent");
   });
 
   it("applies correct styling for TS/SCI/FSP", () => {
     render(<ClearanceBadge level="TS/SCI/FSP" />);
     const badge = screen.getByText("TS/SCI/FSP");
-    expect(badge).toHaveClass("bg-purple-500/15");
+    expect(badge).toHaveClass("bg-accent");
   });
 
   it("applies correct styling for Yankee White", () => {
     render(<ClearanceBadge level="Yankee White" />);
     const badge = screen.getByText("Yankee White");
-    expect(badge).toHaveClass("bg-indigo-500/15");
+    expect(badge).toHaveClass("bg-primary");
   });
 
   it("includes Shield icon", () => {

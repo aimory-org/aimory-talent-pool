@@ -93,21 +93,18 @@ export function FiltersPanel({
   };
 
   return (
-    <div className="relative z-30 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl border border-black/10 dark:border-white/15 p-6 mb-6 shadow-xl shadow-black/5">
-      {/* Subtle gradient overlay */}
-      <div className="absolute inset-0 bg-linear-to-br from-indigo-500/5 via-transparent to-purple-500/5 rounded-2xl pointer-events-none" />
-
+    <div className="relative z-30 bg-card rounded-2xl border border-border p-6 mb-6">
       <div className="relative">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-indigo-500/20 rounded-lg">
-              <Filter className="h-4 w-4 text-indigo-400" />
+            <div className="p-2 bg-accent rounded-lg">
+              <Filter className="h-4 w-4 text-accent-foreground" />
             </div>
             <div>
               <h3 className="text-sm font-semibold text-foreground">
                 Filter Candidates
               </h3>
-              <p className="text-xs text-foreground/40">
+              <p className="text-xs text-muted-foreground">
                 Narrow down your search with specific criteria
               </p>
             </div>
@@ -145,10 +142,10 @@ export function FiltersPanel({
             {totalWarningCount > 0 && (
               <button
                 onClick={onToggleWarningsFilter}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors duration-150 ${
                   warningsFilterActive
-                    ? "bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300"
-                    : "border border-black/6 dark:border-white/6 text-foreground/40 hover:text-amber-600 dark:hover:text-amber-400 hover:border-amber-500/20"
+                    ? "bg-warning/15 border border-warning/30 text-warning"
+                    : "border border-border text-muted-foreground hover:text-warning hover:border-warning/30"
                 }`}
               >
                 <AlertTriangle className="h-3.5 w-3.5" />
@@ -156,8 +153,8 @@ export function FiltersPanel({
                 <span
                   className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
                     warningsFilterActive
-                      ? "bg-amber-500 text-white"
-                      : "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                      ? "bg-warning text-white"
+                      : "bg-warning/15 text-warning"
                   }`}
                 >
                   {totalWarningCount}
@@ -172,7 +169,7 @@ export function FiltersPanel({
             {selectedWarningTypes.map((type) => (
               <span
                 key={type}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 text-xs border border-amber-500/30 hover:bg-amber-500/30 transition-colors"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-warning/15 text-warning text-xs border border-warning/30 hover:bg-warning/25 transition-colors"
               >
                 {WARNING_TYPES.find((w) => w.value === type)?.label}
                 <button
@@ -214,7 +211,7 @@ export function FiltersPanel({
             <Label className="text-foreground/70">
               Industry{" "}
               {filters.industry_categories.length > 0 && (
-                <span className="text-purple-600 dark:text-purple-400">
+                <span className="text-primary">
                   ({filters.industry_categories.length})
                 </span>
               )}
@@ -236,7 +233,7 @@ export function FiltersPanel({
                 {filters.industry_categories.map((cat) => (
                   <span
                     key={cat}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-700 dark:text-purple-300 text-xs border border-purple-500/30 hover:bg-purple-500/30 transition-colors"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-accent text-accent-foreground text-xs hover:bg-accent/70 transition-colors"
                   >
                     {cat}
                     <button
@@ -302,7 +299,7 @@ export function FiltersPanel({
             <Label className="text-foreground/70">
               Skills{" "}
               {filters.skills.length > 0 && (
-                <span className="text-indigo-600 dark:text-indigo-400">
+                <span className="text-primary">
                   ({filters.skills.length})
                 </span>
               )}
@@ -324,7 +321,7 @@ export function FiltersPanel({
                 {filters.skills.map((skill) => (
                   <span
                     key={skill}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 text-xs border border-indigo-500/30 hover:bg-indigo-500/30 transition-colors"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-accent text-accent-foreground text-xs hover:bg-accent/70 transition-colors"
                   >
                     {skill}
                     <button
@@ -346,7 +343,7 @@ export function FiltersPanel({
             <Label className="text-foreground/70">
               Certifications{" "}
               {filters.certifications.length > 0 && (
-                <span className="text-amber-600 dark:text-amber-400">
+                <span className="text-primary">
                   ({filters.certifications.length})
                 </span>
               )}
@@ -368,7 +365,7 @@ export function FiltersPanel({
                 {filters.certifications.map((cert) => (
                   <span
                     key={cert}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 text-xs border border-amber-500/30 hover:bg-amber-500/30 transition-colors"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-accent text-accent-foreground text-xs hover:bg-accent/70 transition-colors"
                   >
                     {cert}
                     <button
@@ -391,7 +388,7 @@ export function FiltersPanel({
               <Label className="text-foreground/70">
                 Tags{" "}
                 {filters.tags.length > 0 && (
-                  <span className="text-purple-600 dark:text-purple-400">
+                  <span className="text-primary">
                     ({filters.tags.length})
                   </span>
                 )}
@@ -404,8 +401,8 @@ export function FiltersPanel({
                   }}
                   className={`flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded transition-colors ${
                     managingTags
-                      ? "bg-red-500/10 text-red-500 border border-red-500/20"
-                      : "text-foreground/40 hover:text-foreground/70"
+                      ? "bg-destructive/10 text-destructive border border-destructive/20"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
                   title="Manage tags"
                 >
@@ -417,7 +414,7 @@ export function FiltersPanel({
 
             {managingTags ? (
               <div className="space-y-1.5">
-                <p className="text-[10px] text-foreground/40">
+                <p className="text-[10px] text-muted-foreground">
                   Click trash to delete permanently from all candidates.
                 </p>
                 <div className="flex flex-wrap gap-1.5">
@@ -429,8 +426,8 @@ export function FiltersPanel({
                         key={tag}
                         className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border transition-colors ${
                           isConfirming
-                            ? "bg-red-500/20 text-red-600 dark:text-red-400 border-red-500/40"
-                            : "bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/20"
+                            ? "bg-destructive/15 text-destructive border-destructive/40"
+                            : "bg-accent text-accent-foreground border-transparent"
                         }`}
                       >
                         {tag}
@@ -444,8 +441,8 @@ export function FiltersPanel({
                           }
                           className={`ml-0.5 transition-colors ${
                             isConfirming
-                              ? "text-red-500 hover:text-red-700"
-                              : "text-foreground/40 hover:text-red-500"
+                              ? "text-destructive hover:opacity-70"
+                              : "text-accent-foreground/50 hover:text-destructive"
                           }`}
                         >
                           {isDeleting ? (
@@ -481,7 +478,7 @@ export function FiltersPanel({
                     {filters.tags.map((tag) => (
                       <span
                         key={tag}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-700 dark:text-purple-300 text-xs border border-purple-500/30 hover:bg-purple-500/30 transition-colors"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-accent text-accent-foreground text-xs hover:bg-accent/70 transition-colors"
                       >
                         {tag}
                         <button
@@ -510,7 +507,7 @@ export function FiltersPanel({
                 value={filters.minYears}
                 onChange={(e) => onFilterChange("minYears", e.target.value)}
                 placeholder="Min"
-                className="flex h-9 w-full rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground/90 placeholder-foreground/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 hover:border-border hover:bg-secondary transition-all"
+                className="flex h-9 w-full rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground/90 placeholder-foreground/40 focus:outline-none focus:ring-2 focus:ring-ring/40 focus:border-ring hover:border-border hover:bg-secondary transition-colors"
               />
               <input
                 type="number"
@@ -518,7 +515,7 @@ export function FiltersPanel({
                 value={filters.maxYears}
                 onChange={(e) => onFilterChange("maxYears", e.target.value)}
                 placeholder="Max"
-                className="flex h-9 w-full rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground/90 placeholder-foreground/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 hover:border-border hover:bg-secondary transition-all"
+                className="flex h-9 w-full rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground/90 placeholder-foreground/40 focus:outline-none focus:ring-2 focus:ring-ring/40 focus:border-ring hover:border-border hover:bg-secondary transition-colors"
               />
             </div>
           </div>

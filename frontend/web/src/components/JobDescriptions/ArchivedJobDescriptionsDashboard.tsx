@@ -4,7 +4,6 @@
 import { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Archive,
   Filter,
   X,
   RefreshCw,
@@ -105,53 +104,43 @@ export function ArchivedJobDescriptionsDashboard() {
   const activeFilterCount = Object.values(filters).filter(Boolean).length;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5">
+    <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-6 space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <div className="absolute inset-0 rounded-xl bg-linear-to-br from-violet-600 to-purple-700 blur-md opacity-40" />
-            <div className="relative p-2.5 bg-linear-to-br from-violet-600 to-purple-700 rounded-xl shadow-lg shadow-violet-700/30">
-              <Archive className="h-5 w-5 text-white" />
-            </div>
-          </div>
-          <div>
-            <h1 className="text-xl font-bold tracking-tight">
-              <span className="shimmer-text">Archived Job Descriptions</span>
-            </h1>
-            <p className="text-xs text-foreground/40 mt-0.5">
-              {jobDescriptions.length} archived job{" "}
-              {jobDescriptions.length === 1 ? "description" : "descriptions"}
-            </p>
-          </div>
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div>
+          <h1 className="font-display text-2xl text-foreground">Archived Job Descriptions</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {jobDescriptions.length} archived job{" "}
+            {jobDescriptions.length === 1 ? "description" : "descriptions"}
+          </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => navigate("/job-descriptions")}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all border border-violet-400/30 text-violet-500 dark:text-violet-300 hover:text-violet-600 dark:hover:text-violet-200 hover:bg-violet-400/10"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors border border-border text-muted-foreground hover:text-foreground hover:bg-secondary"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             Back to Active
           </button>
           <button
             onClick={refresh}
-            className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 text-foreground/50 hover:text-foreground transition-all"
+            className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
             title="Refresh"
           >
             <RefreshCw className="h-4 w-4" />
           </button>
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
               showFilters || activeFilterCount > 0
-                ? "bg-violet-600/20 border border-violet-600/30 text-violet-700 dark:text-violet-400"
-                : "border border-black/10 dark:border-white/10 text-foreground/50 hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5"
+                ? "bg-accent text-accent-foreground"
+                : "border border-border text-muted-foreground hover:text-foreground hover:bg-secondary"
             }`}
           >
             <Filter className="h-3.5 w-3.5" />
             Filters
             {activeFilterCount > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-violet-600 text-white text-[10px] font-bold leading-none">
+              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold leading-none">
                 {activeFilterCount}
               </span>
             )}
@@ -161,8 +150,8 @@ export function ArchivedJobDescriptionsDashboard() {
 
       {/* Error banner */}
       {error && (
-        <div className="rounded-xl bg-red-500/10 border border-red-500/20 p-4">
-          <p className="text-sm text-red-600 dark:text-red-300">
+        <div className="rounded-xl bg-destructive/10 border border-destructive/20 p-4">
+          <p className="text-sm text-destructive">
             {error.message}
           </p>
         </div>
@@ -170,10 +159,10 @@ export function ArchivedJobDescriptionsDashboard() {
 
       {/* Filters */}
       {showFilters && (
-        <div className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-black/7 dark:border-white/7 p-4">
+        <div className="bg-card rounded-2xl border border-border p-4">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="space-y-1.5">
-              <label className="block text-[11px] font-semibold uppercase tracking-wider text-foreground/40">
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Job Title
               </label>
               <SearchableSelect
@@ -184,7 +173,7 @@ export function ArchivedJobDescriptionsDashboard() {
               />
             </div>
             <div className="space-y-1.5">
-              <label className="block text-[11px] font-semibold uppercase tracking-wider text-foreground/40">
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Industry
               </label>
               <SearchableSelect
@@ -195,7 +184,7 @@ export function ArchivedJobDescriptionsDashboard() {
               />
             </div>
             <div className="space-y-1.5">
-              <label className="block text-[11px] font-semibold uppercase tracking-wider text-foreground/40">
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Clearance
               </label>
               <SearchableSelect
@@ -206,7 +195,7 @@ export function ArchivedJobDescriptionsDashboard() {
               />
             </div>
             <div className="space-y-1.5">
-              <label className="block text-[11px] font-semibold uppercase tracking-wider text-foreground/40">
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 State
               </label>
               <SearchableSelect
@@ -221,7 +210,7 @@ export function ArchivedJobDescriptionsDashboard() {
             <div className="mt-3 flex justify-end">
               <button
                 onClick={clearFilters}
-                className="text-xs text-foreground/40 hover:text-foreground flex items-center gap-1 transition-colors"
+                className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
               >
                 <X className="h-3 w-3" />
                 Clear filters

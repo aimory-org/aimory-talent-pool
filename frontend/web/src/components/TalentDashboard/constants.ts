@@ -9,47 +9,44 @@ interface StatusCfg {
 }
 
 export const statusConfig: Record<CandidateStatus, StatusCfg> = {
+  // Hasn't been engaged yet — lightest treatment: outline only, no fill.
   "Potential Candidate": {
-    badge:
-      "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300 border-emerald-500/25",
-    dot: "bg-emerald-500",
+    badge: "bg-transparent text-muted-foreground border-border-strong",
+    dot: "bg-muted-foreground",
   },
   "Active Candidate": {
-    badge:
-      "bg-indigo-500/12 text-indigo-700 dark:text-indigo-300 border-indigo-500/25",
-    dot: "bg-indigo-500",
+    badge: "bg-accent text-accent-foreground border-transparent",
+    dot: "bg-primary",
   },
+  // Resolved, but not relevant to Aimory's pipeline — heaviest neutral
+  // treatment: solid fill, to read as "closed" rather than "not started".
   "Placed at Other Company": {
-    badge:
-      "bg-violet-500/12 text-violet-700 dark:text-violet-300 border-violet-500/25",
-    dot: "bg-violet-500",
+    badge: "bg-muted-foreground/20 text-foreground/80 border-transparent",
+    dot: "bg-muted-foreground",
   },
   "Placed with us": {
-    badge:
-      "bg-teal-500/12 text-teal-700 dark:text-teal-300 border-teal-500/25",
-    dot: "bg-teal-500",
+    badge: "bg-success/12 text-success border-success/25",
+    dot: "bg-success",
   },
   "Stale Candidate": {
-    badge:
-      "bg-amber-500/12 text-amber-700 dark:text-amber-300 border-amber-500/25",
-    dot: "bg-amber-500",
+    badge: "bg-warning/12 text-warning border-warning/25",
+    dot: "bg-warning",
   },
   "Do Not Contact": {
-    badge: "bg-red-500/12 text-red-700 dark:text-red-300 border-red-500/25",
-    dot: "bg-red-500",
+    badge: "bg-destructive/12 text-destructive border-destructive/25",
+    dot: "bg-destructive",
   },
 };
 
+// Clearance badges use a 3-step escalating visual weight (standard → elevated
+// → highest) rather than a distinct hue per level — the label text already
+// says exactly which clearance it is, so color only needs to flag relative
+// sensitivity at a glance.
 export const clearanceColors: Record<string, string> = {
-  Secret:
-    "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30",
-  TS: "bg-orange-500/15 text-orange-700 dark:text-orange-300 border-orange-500/30",
-  "TS/SCI":
-    "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30",
-  "TS/SCI/FSP":
-    "bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/30",
-  "TS/SCI/CI":
-    "bg-fuchsia-500/15 text-fuchsia-700 dark:text-fuchsia-300 border-fuchsia-500/30",
-  "Yankee White":
-    "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/30",
+  Secret: "bg-secondary text-muted-foreground border-transparent",
+  TS: "bg-secondary text-muted-foreground border-transparent",
+  "TS/SCI": "bg-accent text-accent-foreground border-transparent",
+  "TS/SCI/FSP": "bg-accent text-accent-foreground border-transparent",
+  "TS/SCI/CI": "bg-accent text-accent-foreground border-transparent",
+  "Yankee White": "bg-primary text-primary-foreground border-transparent",
 };

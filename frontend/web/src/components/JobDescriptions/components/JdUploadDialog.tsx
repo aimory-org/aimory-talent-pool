@@ -134,12 +134,12 @@ export function JdUploadDialog({
       />
 
       {/* Dialog */}
-      <div className="relative bg-white dark:bg-slate-900 rounded-2xl border border-black/10 dark:border-white/10 shadow-2xl w-full max-w-md mx-4 p-6 animate-slide-in-up">
+      <div className="relative bg-card rounded-2xl border border-border shadow-xl w-full max-w-md mx-4 p-6 animate-slide-in-up">
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-violet-500/10 rounded-lg border border-violet-500/20">
-              <Upload className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+            <div className="p-2 bg-accent rounded-lg">
+              <Upload className="h-4 w-4 text-accent-foreground" />
             </div>
             <h2 className="text-lg font-semibold text-foreground">
               Upload Job Description
@@ -147,7 +147,7 @@ export function JdUploadDialog({
           </div>
           <button
             onClick={handleClose}
-            className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 text-foreground/40 hover:text-foreground transition-colors"
+            className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
@@ -159,12 +159,12 @@ export function JdUploadDialog({
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onClick={() => fileInputRef.current?.click()}
-          className={`relative border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
+          className={`relative border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
             dragOver
-              ? "border-violet-500 bg-violet-500/10"
+              ? "border-primary bg-accent"
               : file
-                ? "border-emerald-500/40 bg-emerald-500/5"
-                : "border-black/10 dark:border-white/10 hover:border-violet-500/40 hover:bg-violet-500/5"
+                ? "border-success/40 bg-success/5"
+                : "border-border-strong hover:border-primary/40 hover:bg-accent"
           }`}
         >
           <input
@@ -177,7 +177,7 @@ export function JdUploadDialog({
 
           {file ? (
             <div className="flex flex-col items-center gap-2">
-              <FileText className="h-8 w-8 text-emerald-500" />
+              <FileText className="h-8 w-8 text-success" />
               <p className="font-medium text-foreground text-sm truncate max-w-full">
                 {file.name}
               </p>
@@ -191,14 +191,14 @@ export function JdUploadDialog({
                   setUploadState("idle");
                   setErrorMessage("");
                 }}
-                className="text-xs text-foreground/40 hover:text-red-500 transition-colors mt-1"
+                className="text-xs text-foreground/40 hover:text-destructive transition-colors mt-1"
               >
                 Remove
               </button>
             </div>
           ) : (
             <div className="flex flex-col items-center gap-2">
-              <Upload className="h-8 w-8 text-foreground/20" />
+              <Upload className="h-8 w-8 text-muted-foreground" />
               <p className="text-sm text-foreground/60 font-medium">
                 Drop a file here or click to browse
               </p>
@@ -211,8 +211,8 @@ export function JdUploadDialog({
 
         {/* Error */}
         {errorMessage && (
-          <div className="mt-3 rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-2">
-            <p className="text-sm text-red-600 dark:text-red-300">
+          <div className="mt-3 rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2">
+            <p className="text-sm text-destructive">
               {errorMessage}
             </p>
           </div>
@@ -220,9 +220,9 @@ export function JdUploadDialog({
 
         {/* Success */}
         {uploadState === "success" && (
-          <div className="mt-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-            <p className="text-sm text-emerald-600 dark:text-emerald-300">
+          <div className="mt-3 rounded-lg bg-success/10 border border-success/20 px-3 py-2 flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-success" />
+            <p className="text-sm text-success">
               Uploaded! Processing will begin shortly.
             </p>
           </div>
@@ -232,7 +232,7 @@ export function JdUploadDialog({
         <div className="flex justify-end gap-2 mt-5">
           <button
             onClick={handleClose}
-            className="px-4 py-2 rounded-lg border border-black/10 dark:border-white/10 text-sm font-medium text-foreground/60 hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5 transition-all"
+            className="px-4 py-2 rounded-lg border border-border text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
           >
             Cancel
           </button>
@@ -241,7 +241,7 @@ export function JdUploadDialog({
             disabled={
               !file || uploadState === "uploading" || uploadState === "success"
             }
-            className="px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium transition-all flex items-center gap-2"
+            className="px-4 py-2 rounded-lg bg-primary hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed text-primary-foreground text-sm font-medium transition-colors flex items-center gap-2"
           >
             {uploadState === "uploading" ? (
               <>
