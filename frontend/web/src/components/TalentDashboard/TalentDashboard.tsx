@@ -8,7 +8,7 @@
  * - Detail panel for viewing/editing individual profiles
  */
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
-import { Users, Search, Filter, X, Loader2 } from "lucide-react";
+import { Search, Filter, X, Loader2 } from "lucide-react";
 import { useTalents } from "@/hooks/useTalents";
 import { useLookups } from "@/hooks/useLookups";
 import { uploadResume, listTalents, bulkDeleteTalents } from "@/lib/api";
@@ -450,25 +450,15 @@ export function TalentDashboard() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="border-b border-black/6 dark:border-white/6 bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl sticky top-16 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div className="border-b border-border bg-background/95 backdrop-blur-sm sticky top-16 z-40">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             {/* Title Section */}
-            <div className="flex items-center gap-3 animate-fade-in">
-              <div className="relative">
-                <div className="absolute inset-0 rounded-xl bg-linear-to-br from-indigo-500 to-violet-600 blur-md opacity-40" />
-                <div className="relative p-2.5 bg-linear-to-br from-indigo-500 to-violet-600 rounded-xl shadow-lg shadow-indigo-500/30">
-                  <Users className="h-5 w-5 text-white" />
-                </div>
-              </div>
-              <div>
-                <h1 className="text-xl font-bold tracking-tight">
-                  <span className="shimmer-text">Talent Pool</span>
-                </h1>
-                <p className="text-xs text-foreground/40 mt-0.5">
-                  Discover and manage your candidate pipeline
-                </p>
-              </div>
+            <div className="animate-fade-in">
+              <h1 className="font-display text-3xl text-foreground">Talent Pool</h1>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Discover and manage your candidate pipeline
+              </p>
             </div>
 
             {/* Stats Cards */}
@@ -477,10 +467,10 @@ export function TalentDashboard() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Processing banner */}
         {showProcessingBanner && (
-          <div className="flex items-center justify-between gap-3 mb-6 px-4 py-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-700 dark:text-indigo-300">
+          <div className="flex items-center justify-between gap-3 mb-6 px-4 py-3 rounded-xl bg-accent border border-border text-accent-foreground">
             <div className="flex items-center gap-2.5">
               <Loader2 className="h-4 w-4 animate-spin shrink-0" />
               <p className="text-sm font-medium">
@@ -489,7 +479,7 @@ export function TalentDashboard() {
             </div>
             <button
               onClick={() => { stopPolling(); setShowProcessingBanner(false); }}
-              className="shrink-0 text-indigo-500/60 hover:text-indigo-700 dark:hover:text-indigo-200 transition-colors"
+              className="shrink-0 text-accent-foreground/60 hover:text-accent-foreground transition-colors"
               aria-label="Dismiss"
             >
               <X className="h-4 w-4" />
@@ -499,11 +489,10 @@ export function TalentDashboard() {
 
         {/* Search & Filter Toggle */}
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          <div className="relative flex-1 group">
-            <div className="absolute inset-0 bg-linear-to-r from-indigo-500/20 to-purple-500/20 rounded-xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-300" />
-            <div className="relative flex items-center gap-2">
+          <div className="relative flex-1">
+            <div className="flex items-center gap-2">
               <div className="relative flex-1">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-foreground/40 group-focus-within:text-indigo-400 transition-colors pointer-events-none" />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
                 <input
                   type="text"
                   placeholder="Search by name, tags, and resume content..."
@@ -516,7 +505,7 @@ export function TalentDashboard() {
                       setFilters((prev) => ({ ...prev, search: "" }));
                     }
                   }}
-                  className="w-full h-12 pl-12 pr-4 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground placeholder-foreground/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 focus:bg-black/10 dark:focus:bg-white/10 transition-all duration-300"
+                  className="w-full h-12 pl-12 pr-4 rounded-xl bg-secondary border border-border text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/40 focus:border-ring transition-colors duration-150"
                 />
               </div>
               {(searchInput || filters.search) && (
@@ -525,7 +514,7 @@ export function TalentDashboard() {
                     setSearchInput("");
                     setFilters((prev) => ({ ...prev, search: "" }));
                   }}
-                  className="h-12 px-3 rounded-xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 text-foreground/50 hover:text-foreground hover:bg-black/10 dark:hover:bg-white/10 transition-all"
+                  className="h-12 px-3 rounded-xl border border-border bg-secondary text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                   aria-label="Clear search"
                 >
                   <X className="h-4 w-4" />
@@ -533,7 +522,7 @@ export function TalentDashboard() {
               )}
               <button
                 onClick={commitSearch}
-                className="h-12 px-5 rounded-xl bg-linear-to-r from-indigo-500 to-purple-600 text-white font-medium text-sm hover:from-indigo-600 hover:to-purple-700 transition-all shadow-lg shadow-indigo-500/25 shrink-0"
+                className="h-12 px-5 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:bg-primary-hover transition-colors shrink-0"
               >
                 Search
               </button>
@@ -542,16 +531,16 @@ export function TalentDashboard() {
           <ManualUploadButton onManualUpload={handleManualUpload} />
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-5 py-3 rounded-xl border transition-all duration-300 font-medium ${
+            className={`flex items-center gap-2 px-5 py-3 rounded-xl border transition-colors duration-150 font-medium ${
               showFilters
-                ? "bg-linear-to-r from-indigo-500/20 to-purple-500/20 border-indigo-500/40 text-indigo-600 dark:text-indigo-300 shadow-lg shadow-indigo-500/10"
-                : "bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground/60 hover:text-foreground hover:border-black/20 dark:hover:border-white/20 hover:bg-black/10 dark:hover:bg-white/10"
+                ? "bg-accent border-transparent text-accent-foreground"
+                : "bg-secondary border-border text-muted-foreground hover:text-foreground hover:bg-accent"
             }`}
           >
             <Filter className="h-4 w-4" />
             <span>Filters</span>
             {activeFilterCount > 0 && (
-              <span className="flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-linear-to-r from-indigo-500 to-purple-500 text-white text-xs font-bold shadow-lg shadow-indigo-500/25">
+              <span className="flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-primary text-primary-foreground text-xs font-bold">
                 {activeFilterCount}
               </span>
             )}
@@ -595,13 +584,13 @@ export function TalentDashboard() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             {talentsLoading ? (
-              <div className="flex items-center gap-2 text-foreground/40">
-                <div className="h-4 w-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                 <span className="text-sm">Loading candidates...</span>
               </div>
             ) : (
               <>
-                <p className="text-sm text-foreground/60">
+                <p className="text-sm text-muted-foreground">
                   Showing{" "}
                   <span className="text-foreground font-semibold">
                     {pageStart}–{pageEnd}
@@ -613,7 +602,7 @@ export function TalentDashboard() {
                   {displayedProfiles.length === 1 ? "candidate" : "candidates"}
                 </p>
                 {activeFilterCount > 0 && (
-                  <span className="text-xs bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/30">
+                  <span className="text-xs bg-accent text-accent-foreground px-2 py-0.5 rounded-full">
                     {activeFilterCount}{" "}
                     {activeFilterCount === 1 ? "filter" : "filters"} active
                   </span>
@@ -622,12 +611,12 @@ export function TalentDashboard() {
             )}
           </div>
           {talentsError && (
-            <p className="text-sm text-red-400 flex items-center gap-2">
-              <span className="flex h-2 w-2 rounded-full bg-red-500" />
+            <p className="text-sm text-destructive flex items-center gap-2">
+              <span className="flex h-2 w-2 rounded-full bg-destructive" />
               Error: {talentsError.message}
               <button
                 onClick={refreshTalents}
-                className="underline hover:text-red-300"
+                className="underline hover:opacity-80"
               >
                 Retry
               </button>
@@ -703,10 +692,10 @@ export function TalentDashboard() {
       {/* Toast Notification */}
       {toast && (
         <div
-          className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 rounded-xl shadow-xl text-sm font-medium animate-fade-in border ${
+          className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 rounded-xl shadow-lg text-sm font-medium animate-fade-in border ${
             toast.type === "success"
-              ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300"
-              : "bg-red-500/10 border-red-500/30 text-red-700 dark:text-red-300"
+              ? "bg-card border-success/30 text-success"
+              : "bg-card border-destructive/30 text-destructive"
           }`}
         >
           <span>{toast.message}</span>

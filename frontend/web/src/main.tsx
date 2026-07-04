@@ -27,7 +27,7 @@ const initialTheme =
     ? systemDark
       ? "dark"
       : "light"
-    : storedTheme || "dark";
+    : storedTheme || "light";
 document.documentElement.classList.add(initialTheme);
 
 const container = document.getElementById("root");

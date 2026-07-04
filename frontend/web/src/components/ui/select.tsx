@@ -23,10 +23,10 @@ function Select({
       <select
         className={cn(
           "flex h-9 w-full appearance-none rounded-lg border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 px-3 py-2 pr-8 text-sm text-foreground/90 shadow-sm transition-colors",
-          "focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50",
+          "focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring",
           "hover:border-black/20 dark:hover:border-white/20 hover:bg-black/8 dark:hover:bg-white/8",
           "disabled:cursor-not-allowed disabled:opacity-50",
-          "[&>option]:bg-white dark:[&>option]:bg-slate-800 [&>option]:text-foreground",
+          "[&>option]:bg-popover [&>option]:text-foreground",
           className,
         )}
         {...props}

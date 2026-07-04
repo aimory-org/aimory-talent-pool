@@ -45,7 +45,7 @@ function Section({
   return (
     <section id={sectionId} className="mb-14 scroll-mt-6">
       <div className="flex items-center gap-3 mb-6">
-        <div className="p-2.5 bg-violet-500/15 rounded-xl text-violet-600 dark:text-violet-400 ring-1 ring-violet-500/20">
+        <div className="p-2.5 bg-accent rounded-xl text-accent-foreground">
           {icon}
         </div>
         <h2 className="text-xl font-bold text-foreground tracking-tight">
@@ -78,14 +78,14 @@ function SubSection({
 
 function CodeBlock({ children }: { children: string }) {
   return (
-    <div className="relative mt-4 rounded-xl overflow-hidden border border-black/10 dark:border-white/5">
-      <div className="flex items-center gap-1.5 px-4 py-2.5 bg-black/10 dark:bg-slate-900/90 border-b border-black/10 dark:border-white/5">
-        <span className="w-2.5 h-2.5 rounded-full bg-red-400/70" />
-        <span className="w-2.5 h-2.5 rounded-full bg-yellow-400/70" />
-        <span className="w-2.5 h-2.5 rounded-full bg-emerald-400/70" />
+    <div className="relative mt-4 rounded-xl overflow-hidden border border-border">
+      <div className="flex items-center gap-1.5 px-4 py-2.5 bg-black/10 dark:bg-white/5 border-b border-border">
+        <span className="w-2.5 h-2.5 rounded-full bg-destructive/70" />
+        <span className="w-2.5 h-2.5 rounded-full bg-warning/70" />
+        <span className="w-2.5 h-2.5 rounded-full bg-success/70" />
       </div>
-      <div className="bg-[#0d1117] dark:bg-[#0a0e1a] p-5 overflow-x-auto">
-        <pre className="text-[13px] text-slate-300 font-mono leading-relaxed whitespace-pre-wrap">
+      <div className="bg-code-bg p-5 overflow-x-auto">
+        <pre className="text-[13px] text-foreground/70 font-mono leading-relaxed whitespace-pre-wrap">
           {children}
         </pre>
       </div>
@@ -95,29 +95,29 @@ function CodeBlock({ children }: { children: string }) {
 
 function Mono({ children }: { children: React.ReactNode }) {
   return (
-    <code className="px-1.5 py-0.5 bg-violet-500/10 dark:bg-violet-500/15 text-violet-700 dark:text-violet-300 rounded text-[0.82em] font-mono border border-violet-500/15">
+    <code className="px-1.5 py-0.5 bg-accent text-accent-foreground rounded text-[0.82em] font-mono">
       {children}
     </code>
   );
 }
 
+// Diagram/reference tags collapsed to the app's restrained semantic set —
+// neutral (data/generic) / accent (compute & services) / success (output) /
+// warning (caution) / destructive (error paths) — rather than an arbitrary
+// hue per infra category.
 function Pill({
   children,
-  color = "slate",
+  color = "neutral",
 }: {
   children: React.ReactNode;
   color?: string;
 }) {
   const colors: Record<string, string> = {
-    slate:
-      "bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20",
-    violet:
-      "bg-violet-500/10 text-violet-700 dark:text-violet-300 border-violet-500/20",
-    blue: "bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20",
-    emerald:
-      "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20",
-    amber:
-      "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20",
+    neutral: "bg-secondary text-muted-foreground border-transparent",
+    accent: "bg-accent text-accent-foreground border-transparent",
+    success: "bg-success/10 text-success border-success/20",
+    warning: "bg-warning/10 text-warning border-warning/20",
+    destructive: "bg-destructive/10 text-destructive border-destructive/20",
   };
   return (
     <span
@@ -145,17 +145,15 @@ function ArchNode({
   color?: "violet" | "blue" | "emerald" | "amber" | "slate" | "red";
   wide?: boolean;
 }) {
+  // Collapsed to the app's restrained semantic set — violet/blue both read
+  // as "accent" (compute & services), the rest map to their token directly.
   const colors: Record<typeof color, string> = {
-    violet:
-      "bg-violet-500/10 border-violet-500/25 text-violet-700 dark:text-violet-300",
-    blue: "bg-blue-500/10 border-blue-500/25 text-blue-700 dark:text-blue-300",
-    emerald:
-      "bg-emerald-500/10 border-emerald-500/25 text-emerald-700 dark:text-emerald-300",
-    amber:
-      "bg-amber-500/10 border-amber-500/25 text-amber-700 dark:text-amber-300",
-    slate:
-      "bg-slate-500/10 border-slate-500/25 text-slate-700 dark:text-slate-300",
-    red: "bg-red-500/10 border-red-500/25 text-red-700 dark:text-red-300",
+    violet: "bg-accent border-transparent text-accent-foreground",
+    blue: "bg-accent border-transparent text-accent-foreground",
+    emerald: "bg-success/10 border-success/25 text-success",
+    amber: "bg-warning/10 border-warning/25 text-warning",
+    slate: "bg-secondary border-transparent text-muted-foreground",
+    red: "bg-destructive/10 border-destructive/25 text-destructive",
   };
   return (
     <div
@@ -197,10 +195,10 @@ function FlowArrow({
 
 function ArchitectureDiagram() {
   return (
-    <div className="mt-6 rounded-2xl border border-black/10 dark:border-white/10 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm overflow-hidden">
+    <div className="mt-6 rounded-2xl border border-border bg-card overflow-hidden">
       {/* Header */}
-      <div className="px-5 py-3 border-b border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 flex items-center gap-2">
-        <div className="w-2 h-2 rounded-full bg-violet-500" />
+      <div className="px-5 py-3 border-b border-border bg-secondary flex items-center gap-2">
+        <div className="w-2 h-2 rounded-full bg-primary" />
         <span className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
           System Architecture
         </span>
@@ -405,20 +403,17 @@ const PIPELINE_STEPS = [
 ];
 
 const stepColors: Record<string, string> = {
-  violet:
-    "border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300",
-  blue: "border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-300",
-  amber:
-    "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300",
-  emerald:
-    "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+  violet: "border-transparent bg-accent text-accent-foreground",
+  blue: "border-transparent bg-accent text-accent-foreground",
+  amber: "border-warning/30 bg-warning/10 text-warning",
+  emerald: "border-success/30 bg-success/10 text-success",
 };
 
 function PipelineDiagram() {
   return (
-    <div className="mt-6 rounded-2xl border border-black/10 dark:border-white/10 bg-white/50 dark:bg-slate-800/50 overflow-hidden">
-      <div className="px-5 py-3 border-b border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 flex items-center gap-2">
-        <div className="w-2 h-2 rounded-full bg-violet-500" />
+    <div className="mt-6 rounded-2xl border border-border bg-card overflow-hidden">
+      <div className="px-5 py-3 border-b border-border bg-secondary flex items-center gap-2">
+        <div className="w-2 h-2 rounded-full bg-primary" />
         <span className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
           Step Functions Express Workflow
         </span>
@@ -446,7 +441,7 @@ function PipelineDiagram() {
                   >
                     {s.step}
                   </code>
-                  <Pill color="slate">
+                  <Pill color="neutral">
                     <ChevronRight className="w-3 h-3 mr-0.5 opacity-60" />
                     {s.trigger}
                   </Pill>
@@ -469,9 +464,9 @@ function PipelineDiagram() {
 
 function MatchPipelineDiagram() {
   return (
-    <div className="mt-6 rounded-2xl border border-black/10 dark:border-white/10 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm overflow-hidden">
-      <div className="px-5 py-3 border-b border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 flex items-center gap-2">
-        <div className="w-2 h-2 rounded-full bg-violet-500" />
+    <div className="mt-6 rounded-2xl border border-border bg-card overflow-hidden">
+      <div className="px-5 py-3 border-b border-border bg-secondary flex items-center gap-2">
+        <div className="w-2 h-2 rounded-full bg-primary" />
         <span className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
           Retrieve → Rerank → Score
         </span>
@@ -593,32 +588,27 @@ function AuthFlowDiagram() {
   ];
 
   const actorColors: Record<string, string> = {
-    User: "bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/25",
-    Cognito:
-      "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/25",
-    Microsoft:
-      "bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/25",
-    Amplify:
-      "bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-500/25",
-    "API Call":
-      "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/25",
-    Lambda:
-      "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/25",
+    User: "bg-secondary text-muted-foreground border-transparent",
+    Cognito: "bg-warning/15 text-warning border-warning/25",
+    Microsoft: "bg-accent text-accent-foreground border-transparent",
+    Amplify: "bg-accent text-accent-foreground border-transparent",
+    "API Call": "bg-success/15 text-success border-success/25",
+    Lambda: "bg-success/15 text-success border-success/25",
   };
 
   return (
-    <div className="mt-6 rounded-2xl border border-black/10 dark:border-white/10 bg-white/50 dark:bg-slate-800/50 overflow-hidden">
-      <div className="px-5 py-3 border-b border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 flex items-center gap-2">
-        <div className="w-2 h-2 rounded-full bg-blue-500" />
+    <div className="mt-6 rounded-2xl border border-border bg-card overflow-hidden">
+      <div className="px-5 py-3 border-b border-border bg-secondary flex items-center gap-2">
+        <div className="w-2 h-2 rounded-full bg-primary" />
         <span className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
           OAuth 2.0 PKCE Flow
         </span>
       </div>
-      <div className="divide-y divide-black/5 dark:divide-white/5">
+      <div className="divide-y divide-border">
         {steps.map((s, i) => (
           <div
             key={i}
-            className="flex items-start gap-4 px-5 py-4 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+            className="flex items-start gap-4 px-5 py-4 hover:bg-secondary transition-colors"
           >
             <span
               className={`shrink-0 text-[11px] font-bold px-2.5 py-1 rounded-lg border whitespace-nowrap ${actorColors[s.actor]}`}
@@ -682,16 +672,12 @@ const MODULES = [
 ];
 
 const moduleColors: Record<string, string> = {
-  violet:
-    "bg-violet-500/10 border-violet-500/25 text-violet-700 dark:text-violet-300",
-  blue: "bg-blue-500/10 border-blue-500/25 text-blue-700 dark:text-blue-300",
-  emerald:
-    "bg-emerald-500/10 border-emerald-500/25 text-emerald-700 dark:text-emerald-300",
-  amber:
-    "bg-amber-500/10 border-amber-500/25 text-amber-700 dark:text-amber-300",
-  slate:
-    "bg-slate-500/10 border-slate-500/25 text-slate-700 dark:text-slate-300",
-  red: "bg-red-500/10 border-red-500/25 text-red-700 dark:text-red-300",
+  violet: "bg-accent border-transparent text-accent-foreground",
+  blue: "bg-accent border-transparent text-accent-foreground",
+  emerald: "bg-success/10 border-success/25 text-success",
+  amber: "bg-warning/10 border-warning/25 text-warning",
+  slate: "bg-secondary border-transparent text-muted-foreground",
+  red: "bg-destructive/10 border-destructive/25 text-destructive",
 };
 
 // ---------------------------------------------------------------------------
@@ -704,98 +690,98 @@ const API_ENDPOINTS = [
     path: "/talents",
     desc: "List / search profiles via OpenSearch. Accepts: status, service_category, industry_category, job_title, clearance_level, location_state, city, skills (CSV), certifications (CSV), tags (CSV), search (full-text), minYears, maxYears.",
     methodColor:
-      "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/25",
+      "bg-success/15 text-success border-success/25",
   },
   {
     method: "GET",
     path: "/talents/{pk}",
     desc: "Fetch a single profile by primary key (URL-encoded). Returns the full DynamoDB item.",
     methodColor:
-      "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/25",
+      "bg-success/15 text-success border-success/25",
   },
   {
     method: "PATCH",
     path: "/talents?pk={pk}",
     desc: "Partial update of any profile fields. Body is a subset of the profile schema. Returns the updated profile from DynamoDB.",
     methodColor:
-      "bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/25",
+      "bg-accent text-accent-foreground border-transparent",
   },
   {
     method: "DELETE",
     path: "/talents?pk={pk}",
     desc: "Permanently delete a profile from DynamoDB and OpenSearch.",
     methodColor:
-      "bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/25",
+      "bg-destructive/15 text-destructive border-destructive/25",
   },
   {
     method: "GET",
     path: "/lookups",
     desc: "Fetch dropdown option sets. Optional: ?include=skills,certifications,job_titles,cities,tags. Returns all sets by default.",
     methodColor:
-      "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/25",
+      "bg-success/15 text-success border-success/25",
   },
   {
     method: "GET",
     path: "/resume-url?key={s3_key}",
     desc: "Generate a short-lived presigned S3 URL for viewing the original document (resume or JD). Default expiry: 15 minutes.",
     methodColor:
-      "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/25",
+      "bg-success/15 text-success border-success/25",
   },
   {
     method: "DELETE",
     path: "/tags?tag={tag}",
     desc: "Permanently delete a tag from the lookup table and remove it from all matching profiles in DynamoDB and OpenSearch.",
     methodColor:
-      "bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/25",
+      "bg-destructive/15 text-destructive border-destructive/25",
   },
   {
     method: "GET",
     path: "/job-descriptions",
     desc: "List all job descriptions. Supports filters: required_clearance, location_state, industry_category, job_title. Sorted newest-first by created_at.",
     methodColor:
-      "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/25",
+      "bg-success/15 text-success border-success/25",
   },
   {
     method: "GET",
     path: "/job-descriptions/{pk}",
     desc: "Fetch a single job description by primary key (URL-encoded).",
     methodColor:
-      "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/25",
+      "bg-success/15 text-success border-success/25",
   },
   {
     method: "DELETE",
     path: "/job-descriptions?pk={pk}",
     desc: "Permanently delete a job description from DynamoDB.",
     methodColor:
-      "bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/25",
+      "bg-destructive/15 text-destructive border-destructive/25",
   },
   {
     method: "PATCH",
     path: "/job-descriptions",
     desc: "Update a job description's editable fields (title, skills, clearance, etc.). Also supports dismiss_duplicate: true to clear the possible duplicate flag.",
     methodColor:
-      "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/25",
+      "bg-warning/15 text-warning border-warning/25",
   },
   {
     method: "POST",
     path: "/job-descriptions/{pk}/match",
     desc: "AI-powered candidate matching. Compares JD requirements against all talent profiles using Bedrock/Claude and returns ranked matches with scores and rationale. Optional: ?limit=N.",
     methodColor:
-      "bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-500/25",
+      "bg-accent text-accent-foreground border-transparent",
   },
   {
     method: "GET",
     path: "/jd-upload-url?filename={name}&contentType={type}",
     desc: "Generate a presigned S3 PUT URL for uploading a job description file (PDF/DOC/DOCX). Returns { uploadUrl, key, expiresIn }. Default expiry: 15 minutes.",
     methodColor:
-      "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/25",
+      "bg-success/15 text-success border-success/25",
   },
   {
     method: "GET",
     path: "/resume-upload-url?filename={name}&contentType={type}",
     desc: "Generate a presigned S3 PUT URL for uploading a resume file (PDF/DOC/DOCX). Returns { uploadUrl, key, expiresIn }. Default expiry: 15 minutes.",
     methodColor:
-      "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/25",
+      "bg-success/15 text-success border-success/25",
   },
 ];
 
@@ -883,7 +869,7 @@ export function TechReference() {
           {MODULES.map((m) => (
             <div
               key={m.name}
-              className="rounded-xl border border-black/10 dark:border-white/10 bg-white/60 dark:bg-slate-800/60 p-4 hover:shadow-md transition-shadow"
+              className="rounded-xl border border-border bg-card p-4 hover:shadow-sm transition-shadow"
             >
               <div className="flex items-center gap-2.5 mb-2">
                 <span
@@ -1053,9 +1039,9 @@ aimory-talent-pool-dev-frontend-{acct-id}   # S3`}</CodeBlock>
           dynamically built compound query. Filtering is entirely server-side.
         </p>
 
-        <div className="mt-5 rounded-2xl border border-black/10 dark:border-white/10 bg-white/50 dark:bg-slate-800/50 overflow-hidden">
+        <div className="mt-5 rounded-2xl border border-border bg-card overflow-hidden">
           <div className="px-5 py-3 border-b border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-blue-500" />
+            <div className="w-2 h-2 rounded-full bg-primary" />
             <span className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
               Query Strategy
             </span>
@@ -1103,7 +1089,7 @@ aimory-talent-pool-dev-frontend-{acct-id}   # S3`}</CodeBlock>
                 className="grid grid-cols-[1fr_1fr_2fr] gap-4 px-5 py-3.5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-xs"
               >
                 <div>
-                  <code className="font-mono font-semibold text-violet-600 dark:text-violet-400">
+                  <code className="font-mono font-semibold text-primary">
                     {row.type}
                   </code>
                   <div className="text-[10px] text-foreground/40 mt-0.5 font-mono">
@@ -1174,8 +1160,8 @@ aimory-talent-pool-dev-frontend-{acct-id}   # S3`}</CodeBlock>
         </SubSection>
 
         <SubSection title="Hard filters — the safety gate">
-          <div className="flex gap-3 p-4 rounded-xl bg-red-500/5 border border-red-500/20 mb-3">
-            <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+          <div className="flex gap-3 p-4 rounded-xl bg-destructive/5 border border-destructive/20 mb-3">
+            <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
             <p className="text-sm leading-relaxed text-foreground/70">
               Retrieval is about relevance, not eligibility — a candidate
               can be a strong semantic match for a role's skills while
@@ -1223,7 +1209,7 @@ aimory-talent-pool-dev-frontend-{acct-id}   # S3`}</CodeBlock>
                 className="flex items-center justify-between px-3 py-2 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10"
               >
                 <span className="text-xs text-foreground/70">{r.label}</span>
-                <Pill color="violet">{r.pts}</Pill>
+                <Pill color="accent">{r.pts}</Pill>
               </div>
             ))}
           </div>
@@ -1279,9 +1265,9 @@ aimory-talent-pool-dev-frontend-{acct-id}   # S3`}</CodeBlock>
           <Mono>api_endpoint</Mono>).
         </p>
 
-        <div className="mt-5 rounded-2xl border border-black/10 dark:border-white/10 bg-white/50 dark:bg-slate-800/50 overflow-hidden">
+        <div className="mt-5 rounded-2xl border border-border bg-card overflow-hidden">
           <div className="px-5 py-3 border-b border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-amber-500" />
+            <div className="w-2 h-2 rounded-full bg-primary" />
             <span className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
               Endpoints
             </span>
@@ -1344,9 +1330,9 @@ aws cloudfront create-invalidation \\
 
         <SubSection title="Scheduled Jobs">
           <div className="grid sm:grid-cols-2 gap-3 mt-3">
-            <div className="rounded-xl border border-black/10 dark:border-white/10 bg-white/60 dark:bg-slate-800/60 p-4">
+            <div className="rounded-xl border border-border bg-card p-4">
               <div className="flex items-center gap-2 mb-2">
-                <span className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-400">
+                <span className="p-1.5 rounded-lg bg-warning/10 border border-warning/25 text-warning">
                   <RefreshCw className="w-3.5 h-3.5" />
                 </span>
                 <code className="text-xs font-mono font-bold text-foreground">
@@ -1359,9 +1345,9 @@ aws cloudfront create-invalidation \\
                 sets their status to "Stale Candidate".
               </p>
             </div>
-            <div className="rounded-xl border border-black/10 dark:border-white/10 bg-white/60 dark:bg-slate-800/60 p-4">
+            <div className="rounded-xl border border-border bg-card p-4">
               <div className="flex items-center gap-2 mb-2">
-                <span className="p-1.5 rounded-lg bg-violet-500/10 border border-violet-500/25 text-violet-600 dark:text-violet-400">
+                <span className="p-1.5 rounded-lg bg-accent border border-transparent text-accent-foreground">
                   <Zap className="w-3.5 h-3.5" />
                 </span>
                 <code className="text-xs font-mono font-bold text-foreground">
@@ -1388,9 +1374,9 @@ aws cloudfront create-invalidation \\
           DynamoDB, Lambda, S3, and Step Functions permissions.
         </p>
 
-        <div className="mt-5 rounded-2xl border border-black/10 dark:border-white/10 bg-white/50 dark:bg-slate-800/50 overflow-hidden">
+        <div className="mt-5 rounded-2xl border border-border bg-card overflow-hidden">
           <div className="px-5 py-3 border-b border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-slate-500" />
+            <div className="w-2 h-2 rounded-full bg-primary" />
             <span className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
               scripts/
             </span>
@@ -1436,11 +1422,11 @@ aws cloudfront create-invalidation \\
               key={script}
               className={`px-5 py-4 ${i < arr.length - 1 ? "border-b border-black/5 dark:border-white/5" : ""}`}
             >
-              <code className="text-sm font-mono font-bold text-violet-600 dark:text-violet-400">
+              <code className="text-sm font-mono font-bold text-primary">
                 {script}
               </code>
               <p className="text-xs text-foreground/55 mt-1 mb-3">{desc}</p>
-              <div className="bg-[#0d1117] rounded-lg px-4 py-2.5 font-mono text-xs text-slate-400 border border-white/5">
+              <div className="bg-code-bg rounded-lg px-4 py-2.5 font-mono text-xs text-foreground/60 border border-border">
                 <pre className="whitespace-pre-wrap">{usage}</pre>
               </div>
             </div>
@@ -1454,10 +1440,10 @@ aws cloudfront create-invalidation \\
           {SECURITY_ITEMS.map((item) => (
             <div
               key={item.label}
-              className="rounded-xl border border-black/10 dark:border-white/10 bg-white/60 dark:bg-slate-800/60 p-4 hover:shadow-md transition-shadow"
+              className="rounded-xl border border-border bg-card p-4 hover:shadow-sm transition-shadow"
             >
               <div className="flex items-center gap-2.5 mb-2">
-                <span className="p-1.5 rounded-lg bg-violet-500/10 border border-violet-500/25 text-violet-600 dark:text-violet-400">
+                <span className="p-1.5 rounded-lg bg-accent border border-transparent text-accent-foreground">
                   {item.icon}
                 </span>
                 <div>

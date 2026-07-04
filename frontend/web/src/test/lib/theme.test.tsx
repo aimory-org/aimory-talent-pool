@@ -35,7 +35,7 @@ describe("ThemeProvider", () => {
     window.matchMedia = originalMatchMedia;
   });
 
-  it("provides default dark theme", () => {
+  it("provides default light theme", () => {
     const TestComponent = () => {
       const { theme, resolvedTheme } = useTheme();
       return (
@@ -52,8 +52,8 @@ describe("ThemeProvider", () => {
       </ThemeProvider>,
     );
 
-    expect(screen.getByTestId("theme").textContent).toBe("dark");
-    expect(screen.getByTestId("resolved").textContent).toBe("dark");
+    expect(screen.getByTestId("theme").textContent).toBe("light");
+    expect(screen.getByTestId("resolved").textContent).toBe("light");
   });
 
   it("loads theme from localStorage", () => {
@@ -85,7 +85,7 @@ describe("ThemeProvider", () => {
       return (
         <div>
           <span data-testid="theme">{theme}</span>
-          <button onClick={() => setTheme("light")}>Set Light</button>
+          <button onClick={() => setTheme("dark")}>Set Dark</button>
         </div>
       );
     };
@@ -96,18 +96,18 @@ describe("ThemeProvider", () => {
       </ThemeProvider>,
     );
 
-    expect(screen.getByTestId("theme").textContent).toBe("dark");
-
-    await userEvent.click(screen.getByRole("button", { name: /set light/i }));
-
     expect(screen.getByTestId("theme").textContent).toBe("light");
-    expect(localStorage.getItem("theme")).toBe("light");
+
+    await userEvent.click(screen.getByRole("button", { name: /set dark/i }));
+
+    expect(screen.getByTestId("theme").textContent).toBe("dark");
+    expect(localStorage.getItem("theme")).toBe("dark");
   });
 
   it("applies theme class to document", async () => {
     const TestComponent = () => {
       const { setTheme } = useTheme();
-      return <button onClick={() => setTheme("light")}>Set Light</button>;
+      return <button onClick={() => setTheme("dark")}>Set Dark</button>;
     };
 
     render(
@@ -116,14 +116,14 @@ describe("ThemeProvider", () => {
       </ThemeProvider>,
     );
 
-    // Should have dark class initially
-    expect(document.documentElement.classList.contains("dark")).toBe(true);
+    // Should have light class initially
+    expect(document.documentElement.classList.contains("light")).toBe(true);
 
     await userEvent.click(screen.getByRole("button"));
 
-    // Should have light class after change
-    expect(document.documentElement.classList.contains("light")).toBe(true);
-    expect(document.documentElement.classList.contains("dark")).toBe(false);
+    // Should have dark class after change
+    expect(document.documentElement.classList.contains("dark")).toBe(true);
+    expect(document.documentElement.classList.contains("light")).toBe(false);
   });
 
   it("resolves system theme based on prefers-color-scheme", () => {
@@ -232,9 +232,6 @@ describe("ThemeProvider", () => {
       </ThemeProvider>,
     );
 
-    expect(screen.getByTestId("theme").textContent).toBe("dark");
-
-    await userEvent.click(screen.getByRole("button"));
     expect(screen.getByTestId("theme").textContent).toBe("light");
 
     await userEvent.click(screen.getByRole("button"));
@@ -242,6 +239,9 @@ describe("ThemeProvider", () => {
 
     await userEvent.click(screen.getByRole("button"));
     expect(screen.getByTestId("theme").textContent).toBe("dark");
+
+    await userEvent.click(screen.getByRole("button"));
+    expect(screen.getByTestId("theme").textContent).toBe("light");
   });
 });
 
@@ -269,8 +269,8 @@ describe("useTheme hook", () => {
 
     const { result } = renderHook(() => useTheme(), { wrapper });
 
-    expect(result.current.theme).toBe("dark");
-    expect(result.current.resolvedTheme).toBe("dark");
+    expect(result.current.theme).toBe("light");
+    expect(result.current.resolvedTheme).toBe("light");
     expect(typeof result.current.setTheme).toBe("function");
   });
 

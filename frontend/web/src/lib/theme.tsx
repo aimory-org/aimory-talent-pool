@@ -11,7 +11,7 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 function getSystemTheme(): "dark" | "light" {
-  if (typeof window === "undefined") return "dark";
+  if (typeof window === "undefined") return "light";
   return window.matchMedia("(prefers-color-scheme: dark)").matches
     ? "dark"
     : "light";
@@ -19,9 +19,9 @@ function getSystemTheme(): "dark" | "light" {
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
-    if (typeof window === "undefined") return "dark";
+    if (typeof window === "undefined") return "light";
     const stored = localStorage.getItem("theme") as Theme | null;
-    return stored || "dark"; // Default to dark since that's the current design
+    return stored || "light"; // Default to light — the brand's native theme
   });
 
   const [resolvedTheme, setResolvedTheme] = useState<"dark" | "light">(() => {
@@ -56,7 +56,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (metaThemeColor) {
       metaThemeColor.setAttribute(
         "content",
-        effectiveTheme === "dark" ? "#1e293b" : "#ffffff",
+        effectiveTheme === "dark" ? "#16121b" : "#ffffff",
       );
     }
 

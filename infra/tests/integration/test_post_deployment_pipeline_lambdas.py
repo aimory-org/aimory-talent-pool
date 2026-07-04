@@ -238,7 +238,15 @@ def test_pipeline_persist_lambda_smoke_write_and_cleanup():
         _safe_delete_item(TALENT_TABLE, {"pk": pk})
         _safe_delete_item(SKILLS_LOOKUP_TABLE, {"skill": f"IntegrationSkill{suffix}"})
         _safe_delete_item(CERTIFICATIONS_LOOKUP_TABLE, {"certification": f"IntegrationCert{suffix}"})
-        _safe_delete_item(CITIES_LOOKUP_TABLE, {"city": f"Integrationcity{suffix}", "state": "VA"})
+        # The persist lambda writes city through _normalize_city (city.strip().title())
+        # before storing it in the lookup table, so the delete key must apply the
+        # same transform — otherwise a suffix hex digit followed by a letter (e.g.
+        # "071e98e1" -> "071E98E1") gets title-cased and the literal key here
+        # silently misses, leaving orphaned "Integrationcity..." rows behind.
+        _safe_delete_item(
+            CITIES_LOOKUP_TABLE,
+            {"city": f"IntegrationCity{suffix}".title(), "state": "VA"},
+        )
         _safe_delete_item(JOB_TITLES_LOOKUP_TABLE, {"job_title": f"Integration Engineer {suffix}"})
         _safe_delete_item(INDUSTRY_CATEGORIES_LOOKUP_TABLE, {"industry_category": f"IntegrationCategory{suffix}"})
         _cleanup_audit_entries(pk)

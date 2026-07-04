@@ -722,35 +722,35 @@ export function ProfileDetailPanel({
     };
 
     return (
-      <div className="fixed inset-y-0 right-0 w-full bg-white/95 dark:bg-slate-800/95 backdrop-blur-lg border-l border-black/10 dark:border-white/10 shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300">
+      <div className="fixed inset-y-0 right-0 w-full bg-card backdrop-blur-sm border-l border-border shadow-xl z-50 flex flex-col animate-in slide-in-from-right duration-300">
         {/* Top bar */}
-        <div className="flex-none bg-white/95 dark:bg-slate-800/95 backdrop-blur-lg border-b border-black/10 dark:border-white/10 px-4 py-3 flex items-center justify-between">
+        <div className="flex-none bg-card border-b border-border px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-full bg-linear-to-br from-amber-500/30 to-orange-500/30 flex items-center justify-center border border-black/10 dark:border-white/10 text-foreground font-semibold text-sm">
+            <div className="h-8 w-8 rounded-full bg-warning/15 flex items-center justify-center text-warning font-semibold text-sm">
               ⚠
             </div>
             <div>
               <h2 className="text-sm font-semibold text-foreground">Resume Comparison</h2>
-              <p className="text-xs text-foreground/40">Possible duplicate — reviewing side by side</p>
+              <p className="text-xs text-muted-foreground">Possible duplicate — reviewing side by side</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowCompare(false)}
-              className="px-3 py-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-500/20 transition-colors text-sm font-medium flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded-lg bg-accent text-accent-foreground hover:bg-accent/70 transition-colors text-sm font-medium flex items-center gap-1.5"
             >
               <FileText className="h-3.5 w-3.5" />
               Back to Profile
             </button>
             <button
               onClick={handleIgnore}
-              className="px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 transition-colors text-sm font-medium"
+              className="px-3 py-1.5 rounded-lg bg-warning/10 border border-warning/30 text-warning hover:bg-warning/20 transition-colors text-sm font-medium"
             >
               Ignore
             </button>
             <button
               onClick={onClose}
-              className="p-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors text-foreground/60 hover:text-foreground"
+              className="p-2 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
             >
               <X className="h-5 w-5" />
             </button>
@@ -759,56 +759,56 @@ export function ProfileDetailPanel({
         {/* Side-by-side resumes */}
         <div className="flex-1 flex min-h-0">
           {/* This (new) candidate */}
-          <div className="flex-1 flex flex-col border-r border-black/10 dark:border-white/10">
-            <div className="flex-none px-4 py-2 bg-indigo-500/5 border-b border-black/10 dark:border-white/10 flex items-center justify-between gap-2">
+          <div className="flex-1 flex flex-col border-r border-border">
+            <div className="flex-none px-4 py-2 bg-accent border-b border-border flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 min-w-0">
-                <div className="h-6 w-6 shrink-0 rounded-full bg-linear-to-br from-indigo-500/30 to-purple-500/30 flex items-center justify-center text-foreground font-semibold text-xs border border-black/10 dark:border-white/10">
+                <div className="h-6 w-6 shrink-0 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold text-xs">
                   {(profile.name || "?").charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0">
                   <span className="text-xs font-semibold text-foreground truncate block">{profile.name || "Unknown"}</span>
-                  <span className="text-xs text-foreground/40">Submitted {formatDate(profile.date_received)}</span>
+                  <span className="text-xs text-muted-foreground">Submitted {formatDate(profile.date_received)}</span>
                 </div>
               </div>
               <button
                 onClick={handleKeepNew}
-                className="shrink-0 px-2.5 py-1 rounded-lg text-xs font-medium border border-green-500/30 text-green-700 dark:text-green-300 bg-green-500/10 hover:bg-green-500/20 transition-colors"
+                className="shrink-0 px-2.5 py-1 rounded-lg text-xs font-medium bg-primary text-primary-foreground hover:bg-primary-hover transition-colors"
               >
                 Keep New Resume
               </button>
             </div>
-            <div className="flex-1 bg-white dark:bg-slate-900">
+            <div className="flex-1 bg-background">
               {resumeUrl ? (
                 <iframe src={resumeUrl} className="w-full h-full border-0" title={`Resume - ${profile.name || "Unknown"}`} />
               ) : (
-                <div className="flex items-center justify-center h-full text-foreground/40 text-sm">No resume available</div>
+                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">No resume available</div>
               )}
             </div>
           </div>
           {/* Original candidate */}
           <div className="flex-1 flex flex-col">
-            <div className="flex-none px-4 py-2 bg-amber-500/5 border-b border-black/10 dark:border-white/10 flex items-center justify-between gap-2">
+            <div className="flex-none px-4 py-2 bg-secondary border-b border-border flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 min-w-0">
-                <div className="h-6 w-6 shrink-0 rounded-full bg-linear-to-br from-amber-500/30 to-orange-500/30 flex items-center justify-center text-foreground font-semibold text-xs border border-black/10 dark:border-white/10">
+                <div className="h-6 w-6 shrink-0 rounded-full bg-muted-foreground/30 flex items-center justify-center text-foreground font-semibold text-xs">
                   {(compareProfile.name || "?").charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0">
                   <span className="text-xs font-semibold text-foreground truncate block">{compareProfile.name || "Unknown"}</span>
-                  <span className="text-xs text-foreground/40">Submitted {formatDate(compareProfile.date_received)}</span>
+                  <span className="text-xs text-muted-foreground">Submitted {formatDate(compareProfile.date_received)}</span>
                 </div>
               </div>
               <button
                 onClick={handleKeepOriginal}
-                className="shrink-0 px-2.5 py-1 rounded-lg text-xs font-medium border border-red-500/30 text-red-700 dark:text-red-300 bg-red-500/10 hover:bg-red-500/20 transition-colors"
+                className="shrink-0 px-2.5 py-1 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-accent transition-colors"
               >
                 Keep Original
               </button>
             </div>
-            <div className="flex-1 bg-white dark:bg-slate-900">
+            <div className="flex-1 bg-background">
               {compareResumeUrl ? (
                 <iframe src={compareResumeUrl} className="w-full h-full border-0" title={`Resume - ${compareProfile.name || "Unknown"}`} />
               ) : (
-                <div className="flex items-center justify-center h-full text-foreground/40 text-sm">No resume available</div>
+                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">No resume available</div>
               )}
             </div>
           </div>
@@ -820,18 +820,18 @@ export function ProfileDetailPanel({
   // Resume viewer — side-by-side split layout: resume left, profile right (editable)
   if (showResume && resumeUrl) {
     return (
-      <div className="fixed inset-y-0 right-0 w-full bg-white/95 dark:bg-slate-800/95 backdrop-blur-lg border-l border-black/10 dark:border-white/10 shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300">
+      <div className="fixed inset-y-0 right-0 w-full bg-card backdrop-blur-sm border-l border-border shadow-xl z-50 flex flex-col animate-in slide-in-from-right duration-300">
         {/* Top bar */}
-        <div className="flex-none bg-white/95 dark:bg-slate-800/95 backdrop-blur-lg border-b border-black/10 dark:border-white/10 px-4 py-3 flex items-center justify-between">
+        <div className="flex-none bg-card border-b border-border px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-full bg-linear-to-br from-indigo-500/30 to-purple-500/30 flex items-center justify-center border border-black/10 dark:border-white/10 text-foreground font-semibold text-sm">
+            <div className="h-8 w-8 rounded-full bg-accent flex items-center justify-center text-accent-foreground font-semibold text-sm">
               {(profile.name || "?").charAt(0).toUpperCase()}
             </div>
             <div>
               <h2 className="text-sm font-semibold text-foreground">
                 {profile.name || "Unknown"}
               </h2>
-              <p className="text-xs text-foreground/40">
+              <p className="text-xs text-muted-foreground">
                 Resume &middot;{" "}
                 {profile.job_title || profile.industry_category || "Candidate"}
               </p>
@@ -840,14 +840,14 @@ export function ProfileDetailPanel({
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowResume(false)}
-              className="px-3 py-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-500/20 transition-colors text-sm font-medium flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded-lg bg-accent text-accent-foreground hover:bg-accent/70 transition-colors text-sm font-medium flex items-center gap-1.5"
             >
               <FileText className="h-3.5 w-3.5" />
               Back to Profile
             </button>
             <button
               onClick={onClose}
-              className="p-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors text-foreground/60 hover:text-foreground"
+              className="p-2 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
             >
               <X className="h-5 w-5" />
             </button>
@@ -856,7 +856,7 @@ export function ProfileDetailPanel({
         {/* Split content: resume (left) + editable profile (right) */}
         <div className="flex-1 flex min-h-0">
           {/* Resume iframe — takes majority of space */}
-          <div className="flex-1 bg-white dark:bg-slate-900 border-r border-black/10 dark:border-white/10">
+          <div className="flex-1 bg-background border-r border-border">
             <iframe
               src={resumeUrl}
               className="w-full h-full border-0"
@@ -864,7 +864,7 @@ export function ProfileDetailPanel({
             />
           </div>
           {/* Editable profile sidebar */}
-          <div className="w-96 shrink-0 overflow-y-auto bg-white/50 dark:bg-slate-800/50">
+          <div className="w-96 shrink-0 overflow-y-auto bg-secondary/40">
             <div className="p-4 space-y-4">
               {/* Edit toggle + status header */}
               <div className="flex items-center justify-between">
@@ -883,7 +883,7 @@ export function ProfileDetailPanel({
                 {!isEditMode ? (
                   <button
                     onClick={() => setIsEditMode(true)}
-                    className="p-1.5 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors text-foreground/50 hover:text-indigo-500"
+                    className="p-1.5 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-primary"
                     title="Edit profile"
                   >
                     <Edit3 className="h-4 w-4" />
@@ -893,13 +893,13 @@ export function ProfileDetailPanel({
                     <button
                       onClick={handleSave}
                       disabled={isSaving}
-                      className="px-2 py-1 rounded-md bg-green-500/20 border border-green-500/30 text-green-600 dark:text-green-400 hover:bg-green-500/30 transition-colors text-xs font-medium disabled:opacity-50"
+                      className="px-2 py-1 rounded-md bg-success/15 border border-success/30 text-success hover:bg-success/25 transition-colors text-xs font-medium disabled:opacity-50"
                     >
                       {isSaving ? "…" : "Save"}
                     </button>
                     <button
                       onClick={handleCancelEdit}
-                      className="p-1.5 rounded-md hover:bg-black/10 dark:hover:bg-white/10 transition-colors text-foreground/50"
+                      className="p-1.5 rounded-md hover:bg-secondary transition-colors text-muted-foreground"
                     >
                       <XCircle className="h-3.5 w-3.5" />
                     </button>
@@ -914,7 +914,7 @@ export function ProfileDetailPanel({
                   onChange={(e) =>
                     setEditData((prev) => ({ ...prev, name: e.target.value }))
                   }
-                  className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground text-sm font-semibold"
+                  className="bg-secondary border-border text-foreground text-sm font-semibold"
                   placeholder="Full name"
                 />
               ) : (
@@ -926,7 +926,7 @@ export function ProfileDetailPanel({
               {/* Status (edit only) */}
               {isEditMode && (
                 <div className="space-y-1">
-                  <Label className="text-foreground/50 text-[10px]">
+                  <Label className="text-muted-foreground text-[10px]">
                     Status
                   </Label>
                   <Select
@@ -937,7 +937,7 @@ export function ProfileDetailPanel({
                         status: e.target.value as CandidateStatus,
                       }))
                     }
-                    className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground text-xs"
+                    className="bg-secondary border-border text-foreground text-xs"
                     options={CANDIDATE_STATUSES}
                   />
                 </div>
@@ -946,7 +946,7 @@ export function ProfileDetailPanel({
               {/* Summary */}
               {isEditMode ? (
                 <div className="space-y-1">
-                  <Label className="text-foreground/50 text-[10px]">
+                  <Label className="text-muted-foreground text-[10px]">
                     Summary
                   </Label>
                   <textarea
@@ -958,12 +958,12 @@ export function ProfileDetailPanel({
                       }))
                     }
                     rows={4}
-                    className="w-full px-2 py-1.5 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground text-xs placeholder-foreground/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all resize-none"
+                    className="w-full px-2 py-1.5 rounded-lg bg-secondary border border-border text-foreground text-xs placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/40 transition-colors resize-none"
                     placeholder="Professional summary"
                   />
                 </div>
               ) : profile.summary ? (
-                <div className="bg-black/5 dark:bg-white/5 rounded-lg p-3 border border-black/5 dark:border-white/5">
+                <div className="bg-secondary rounded-lg p-3 border border-border/60">
                   <p className="text-foreground/70 text-xs leading-relaxed italic line-clamp-6">
                     &ldquo;{profile.summary}&rdquo;
                   </p>
@@ -972,7 +972,7 @@ export function ProfileDetailPanel({
 
               {/* Notes & Tags */}
               <div className="space-y-2">
-                <h4 className="text-[10px] font-semibold text-foreground/40 uppercase tracking-wider flex items-center gap-1">
+                <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
                   <FileText className="h-2.5 w-2.5" /> Notes
                 </h4>
                 {isEditMode ? (
@@ -985,7 +985,7 @@ export function ProfileDetailPanel({
                       }))
                     }
                     rows={3}
-                    className="w-full px-2 py-1.5 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground text-xs placeholder-foreground/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all resize-none"
+                    className="w-full px-2 py-1.5 rounded-lg bg-secondary border border-border text-foreground text-xs placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/40 transition-colors resize-none"
                     placeholder="Internal notes..."
                   />
                 ) : (
@@ -999,7 +999,7 @@ export function ProfileDetailPanel({
                 )}
 
                 {/* Tags */}
-                <h4 className="text-[10px] font-semibold text-foreground/40 uppercase tracking-wider flex items-center gap-1 pt-1">
+                <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1 pt-1">
                   <Plus className="h-2.5 w-2.5" /> Tags
                 </h4>
                 {isEditMode ? (
@@ -1008,7 +1008,7 @@ export function ProfileDetailPanel({
                       {editData.tags.map((tag, i) => (
                         <span
                           key={i}
-                          className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-purple-500/15 text-purple-700 dark:text-purple-300 text-[10px] border border-purple-500/20"
+                          className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-accent text-accent-foreground text-[10px]"
                         >
                           {tag}
                           <button
@@ -1028,7 +1028,7 @@ export function ProfileDetailPanel({
                     <input
                       list={`tags-datalist-${profile.pk.replace(/[^a-zA-Z0-9-_]/g, "-")}`}
                       placeholder="Select or type new tag…"
-                      className="flex h-8 w-full rounded-lg border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 px-2 py-1.5 text-xs text-foreground placeholder-foreground/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+                      className="flex h-8 w-full rounded-lg border border-border bg-secondary px-2 py-1.5 text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/40 transition-colors"
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
                           e.preventDefault();
@@ -1074,7 +1074,7 @@ export function ProfileDetailPanel({
                       profile.tags.map((tag, i) => (
                         <span
                           key={i}
-                          className="px-1.5 py-0.5 rounded text-[10px] bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20"
+                          className="px-1.5 py-0.5 rounded text-[10px] bg-accent text-accent-foreground"
                         >
                           {tag}
                         </span>
@@ -1103,7 +1103,7 @@ export function ProfileDetailPanel({
                           job_title: e.target.value,
                         }))
                       }
-                      className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground text-xs"
+                      className="bg-secondary border-border text-foreground text-xs"
                       placeholder="Job title"
                     />
                     <div className="grid grid-cols-2 gap-2">
@@ -1116,7 +1116,7 @@ export function ProfileDetailPanel({
                             contact: { ...prev.contact, email: e.target.value },
                           }))
                         }
-                        className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground text-xs"
+                        className="bg-secondary border-border text-foreground text-xs"
                         placeholder="Email"
                       />
                       <Input
@@ -1128,7 +1128,7 @@ export function ProfileDetailPanel({
                             contact: { ...prev.contact, phone: e.target.value },
                           }))
                         }
-                        className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground text-xs"
+                        className="bg-secondary border-border text-foreground text-xs"
                         placeholder="Phone"
                       />
                     </div>
@@ -1144,7 +1144,7 @@ export function ProfileDetailPanel({
                             },
                           }))
                         }
-                        className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground text-xs"
+                        className="bg-secondary border-border text-foreground text-xs"
                         placeholder="City"
                       />
                       <Select
@@ -1158,7 +1158,7 @@ export function ProfileDetailPanel({
                             },
                           }))
                         }
-                        className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground text-xs"
+                        className="bg-secondary border-border text-foreground text-xs"
                         options={[{ value: "", label: "State" }, ...US_STATES]}
                       />
                     </div>
@@ -1173,7 +1173,7 @@ export function ProfileDetailPanel({
                             years_of_experience: e.target.value,
                           }))
                         }
-                        className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground text-xs"
+                        className="bg-secondary border-border text-foreground text-xs"
                         placeholder="Years exp."
                       />
                       <Input
@@ -1187,7 +1187,7 @@ export function ProfileDetailPanel({
                             requested_salary: e.target.value,
                           }))
                         }
-                        className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground text-xs"
+                        className="bg-secondary border-border text-foreground text-xs"
                         placeholder="Salary $/yr"
                       />
                     </div>
@@ -1199,7 +1199,7 @@ export function ProfileDetailPanel({
                           service_category: e.target.value as ServiceCategory,
                         }))
                       }
-                      className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground text-xs"
+                      className="bg-secondary border-border text-foreground text-xs"
                       options={SERVICE_CATEGORIES}
                     />
                     <div className="space-y-1">
@@ -1211,7 +1211,7 @@ export function ProfileDetailPanel({
                           .map((tag, i) => (
                             <span
                               key={i}
-                              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-purple-500/15 text-purple-700 dark:text-purple-300 text-[10px] border border-purple-500/20"
+                              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-accent text-accent-foreground text-[10px]"
                             >
                               {tag}
                               <button
@@ -1236,7 +1236,7 @@ export function ProfileDetailPanel({
                       </div>
                       <input
                         placeholder="Add industry tag…"
-                        className="flex h-7 w-full rounded-lg border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 px-2 py-1 text-xs text-foreground placeholder-foreground/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+                        className="flex h-7 w-full rounded-lg border border-border bg-secondary px-2 py-1 text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/40 transition-colors"
                         onKeyDown={(e) => {
                           if (e.key === "Enter") {
                             e.preventDefault();
@@ -1268,7 +1268,7 @@ export function ProfileDetailPanel({
                           clearance_level: e.target.value,
                         }))
                       }
-                      className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground text-xs"
+                      className="bg-secondary border-border text-foreground text-xs"
                       options={[
                         { value: "", label: "No clearance" },
                         ...CLEARANCE_LEVELS,
@@ -1285,7 +1285,7 @@ export function ProfileDetailPanel({
                           },
                         }))
                       }
-                      className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground text-xs"
+                      className="bg-secondary border-border text-foreground text-xs"
                       placeholder="LinkedIn URL"
                     />
                     <Input
@@ -1296,7 +1296,7 @@ export function ProfileDetailPanel({
                           contact: { ...prev.contact, github: e.target.value },
                         }))
                       }
-                      className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground text-xs"
+                      className="bg-secondary border-border text-foreground text-xs"
                       placeholder="GitHub URL"
                     />
                   </div>
@@ -1344,7 +1344,7 @@ export function ProfileDetailPanel({
                     {profile.requested_salary && (
                       <div className="flex items-center gap-2 text-foreground/70">
                         <DollarSign className="h-3 w-3 text-foreground/30 shrink-0" />
-                        <span className="text-emerald-500 font-medium">
+                        <span className="text-success font-medium">
                           ${profile.requested_salary.toLocaleString()}/yr
                         </span>
                       </div>
@@ -1362,7 +1362,7 @@ export function ProfileDetailPanel({
                   {isEditMode && (
                     <button
                       onClick={addSkill}
-                      className="p-0.5 rounded text-indigo-500 hover:bg-indigo-500/10 transition-colors"
+                      className="p-0.5 rounded text-primary hover:bg-accent transition-colors"
                     >
                       <Plus className="h-3 w-3" />
                     </button>
@@ -1375,12 +1375,12 @@ export function ProfileDetailPanel({
                         <Input
                           value={skill.name}
                           onChange={(e) => updateSkill(i, e.target.value)}
-                          className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground text-xs flex-1"
+                          className="bg-secondary border-border text-foreground text-xs flex-1"
                           placeholder="Skill"
                         />
                         <button
                           onClick={() => removeSkill(i)}
-                          className="p-1 text-red-400 hover:text-red-500 transition-colors"
+                          className="p-1 text-destructive/70 hover:text-destructive transition-colors"
                         >
                           <Minus className="h-3 w-3" />
                         </button>
@@ -1392,7 +1392,7 @@ export function ProfileDetailPanel({
                     {profile.skillsets.slice(0, 12).map((skill, i) => (
                       <span
                         key={i}
-                        className="px-1.5 py-0.5 rounded text-[10px] bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20"
+                        className="px-1.5 py-0.5 rounded text-[10px] bg-accent text-accent-foreground"
                       >
                         {skill.name}
                       </span>
@@ -1420,7 +1420,7 @@ export function ProfileDetailPanel({
                   {isEditMode && (
                     <button
                       onClick={addCertification}
-                      className="p-0.5 rounded text-amber-500 hover:bg-amber-500/10 transition-colors"
+                      className="p-0.5 rounded text-warning hover:bg-warning/10 transition-colors"
                     >
                       <Plus className="h-3 w-3" />
                     </button>
@@ -1435,12 +1435,12 @@ export function ProfileDetailPanel({
                           onChange={(e) =>
                             updateCertification(i, e.target.value)
                           }
-                          className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground text-xs flex-1"
+                          className="bg-secondary border-border text-foreground text-xs flex-1"
                           placeholder="Certification"
                         />
                         <button
                           onClick={() => removeCertification(i)}
-                          className="p-1 text-red-400 hover:text-red-500 transition-colors"
+                          className="p-1 text-destructive/70 hover:text-destructive transition-colors"
                         >
                           <Minus className="h-3 w-3" />
                         </button>
@@ -1452,7 +1452,7 @@ export function ProfileDetailPanel({
                     {profile.certifications.slice(0, 8).map((cert, i) => (
                       <span
                         key={i}
-                        className="px-1.5 py-0.5 rounded text-[10px] bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20"
+                        className="px-1.5 py-0.5 rounded text-[10px] bg-warning/12 text-warning"
                       >
                         {cert}
                       </span>
@@ -1480,7 +1480,7 @@ export function ProfileDetailPanel({
                   {isEditMode && (
                     <button
                       onClick={addCompany}
-                      className="p-0.5 rounded text-amber-500 hover:bg-amber-500/10 transition-colors"
+                      className="p-0.5 rounded text-warning hover:bg-warning/10 transition-colors"
                     >
                       <Plus className="h-3 w-3" />
                     </button>
@@ -1493,12 +1493,12 @@ export function ProfileDetailPanel({
                         <Input
                           value={c.name}
                           onChange={(e) => updateCompany(i, e.target.value)}
-                          className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground text-xs flex-1"
+                          className="bg-secondary border-border text-foreground text-xs flex-1"
                           placeholder="Company"
                         />
                         <button
                           onClick={() => removeCompany(i)}
-                          className="p-1 text-red-400 hover:text-red-500 transition-colors"
+                          className="p-1 text-destructive/70 hover:text-destructive transition-colors"
                         >
                           <Minus className="h-3 w-3" />
                         </button>
@@ -1528,14 +1528,11 @@ export function ProfileDetailPanel({
   }
 
   return (
-    <div className="fixed inset-y-0 right-0 w-full max-w-2xl bg-white/98 dark:bg-slate-800/98 backdrop-blur-2xl border-l border-black/10 dark:border-white/10 shadow-2xl z-50 overflow-y-auto animate-in slide-in-from-right duration-300">
-      {/* Gradient accent */}
-      <div className="absolute inset-y-0 left-0 w-px bg-gradient-to-b from-indigo-500/50 via-purple-500/50 to-transparent" />
-
+    <div className="fixed inset-y-0 right-0 w-full max-w-2xl bg-card backdrop-blur-sm border-l border-border shadow-xl z-50 overflow-y-auto animate-in slide-in-from-right duration-300">
       {/* Header */}
-      <div className="sticky top-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-b border-black/10 dark:border-white/10 p-4 flex items-center justify-between z-10">
+      <div className="sticky top-0 bg-card border-b border-border p-4 flex items-center justify-between z-10">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full bg-linear-to-br from-indigo-500/30 to-purple-500/30 flex items-center justify-center border border-black/10 dark:border-white/10 text-foreground font-semibold">
+          <div className="h-10 w-10 rounded-full bg-accent flex items-center justify-center text-accent-foreground font-semibold">
             {(profile.name || "?").charAt(0).toUpperCase()}
           </div>
           <div>
@@ -1546,7 +1543,7 @@ export function ProfileDetailPanel({
                   ? "Candidate History"
                   : "Profile Details"}
             </h2>
-            <p className="text-xs text-foreground/40">
+            <p className="text-xs text-muted-foreground">
               {activeTab === "history"
                 ? profile.name || profile.key
                 : profile.job_title || profile.industry_category}
@@ -1560,7 +1557,7 @@ export function ProfileDetailPanel({
                 setActiveTab("profile");
                 setIsEditMode(true);
               }}
-              className="p-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors text-foreground/60 hover:text-indigo-600 dark:text-indigo-400"
+              className="p-2 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-primary"
               title="Edit profile"
             >
               <Edit3 className="h-5 w-5" />
@@ -1568,7 +1565,7 @@ export function ProfileDetailPanel({
           )}
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors text-foreground/60 hover:text-foreground"
+            className="p-2 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
           >
             <X className="h-5 w-5" />
           </button>
@@ -1577,13 +1574,13 @@ export function ProfileDetailPanel({
 
       <div className="p-6 space-y-6">
         {!isEditMode && (
-          <div className="inline-flex items-center rounded-xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 p-1">
+          <div className="inline-flex items-center rounded-xl border border-border bg-secondary p-1">
             <button
               onClick={() => setActiveTab("profile")}
               className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                 activeTab === "profile"
-                  ? "bg-white dark:bg-slate-700 text-foreground shadow-sm"
-                  : "text-foreground/50 hover:text-foreground"
+                  ? "bg-card text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               Profile
@@ -1592,8 +1589,8 @@ export function ProfileDetailPanel({
               onClick={() => setActiveTab("history")}
               className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                 activeTab === "history"
-                  ? "bg-white dark:bg-slate-700 text-foreground shadow-sm"
-                  : "text-foreground/50 hover:text-foreground"
+                  ? "bg-card text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               History
@@ -1611,14 +1608,14 @@ export function ProfileDetailPanel({
                 <button
                   onClick={handleSave}
                   disabled={isSaving}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-linear-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 text-green-600 dark:text-green-400 hover:from-green-500/30 hover:to-emerald-500/30 transition-all disabled:opacity-50 font-medium"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-success/15 border border-success/30 text-success hover:bg-success/25 transition-colors disabled:opacity-50 font-medium"
                 >
                   <Save className="h-4 w-4" />
                   {isSaving ? "Saving..." : "Save Changes"}
                 </button>
                 <button
                   onClick={handleCancelEdit}
-                  className="px-4 py-2.5 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground/60 hover:bg-black/10 dark:hover:bg-white/10 hover:text-foreground transition-all font-medium"
+                  className="px-4 py-2.5 rounded-lg bg-secondary border border-border text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors font-medium"
                 >
                   <XCircle className="h-4 w-4" />
                 </button>
@@ -1640,7 +1637,7 @@ export function ProfileDetailPanel({
                           name: e.target.value,
                         }))
                       }
-                      className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
+                      className="bg-secondary border-border text-foreground"
                       placeholder="Full name"
                     />
                   </div>
@@ -1656,7 +1653,7 @@ export function ProfileDetailPanel({
                           status: e.target.value as CandidateStatus,
                         }))
                       }
-                      className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
+                      className="bg-secondary border-border text-foreground"
                       options={CANDIDATE_STATUSES}
                     />
                   </div>
@@ -1673,7 +1670,7 @@ export function ProfileDetailPanel({
                         }))
                       }
                       rows={3}
-                      className="w-full px-3 py-2 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground placeholder-foreground/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all resize-none"
+                      className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/40 focus:border-ring transition-colors resize-none"
                       placeholder="Brief professional summary"
                     />
                   </div>
@@ -1689,7 +1686,7 @@ export function ProfileDetailPanel({
                     </div>
                   </div>
                   {profile.summary && (
-                    <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4 border border-black/5 dark:border-white/5">
+                    <div className="bg-secondary rounded-xl p-4 border border-border/60">
                       <p className="text-foreground/70 text-sm leading-relaxed italic">
                         &ldquo;{profile.summary}&rdquo;
                       </p>
@@ -1699,7 +1696,7 @@ export function ProfileDetailPanel({
               )}
 
               {!isEditMode && matchInsights && (
-                <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/[0.06] dark:bg-indigo-500/[0.08] p-4 space-y-3">
+                <div className="rounded-xl border border-border bg-secondary/50 p-4 space-y-3">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <h4 className="text-sm font-semibold text-foreground">
@@ -1711,28 +1708,28 @@ export function ProfileDetailPanel({
                       </p>
                     </div>
                     {matchInsights.score != null && (
-                      <span className="inline-flex items-center rounded-md border border-indigo-500/30 bg-indigo-500/15 px-2 py-0.5 text-xs font-semibold text-indigo-700 dark:text-indigo-300">
+                      <span className="inline-flex items-center rounded-md bg-accent px-2 py-0.5 text-xs font-semibold text-accent-foreground">
                         Score {matchInsights.score}
                       </span>
                     )}
                   </div>
 
                   {matchInsights.rationale && (
-                    <p className="text-xs text-foreground/70 bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-lg p-2.5">
+                    <p className="text-xs text-foreground/70 bg-card border border-border/60 rounded-lg p-2.5">
                       {matchInsights.rationale}
                     </p>
                   )}
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className="space-y-2">
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-success">
                         Matching
                       </p>
                       <div className="flex flex-wrap gap-1.5">
                         {matchInsights.matchedRequiredSkills.map((skill) => (
                           <span
                             key={`matched-required-skill-${skill}`}
-                            className="px-2 py-0.5 rounded text-[11px] border bg-emerald-500/15 border-emerald-500/25 text-emerald-700 dark:text-emerald-300"
+                            className="px-2 py-0.5 rounded text-[11px] border bg-success/15 border-success/25 text-success"
                           >
                             Skill: {skill}
                           </span>
@@ -1741,7 +1738,7 @@ export function ProfileDetailPanel({
                           (cert) => (
                             <span
                               key={`matched-required-cert-${cert}`}
-                              className="px-2 py-0.5 rounded text-[11px] border bg-emerald-500/15 border-emerald-500/25 text-emerald-700 dark:text-emerald-300"
+                              className="px-2 py-0.5 rounded text-[11px] border bg-success/15 border-success/25 text-success"
                             >
                               Cert: {cert}
                             </span>
@@ -1750,7 +1747,7 @@ export function ProfileDetailPanel({
                         {matchInsights.matchedChecks.map((check) => (
                           <span
                             key={`matched-check-${check}`}
-                            className="px-2 py-0.5 rounded text-[11px] border bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-300"
+                            className="px-2 py-0.5 rounded text-[11px] border bg-success/10 border-success/20 text-success"
                           >
                             {check}
                           </span>
@@ -1767,14 +1764,14 @@ export function ProfileDetailPanel({
                     </div>
 
                     <div className="space-y-2">
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-red-600 dark:text-red-400">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-destructive">
                         Not Matching
                       </p>
                       <div className="flex flex-wrap gap-1.5">
                         {matchInsights.missingRequiredSkills.map((skill) => (
                           <span
                             key={`missing-required-skill-${skill}`}
-                            className="px-2 py-0.5 rounded text-[11px] border bg-amber-500/15 border-amber-500/25 text-amber-700 dark:text-amber-300"
+                            className="px-2 py-0.5 rounded text-[11px] border bg-destructive/10 border-destructive/20 text-destructive"
                           >
                             Not in tags: {skill}
                           </span>
@@ -1783,7 +1780,7 @@ export function ProfileDetailPanel({
                           (cert) => (
                             <span
                               key={`missing-required-cert-${cert}`}
-                              className="px-2 py-0.5 rounded text-[11px] border bg-amber-500/15 border-amber-500/25 text-amber-700 dark:text-amber-300"
+                              className="px-2 py-0.5 rounded text-[11px] border bg-destructive/10 border-destructive/20 text-destructive"
                             >
                               Not in tags: {cert}
                             </span>
@@ -1792,7 +1789,7 @@ export function ProfileDetailPanel({
                         {matchInsights.missingChecks.map((check) => (
                           <span
                             key={`missing-check-${check}`}
-                            className="px-2 py-0.5 rounded text-[11px] border bg-red-500/10 border-red-500/20 text-red-700 dark:text-red-300"
+                            className="px-2 py-0.5 rounded text-[11px] border bg-destructive/10 border-destructive/20 text-destructive"
                           >
                             {check}
                           </span>
@@ -1823,15 +1820,15 @@ export function ProfileDetailPanel({
                     matchInsights.missingDesiredSkills.length > 0 ||
                     matchInsights.matchedDesiredCertifications.length > 0 ||
                     matchInsights.missingDesiredCertifications.length > 0) && (
-                    <div className="pt-1 border-t border-indigo-500/20 space-y-2">
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                    <div className="pt-1 border-t border-border space-y-2">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                         Desired Criteria
                       </p>
                       <div className="flex flex-wrap gap-1.5">
                         {matchInsights.matchedDesiredSkills.map((skill) => (
                           <span
                             key={`matched-desired-skill-${skill}`}
-                            className="px-2 py-0.5 rounded text-[11px] border bg-indigo-500/15 border-indigo-500/25 text-indigo-700 dark:text-indigo-300"
+                            className="px-2 py-0.5 rounded text-[11px] border bg-success/15 border-success/25 text-success"
                           >
                             Desired skill met: {skill}
                           </span>
@@ -1840,7 +1837,7 @@ export function ProfileDetailPanel({
                           (cert) => (
                             <span
                               key={`matched-desired-cert-${cert}`}
-                              className="px-2 py-0.5 rounded text-[11px] border bg-indigo-500/15 border-indigo-500/25 text-indigo-700 dark:text-indigo-300"
+                              className="px-2 py-0.5 rounded text-[11px] border bg-success/15 border-success/25 text-success"
                             >
                               Desired cert met: {cert}
                             </span>
@@ -1849,7 +1846,7 @@ export function ProfileDetailPanel({
                         {matchInsights.missingDesiredSkills.map((skill) => (
                           <span
                             key={`missing-desired-skill-${skill}`}
-                            className="px-2 py-0.5 rounded text-[11px] border bg-amber-500/15 border-amber-500/25 text-amber-700 dark:text-amber-300"
+                            className="px-2 py-0.5 rounded text-[11px] border bg-warning/15 border-warning/25 text-warning"
                           >
                             Desired skill missing: {skill}
                           </span>
@@ -1858,7 +1855,7 @@ export function ProfileDetailPanel({
                           (cert) => (
                             <span
                               key={`missing-desired-cert-${cert}`}
-                              className="px-2 py-0.5 rounded text-[11px] border bg-amber-500/15 border-amber-500/25 text-amber-700 dark:text-amber-300"
+                              className="px-2 py-0.5 rounded text-[11px] border bg-warning/15 border-warning/25 text-warning"
                             >
                               Desired cert missing: {cert}
                             </span>
@@ -1875,7 +1872,7 @@ export function ProfileDetailPanel({
                 <button
                   onClick={handleViewResume}
                   disabled={resumeLoading}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-linear-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 text-indigo-700 dark:text-indigo-300 hover:from-indigo-500/30 hover:to-purple-500/30 transition-all disabled:opacity-50 font-medium"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-accent text-accent-foreground hover:bg-accent/70 transition-colors disabled:opacity-50 font-medium"
                 >
                   <FileText className="h-4 w-4" />
                   {resumeLoading ? "Loading Resume..." : "View Original Resume"}
@@ -1887,8 +1884,8 @@ export function ProfileDetailPanel({
             {/* Notes & Tags (positioned high for recruiter visibility) */}
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 bg-green-500/20 rounded-lg">
-                  <FileText className="h-3.5 w-3.5 text-green-400" />
+                <div className="p-1.5 bg-accent rounded-lg">
+                  <FileText className="h-3.5 w-3.5 text-accent-foreground" />
                 </div>
                 <h4 className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
                   Recruiter Notes
@@ -1908,7 +1905,7 @@ export function ProfileDetailPanel({
                         }))
                       }
                       rows={4}
-                      className="w-full px-3 py-2 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground placeholder-foreground/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all resize-none"
+                      className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/40 focus:border-ring transition-colors resize-none"
                       placeholder="Internal notes about this candidate..."
                     />
                   </div>
@@ -1918,7 +1915,7 @@ export function ProfileDetailPanel({
                       {editData.tags.map((tag, i) => (
                         <span
                           key={i}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-700 dark:text-purple-300 text-xs border border-purple-500/30"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-accent text-accent-foreground text-xs"
                         >
                           {tag}
                           <button
@@ -1939,7 +1936,7 @@ export function ProfileDetailPanel({
                       <input
                         list={`tags-datalist-full-${profile.pk.replace(/[^a-zA-Z0-9-_]/g, "-")}`}
                         placeholder="Select or type new tag…"
-                        className="flex h-9 w-full rounded-lg border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 px-3 py-2 text-sm text-foreground placeholder-foreground/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+                        className="flex h-9 w-full rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/40 transition-colors"
                         onKeyDown={(e) => {
                           if (e.key === "Enter") {
                             e.preventDefault();
@@ -1984,7 +1981,7 @@ export function ProfileDetailPanel({
               ) : (
                 <div className="space-y-3">
                   {profile.notes ? (
-                    <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4 border border-black/5 dark:border-white/5">
+                    <div className="bg-secondary rounded-xl p-4 border border-border/60">
                       <p className="text-foreground/70 text-sm whitespace-pre-wrap">
                         {profile.notes}
                       </p>
@@ -2004,7 +2001,7 @@ export function ProfileDetailPanel({
                           <Badge
                             key={i}
                             variant="outline"
-                            className="bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/30"
+                            className="bg-accent text-accent-foreground border-transparent"
                           >
                             {tag}
                           </Badge>
@@ -2022,21 +2019,21 @@ export function ProfileDetailPanel({
 
             {/* Possible Duplicate Warning */}
             {!isEditMode && profile.possible_duplicate_of && (
-              <div className="bg-amber-500/10 rounded-xl p-4 border border-amber-500/30">
-                <p className="text-amber-700 dark:text-amber-300 text-sm font-medium mb-1">
+              <div className="bg-warning/10 rounded-xl p-4 border border-warning/30">
+                <p className="text-warning text-sm font-medium mb-1">
                   ⚠ Possible duplicate of another candidate
                 </p>
-                <h3 className="text-amber-600 dark:text-amber-400 text-xs font-semibold mb-1">
+                <h3 className="text-warning text-xs font-semibold mb-1">
                   Please compare and confirm
                 </h3>
-                <p className="text-amber-600/70 dark:text-amber-400/70 text-xs mb-3 break-all">
+                <p className="text-warning/70 text-xs mb-3 break-all">
                   {profile.possible_duplicate_of}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={handleCompare}
                     disabled={compareLoading}
-                    className="px-2.5 py-1 rounded-lg text-xs font-medium border border-indigo-500/30 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-500/10 transition-colors disabled:opacity-50"
+                    className="px-2.5 py-1 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-accent transition-colors disabled:opacity-50"
                   >
                     {compareLoading ? "Loading..." : "Compare"}
                   </button>
@@ -2051,7 +2048,7 @@ export function ProfileDetailPanel({
                         alert("Failed to dismiss duplicate flag.");
                       }
                     }}
-                    className="px-2.5 py-1 rounded-lg text-xs font-medium border border-amber-500/30 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 transition-colors"
+                    className="px-2.5 py-1 rounded-lg text-xs font-medium border border-warning/30 text-warning hover:bg-warning/20 transition-colors"
                   >
                     Ignore
                   </button>
@@ -2067,17 +2064,17 @@ export function ProfileDetailPanel({
                 );
                 if (dataWarnings.length === 0) return null;
                 return (
-                  <div className="bg-amber-500/10 rounded-xl p-4 border border-amber-500/30">
-                    <p className="text-amber-700 dark:text-amber-300 text-sm font-medium mb-2">
+                  <div className="bg-warning/10 rounded-xl p-4 border border-warning/30">
+                    <p className="text-warning text-sm font-medium mb-2">
                       ⚠ Data quality warnings
                     </p>
                     <ul className="space-y-1">
                       {dataWarnings.map((w) => (
                         <li
                           key={w}
-                          className="text-amber-600 dark:text-amber-400 text-xs flex items-center gap-1.5"
+                          className="text-warning text-xs flex items-center gap-1.5"
                         >
-                          <span className="h-1 w-1 rounded-full bg-amber-500" />
+                          <span className="h-1 w-1 rounded-full bg-warning" />
                           {WARNING_LABELS[w]}
                         </li>
                       ))}
@@ -2089,8 +2086,8 @@ export function ProfileDetailPanel({
             {/* Contact Section */}
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 bg-blue-500/20 rounded-lg">
-                  <Mail className="h-3.5 w-3.5 text-blue-400" />
+                <div className="p-1.5 bg-accent rounded-lg">
+                  <Mail className="h-3.5 w-3.5 text-accent-foreground" />
                 </div>
                 <h4 className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
                   Contact Information
@@ -2110,7 +2107,7 @@ export function ProfileDetailPanel({
                           contact: { ...prev.contact, email: e.target.value },
                         }))
                       }
-                      className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
+                      className="bg-secondary border-border text-foreground"
                       placeholder="email@example.com"
                     />
                   </div>
@@ -2125,7 +2122,7 @@ export function ProfileDetailPanel({
                           contact: { ...prev.contact, phone: e.target.value },
                         }))
                       }
-                      className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
+                      className="bg-secondary border-border text-foreground"
                       placeholder="(555) 123-4567"
                     />
                   </div>
@@ -2144,7 +2141,7 @@ export function ProfileDetailPanel({
                           },
                         }))
                       }
-                      className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
+                      className="bg-secondary border-border text-foreground"
                       placeholder="linkedin.com/in/username"
                     />
                   </div>
@@ -2158,7 +2155,7 @@ export function ProfileDetailPanel({
                           contact: { ...prev.contact, github: e.target.value },
                         }))
                       }
-                      className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
+                      className="bg-secondary border-border text-foreground"
                       placeholder="github.com/username"
                     />
                   </div>
@@ -2176,7 +2173,7 @@ export function ProfileDetailPanel({
                             },
                           }))
                         }
-                        className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
+                        className="bg-secondary border-border text-foreground"
                         placeholder="City"
                       />
                     </div>
@@ -2195,7 +2192,7 @@ export function ProfileDetailPanel({
                             },
                           }))
                         }
-                        className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
+                        className="bg-secondary border-border text-foreground"
                         options={[
                           { value: "", label: "Select state" },
                           ...US_STATES,
@@ -2205,13 +2202,13 @@ export function ProfileDetailPanel({
                   </div>
                 </div>
               ) : (
-                <div className="bg-black/5 dark:bg-white/5 rounded-xl border border-black/5 dark:border-white/5 divide-y divide-black/5 dark:divide-white/5">
+                <div className="bg-secondary rounded-xl border border-border/60 divide-y divide-border/60">
                   {profile.contact.email && (
                     <div className="flex items-center gap-3 px-4 py-3">
                       <Mail className="h-4 w-4 text-foreground/30" />
                       <a
                         href={`mailto:${profile.contact.email}`}
-                        className="text-foreground/80 hover:text-indigo-600 dark:text-indigo-400 transition-colors flex-1 truncate"
+                        className="text-foreground/80 hover:text-primary transition-colors flex-1 truncate"
                       >
                         {profile.contact.email}
                       </a>
@@ -2232,7 +2229,7 @@ export function ProfileDetailPanel({
                         href={`https://${profile.contact.linkedin}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-foreground/80 hover:text-indigo-600 dark:text-indigo-400 transition-colors flex-1 truncate"
+                        className="text-foreground/80 hover:text-primary transition-colors flex-1 truncate"
                       >
                         {profile.contact.linkedin}
                       </a>
@@ -2245,7 +2242,7 @@ export function ProfileDetailPanel({
                         href={`https://${profile.contact.github}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-foreground/80 hover:text-indigo-600 dark:text-indigo-400 transition-colors flex-1 truncate"
+                        className="text-foreground/80 hover:text-primary transition-colors flex-1 truncate"
                       >
                         {profile.contact.github}
                       </a>
@@ -2268,8 +2265,8 @@ export function ProfileDetailPanel({
             {/* Professional Section */}
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 bg-purple-500/20 rounded-lg">
-                  <Briefcase className="h-3.5 w-3.5 text-purple-400" />
+                <div className="p-1.5 bg-accent rounded-lg">
+                  <Briefcase className="h-3.5 w-3.5 text-accent-foreground" />
                 </div>
                 <h4 className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
                   Professional Details
@@ -2290,7 +2287,7 @@ export function ProfileDetailPanel({
                           service_category: e.target.value as ServiceCategory,
                         }))
                       }
-                      className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
+                      className="bg-secondary border-border text-foreground"
                       options={SERVICE_CATEGORIES}
                     />
                   </div>
@@ -2306,7 +2303,7 @@ export function ProfileDetailPanel({
                         .map((tag, i) => (
                           <span
                             key={i}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-700 dark:text-purple-300 text-xs border border-purple-500/30"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-accent text-accent-foreground text-xs"
                           >
                             {tag}
                             <button
@@ -2331,7 +2328,7 @@ export function ProfileDetailPanel({
                     </div>
                     <input
                       placeholder="Add industry tag…"
-                      className="flex h-9 w-full rounded-lg border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 px-3 py-2 text-sm text-foreground placeholder-foreground/40 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+                      className="flex h-9 w-full rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/40 transition-colors"
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
                           e.preventDefault();
@@ -2367,7 +2364,7 @@ export function ProfileDetailPanel({
                           job_title: e.target.value,
                         }))
                       }
-                      className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
+                      className="bg-secondary border-border text-foreground"
                       placeholder="e.g. Senior Software Engineer"
                     />
                   </div>
@@ -2386,7 +2383,7 @@ export function ProfileDetailPanel({
                             years_of_experience: e.target.value,
                           }))
                         }
-                        className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
+                        className="bg-secondary border-border text-foreground"
                         placeholder="Years"
                       />
                     </div>
@@ -2405,7 +2402,7 @@ export function ProfileDetailPanel({
                             requested_salary: e.target.value,
                           }))
                         }
-                        className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
+                        className="bg-secondary border-border text-foreground"
                         placeholder="Annual salary"
                       />
                     </div>
@@ -2422,7 +2419,7 @@ export function ProfileDetailPanel({
                           clearance_level: e.target.value,
                         }))
                       }
-                      className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground"
+                      className="bg-secondary border-border text-foreground"
                       options={[
                         { value: "", label: "None" },
                         ...CLEARANCE_LEVELS,
@@ -2433,7 +2430,7 @@ export function ProfileDetailPanel({
               ) : (
                 <>
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4 border border-black/5 dark:border-white/5">
+                    <div className="bg-secondary rounded-xl p-4 border border-border/60">
                       <div className="flex items-center gap-2 text-foreground/50 text-xs mb-2">
                         <Briefcase className="h-3.5 w-3.5" />
                         <span>Job Title</span>
@@ -2445,7 +2442,7 @@ export function ProfileDetailPanel({
                         {profile.service_category}
                       </p>
                     </div>
-                    <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4 border border-black/5 dark:border-white/5">
+                    <div className="bg-secondary rounded-xl p-4 border border-border/60">
                       <div className="flex items-center gap-2 text-foreground/50 text-xs mb-2">
                         <Clock className="h-3.5 w-3.5" />
                         <span>Experience</span>
@@ -2458,7 +2455,7 @@ export function ProfileDetailPanel({
                     </div>
                   </div>
                   {profile.industry_category && (
-                    <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4 border border-black/5 dark:border-white/5">
+                    <div className="bg-secondary rounded-xl p-4 border border-border/60">
                       <div className="flex items-center gap-2 text-foreground/50 text-xs mb-2">
                         <Briefcase className="h-3.5 w-3.5" />
                         <span>Industry</span>
@@ -2472,7 +2469,7 @@ export function ProfileDetailPanel({
                             <Badge
                               key={i}
                               variant="outline"
-                              className="bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/30"
+                              className="bg-accent text-accent-foreground border-transparent"
                             >
                               {tag}
                             </Badge>
@@ -2481,7 +2478,7 @@ export function ProfileDetailPanel({
                     </div>
                   )}
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4 border border-black/5 dark:border-white/5">
+                    <div className="bg-secondary rounded-xl p-4 border border-border/60">
                       <div className="flex items-center gap-2 text-foreground/50 text-xs mb-2">
                         <Shield className="h-3.5 w-3.5" />
                         <span>Clearance</span>
@@ -2492,13 +2489,13 @@ export function ProfileDetailPanel({
                         <span className="text-foreground/40 text-sm">None</span>
                       )}
                     </div>
-                    <div className="bg-black/5 dark:bg-white/5 rounded-xl p-4 border border-black/5 dark:border-white/5">
+                    <div className="bg-secondary rounded-xl p-4 border border-border/60">
                       <div className="flex items-center gap-2 text-foreground/50 text-xs mb-2">
                         <DollarSign className="h-3.5 w-3.5" />
                         <span>Requested Salary</span>
                       </div>
                       {profile.requested_salary ? (
-                        <p className="text-emerald-400 font-semibold">
+                        <p className="text-foreground font-semibold">
                           ${profile.requested_salary.toLocaleString()}
                           <span className="text-foreground/40 font-normal">
                             /yr
@@ -2519,8 +2516,8 @@ export function ProfileDetailPanel({
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="p-1.5 bg-amber-500/20 rounded-lg">
-                    <Building className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                  <div className="p-1.5 bg-accent rounded-lg">
+                    <Building className="h-3.5 w-3.5 text-accent-foreground" />
                   </div>
                   <h4 className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
                     Work History
@@ -2529,7 +2526,7 @@ export function ProfileDetailPanel({
                 {isEditMode && (
                   <button
                     onClick={addCompany}
-                    className="p-1.5 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 hover:bg-amber-500/30 transition-colors"
+                    className="p-1.5 rounded-lg bg-accent text-accent-foreground hover:bg-accent/70 transition-colors"
                   >
                     <Plus className="h-3.5 w-3.5" />
                   </button>
@@ -2543,12 +2540,12 @@ export function ProfileDetailPanel({
                       <Input
                         value={company.name}
                         onChange={(e) => updateCompany(i, e.target.value)}
-                        className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground flex-1"
+                        className="bg-secondary border-border text-foreground flex-1"
                         placeholder="Company name"
                       />
                       <button
                         onClick={() => removeCompany(i)}
-                        className="p-2 rounded-lg text-red-600 dark:text-red-400/60 hover:text-red-600 dark:text-red-400 hover:bg-red-500/10 transition-colors"
+                        className="p-2 rounded-lg text-destructive/60 hover:text-destructive hover:bg-destructive/10 transition-colors"
                       >
                         <Minus className="h-4 w-4" />
                       </button>
@@ -2561,7 +2558,7 @@ export function ProfileDetailPanel({
                   )}
                 </div>
               ) : profile.companies.length > 0 ? (
-                <div className="bg-black/5 dark:bg-white/5 rounded-xl border border-black/5 dark:border-white/5 divide-y divide-black/5 dark:divide-white/5">
+                <div className="bg-secondary rounded-xl border border-border/60 divide-y divide-border/60">
                   {profile.companies.map((company, i) => (
                     <div key={i} className="flex items-center gap-3 px-4 py-3">
                       <Building className="h-4 w-4 text-foreground/30" />
@@ -2580,8 +2577,8 @@ export function ProfileDetailPanel({
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="p-1.5 bg-indigo-500/20 rounded-lg">
-                    <Award className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+                  <div className="p-1.5 bg-accent rounded-lg">
+                    <Award className="h-3.5 w-3.5 text-accent-foreground" />
                   </div>
                   <h4 className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
                     Skills & Expertise
@@ -2590,7 +2587,7 @@ export function ProfileDetailPanel({
                 {isEditMode && (
                   <button
                     onClick={addSkill}
-                    className="p-1.5 rounded-lg bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/30 transition-colors"
+                    className="p-1.5 rounded-lg bg-accent text-accent-foreground hover:bg-accent/70 transition-colors"
                   >
                     <Plus className="h-3.5 w-3.5" />
                   </button>
@@ -2604,12 +2601,12 @@ export function ProfileDetailPanel({
                       <Input
                         value={skill.name}
                         onChange={(e) => updateSkill(i, e.target.value)}
-                        className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground flex-1"
+                        className="bg-secondary border-border text-foreground flex-1"
                         placeholder="Skill name"
                       />
                       <button
                         onClick={() => removeSkill(i)}
-                        className="p-2 rounded-lg text-red-600 dark:text-red-400/60 hover:text-red-600 dark:text-red-400 hover:bg-red-500/10 transition-colors"
+                        className="p-2 rounded-lg text-destructive/60 hover:text-destructive hover:bg-destructive/10 transition-colors"
                       >
                         <Minus className="h-4 w-4" />
                       </button>
@@ -2627,7 +2624,7 @@ export function ProfileDetailPanel({
                     <Badge
                       key={i}
                       variant="outline"
-                      className="bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/30 hover:bg-indigo-500/20 transition-colors"
+                      className="bg-accent text-accent-foreground border-transparent hover:bg-accent/70 transition-colors"
                     >
                       {skill.name}
                     </Badge>
@@ -2645,8 +2642,8 @@ export function ProfileDetailPanel({
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="p-1.5 bg-amber-500/20 rounded-lg">
-                    <Award className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                  <div className="p-1.5 bg-accent rounded-lg">
+                    <Award className="h-3.5 w-3.5 text-accent-foreground" />
                   </div>
                   <h4 className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
                     Certifications
@@ -2655,7 +2652,7 @@ export function ProfileDetailPanel({
                 {isEditMode && (
                   <button
                     onClick={addCertification}
-                    className="p-1.5 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 hover:bg-amber-500/30 transition-colors"
+                    className="p-1.5 rounded-lg bg-accent text-accent-foreground hover:bg-accent/70 transition-colors"
                   >
                     <Plus className="h-3.5 w-3.5" />
                   </button>
@@ -2669,12 +2666,12 @@ export function ProfileDetailPanel({
                       <Input
                         value={cert}
                         onChange={(e) => updateCertification(i, e.target.value)}
-                        className="bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 text-foreground flex-1"
+                        className="bg-secondary border-border text-foreground flex-1"
                         placeholder="Certification name"
                       />
                       <button
                         onClick={() => removeCertification(i)}
-                        className="p-2 rounded-lg text-red-600 dark:text-red-400/60 hover:text-red-600 dark:text-red-400 hover:bg-red-500/10 transition-colors"
+                        className="p-2 rounded-lg text-destructive/60 hover:text-destructive hover:bg-destructive/10 transition-colors"
                       >
                         <Minus className="h-4 w-4" />
                       </button>
@@ -2692,7 +2689,7 @@ export function ProfileDetailPanel({
                     <Badge
                       key={i}
                       variant="outline"
-                      className="bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30 hover:bg-amber-500/20 transition-colors"
+                      className="bg-accent text-accent-foreground border-transparent hover:bg-accent/70 transition-colors"
                     >
                       <Award className="h-3 w-3 mr-1" />
                       {cert}
@@ -2708,16 +2705,16 @@ export function ProfileDetailPanel({
 
             {/* Metadata (view mode only) */}
             {!isEditMode && (
-              <div className="pt-4 border-t border-white/10 space-y-3">
+              <div className="pt-4 border-t border-border space-y-3">
                 <div className="flex items-center gap-2">
-                  <div className="p-1.5 bg-slate-500/20 rounded-lg">
-                    <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                  <div className="p-1.5 bg-accent rounded-lg">
+                    <Calendar className="h-3.5 w-3.5 text-accent-foreground" />
                   </div>
                   <h4 className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
                     Record Info
                   </h4>
                 </div>
-                <div className="bg-black/5 dark:bg-white/5 rounded-xl border border-black/5 dark:border-white/5 divide-y divide-black/5 dark:divide-white/5 text-sm">
+                <div className="bg-secondary rounded-xl border border-border/60 divide-y divide-border/60 text-sm">
                   <div className="flex justify-between px-4 py-2.5">
                     <span className="text-foreground/40">Date received</span>
                     <span className="text-foreground/70">
@@ -2742,38 +2739,38 @@ export function ProfileDetailPanel({
 
             {/* Delete Section (view mode only) */}
             {!isEditMode && (
-              <div className="pt-4 border-t border-white/10">
+              <div className="pt-4 border-t border-border">
                 {!showDeleteConfirm ? (
                   <button
                     onClick={() => setShowDeleteConfirm(true)}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400/80 hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-600 dark:text-red-400 transition-all"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive hover:bg-destructive/20 hover:border-destructive/30 transition-colors"
                   >
                     <Trash2 className="h-4 w-4" />
                     Delete Profile
                   </button>
                 ) : (
-                  <div className="space-y-3 p-4 bg-red-500/10 rounded-xl border border-red-500/20">
-                    <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
+                  <div className="space-y-3 p-4 bg-destructive/10 rounded-xl border border-destructive/20">
+                    <div className="flex items-center gap-2 text-destructive">
                       <Trash2 className="h-4 w-4" />
                       <p className="text-sm font-medium">
                         Delete this profile?
                       </p>
                     </div>
-                    <p className="text-red-300/70 text-sm">
+                    <p className="text-destructive/70 text-sm">
                       This action cannot be undone. The candidate record will be
                       permanently removed.
                     </p>
                     <div className="flex gap-2">
                       <button
                         onClick={() => setShowDeleteConfirm(false)}
-                        className="flex-1 px-4 py-2.5 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground/60 hover:bg-black/10 dark:hover:bg-white/10 hover:text-foreground transition-all text-sm font-medium"
+                        className="flex-1 px-4 py-2.5 rounded-lg bg-secondary border border-border text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors text-sm font-medium"
                       >
                         Cancel
                       </button>
                       <button
                         onClick={handleDelete}
                         disabled={isDeleting}
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-red-500/30 border border-red-500/40 text-red-300 hover:bg-red-500/40 transition-all text-sm font-medium disabled:opacity-50"
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-destructive text-white hover:opacity-90 transition-opacity text-sm font-medium disabled:opacity-50"
                       >
                         {isDeleting ? "Deleting..." : "Yes, Delete"}
                       </button>

@@ -4,7 +4,6 @@
 import { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  FileText,
   Filter,
   X,
   RefreshCw,
@@ -129,31 +128,21 @@ export function JobDescriptionsDashboard() {
   }, [selectedJd, removeJobDescription]);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5">
+    <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-6 space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <div className="absolute inset-0 rounded-xl bg-linear-to-br from-indigo-500 to-violet-600 blur-md opacity-40" />
-            <div className="relative p-2.5 bg-linear-to-br from-indigo-500 to-violet-600 rounded-xl shadow-lg shadow-indigo-500/30">
-              <FileText className="h-5 w-5 text-white" />
-            </div>
-          </div>
-          <div>
-            <h1 className="text-xl font-bold tracking-tight">
-              <span className="shimmer-text">Job Descriptions</span>
-            </h1>
-            <p className="text-xs text-foreground/40 mt-0.5">
-              Upload, manage & match candidates across {sortedJds.length}{" "}
-              job{" "}
-              {sortedJds.length === 1 ? "description" : "descriptions"}
-            </p>
-          </div>
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div>
+          <h1 className="font-display text-2xl text-foreground">Job Descriptions</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Upload, manage & match candidates across {sortedJds.length}{" "}
+            job{" "}
+            {sortedJds.length === 1 ? "description" : "descriptions"}
+          </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => navigate("/job-descriptions/archived")}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all border border-violet-400/30 text-violet-500 dark:text-violet-300 hover:text-violet-600 dark:hover:text-violet-200 hover:bg-violet-400/10"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors border border-border text-muted-foreground hover:text-foreground hover:bg-secondary"
           >
             <Archive className="h-3.5 w-3.5" />
             Archive Pool
@@ -164,23 +153,23 @@ export function JobDescriptionsDashboard() {
           />
           <button
             onClick={refresh}
-            className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 text-foreground/50 hover:text-foreground transition-all"
+            className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
             title="Refresh"
           >
             <RefreshCw className="h-4 w-4" />
           </button>
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
               showFilters || activeFilterCount > 0
-                ? "bg-indigo-500/20 border border-indigo-500/30 text-indigo-600 dark:text-indigo-300"
-                : "border border-black/10 dark:border-white/10 text-foreground/50 hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5"
+                ? "bg-accent text-accent-foreground"
+                : "border border-border text-muted-foreground hover:text-foreground hover:bg-secondary"
             }`}
           >
             <Filter className="h-3.5 w-3.5" />
             Filters
             {activeFilterCount > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-indigo-500 text-white text-[10px] font-bold leading-none">
+              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold leading-none">
                 {activeFilterCount}
               </span>
             )}
@@ -190,8 +179,8 @@ export function JobDescriptionsDashboard() {
 
       {/* Error banner */}
       {error && (
-        <div className="rounded-xl bg-red-500/10 border border-red-500/20 p-4">
-          <p className="text-sm text-red-600 dark:text-red-300">
+        <div className="rounded-xl bg-destructive/10 border border-destructive/20 p-4">
+          <p className="text-sm text-destructive">
             {error.message}
           </p>
         </div>
@@ -199,10 +188,10 @@ export function JobDescriptionsDashboard() {
 
       {/* Filters */}
       {showFilters && (
-        <div className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-black/7 dark:border-white/7 p-4">
+        <div className="bg-card rounded-2xl border border-border p-4">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="space-y-1.5">
-              <label className="block text-[11px] font-semibold uppercase tracking-wider text-foreground/40">
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Job Title
               </label>
               <SearchableSelect
@@ -213,7 +202,7 @@ export function JobDescriptionsDashboard() {
               />
             </div>
             <div className="space-y-1.5">
-              <label className="block text-[11px] font-semibold uppercase tracking-wider text-foreground/40">
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Industry
               </label>
               <SearchableSelect
@@ -224,7 +213,7 @@ export function JobDescriptionsDashboard() {
               />
             </div>
             <div className="space-y-1.5">
-              <label className="block text-[11px] font-semibold uppercase tracking-wider text-foreground/40">
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Clearance
               </label>
               <SearchableSelect
@@ -235,7 +224,7 @@ export function JobDescriptionsDashboard() {
               />
             </div>
             <div className="space-y-1.5">
-              <label className="block text-[11px] font-semibold uppercase tracking-wider text-foreground/40">
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 State
               </label>
               <SearchableSelect
@@ -250,10 +239,10 @@ export function JobDescriptionsDashboard() {
             {duplicateCount > 0 && (
               <button
                 onClick={() => setShowDuplicatesOnly(!showDuplicatesOnly)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                   showDuplicatesOnly
-                    ? "bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300"
-                    : "border border-black/6 dark:border-white/6 text-foreground/40 hover:text-amber-600 dark:hover:text-amber-400 hover:border-amber-500/20"
+                    ? "bg-warning/15 border border-warning/30 text-warning"
+                    : "border border-border text-muted-foreground hover:text-warning hover:border-warning/30"
                 }`}
               >
                 <AlertTriangle className="h-3.5 w-3.5" />
@@ -261,8 +250,8 @@ export function JobDescriptionsDashboard() {
                 <span
                   className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
                     showDuplicatesOnly
-                      ? "bg-amber-500 text-white"
-                      : "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                      ? "bg-warning text-white"
+                      : "bg-warning/15 text-warning"
                   }`}
                 >
                   {duplicateCount}
@@ -272,7 +261,7 @@ export function JobDescriptionsDashboard() {
             {activeFilterCount > 0 && (
               <button
                 onClick={clearFilters}
-                className="text-xs text-foreground/40 hover:text-foreground flex items-center gap-1 transition-colors ml-auto"
+                className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors ml-auto"
               >
                 <X className="h-3 w-3" />
                 Clear filters

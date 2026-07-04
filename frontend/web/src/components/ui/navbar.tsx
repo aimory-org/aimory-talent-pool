@@ -9,6 +9,7 @@ import {
   ClipboardList,
 } from "lucide-react";
 import { useTheme } from "@/lib/theme";
+import { logoPlum, logoWhite } from "@/assets/brand";
 
 interface UserInfo {
   username: string;
@@ -40,14 +41,36 @@ export function NavBar({ user, onSignOut }: NavBarProps) {
     .toUpperCase();
 
   return (
-    <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl border-b border-black/6 dark:border-white/6 sticky top-0 z-50 shadow-sm shadow-black/5">
-      {/* Top accent line */}
-      <div className="absolute inset-x-0 top-0 h-0.5 bg-linear-to-r from-indigo-500 via-violet-500 to-purple-500" />
+    <header className="bg-background/95 backdrop-blur-sm border-b border-border sticky top-0 z-50">
+      <div className="max-w-[1600px] mx-auto px-3 sm:px-4 md:px-6">
+        <div className="flex items-center justify-between h-16 gap-2 sm:gap-4">
+          {/* Brand — logo lockup image cropped (top-aligned, container shorter
+              than the image) to hide the baked-in tagline line, plus our own
+              product subtitle in its place. */}
+          <Link to="/" className="flex flex-col items-center shrink-0 gap-0.5">
+            <div className="h-9 overflow-hidden flex items-start">
+              <img
+                src={logoPlum}
+                alt="Aimory Consulting"
+                className="h-16 w-auto shrink-0 dark:hidden"
+              />
+              <img
+                src={logoWhite}
+                alt="Aimory Consulting"
+                className="hidden h-16 w-auto shrink-0 dark:block"
+              />
+            </div>
+            <span className="hidden sm:flex items-center gap-1.5">
+              <span className="h-px w-2.5 bg-border-strong" />
+              <span className="text-[10px] font-normal uppercase tracking-[0.2em] text-muted-foreground whitespace-nowrap">
+                Recruiting Hub
+              </span>
+              <span className="h-px w-2.5 bg-border-strong" />
+            </span>
+          </Link>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="flex items-center justify-between h-16">
           {/* Nav Items */}
-          <nav className="flex items-center gap-1">
+          <nav className="flex items-center gap-0.5 sm:gap-1">
             {navItems.map(({ path, label, icon: Icon }) => {
               const isActive =
                 path === "/"
@@ -57,25 +80,25 @@ export function NavBar({ user, onSignOut }: NavBarProps) {
                 <Link
                   key={path}
                   to={path}
-                  className={`relative flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 group ${
+                  className={`relative flex items-center gap-1.5 px-2 sm:px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-150 group ${
                     isActive
-                      ? "text-indigo-600 dark:text-indigo-400"
-                      : "text-foreground/50 hover:text-foreground"
+                      ? "text-primary"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   {/* Hover bg */}
                   <span
-                    className={`absolute inset-0 rounded-lg transition-all duration-200 ${
+                    className={`absolute inset-0 rounded-lg transition-colors duration-150 ${
                       isActive
-                        ? "bg-indigo-500/10"
-                        : "bg-transparent group-hover:bg-black/5 dark:group-hover:bg-white/5"
+                        ? "bg-accent"
+                        : "bg-transparent group-hover:bg-secondary"
                     }`}
                   />
                   <Icon className="w-3.5 h-3.5 relative" />
-                  <span className="hidden sm:inline relative">{label}</span>
-                  {/* Active underline dot */}
+                  <span className="hidden lg:inline relative">{label}</span>
+                  {/* Active underline */}
                   {isActive && (
-                    <span className="absolute -bottom-[1px] left-1/2 -translate-x-1/2 w-4 h-0.5 rounded-full bg-linear-to-r from-indigo-500 to-violet-500" />
+                    <span className="absolute -bottom-[1px] left-1/2 -translate-x-1/2 w-4 h-0.5 rounded-full bg-primary" />
                   )}
                 </Link>
               );
@@ -83,40 +106,40 @@ export function NavBar({ user, onSignOut }: NavBarProps) {
           </nav>
 
           {/* Right: User + Actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             {/* Theme toggle */}
             <button
               onClick={() =>
                 setTheme(resolvedTheme === "dark" ? "light" : "dark")
               }
-              className="relative flex items-center justify-center w-8 h-8 rounded-lg text-foreground/40 hover:text-foreground transition-all duration-200 hover:bg-black/5 dark:hover:bg-white/5"
+              className="relative flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground hover:text-foreground transition-colors duration-150 hover:bg-secondary"
               title={`Switch to ${resolvedTheme === "dark" ? "light" : "dark"} mode`}
             >
               {resolvedTheme === "dark" ? (
-                <Sun className="w-4 h-4 transition-transform duration-300 hover:rotate-45" />
+                <Sun className="w-4 h-4" />
               ) : (
-                <Moon className="w-4 h-4 transition-transform duration-300 hover:-rotate-12" />
+                <Moon className="w-4 h-4" />
               )}
             </button>
 
-            <div className="h-5 w-px bg-black/10 dark:bg-white/10" />
+            <div className="hidden sm:block h-5 w-px bg-border" />
 
             {/* User chip */}
-            <div className="flex items-center gap-2 pl-1">
-              <div className="h-7 w-7 rounded-full bg-linear-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white font-semibold text-[11px] shadow-md shadow-indigo-500/30 shrink-0">
+            <div className="hidden sm:flex items-center gap-2 pl-1">
+              <div className="h-7 w-7 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold text-[11px] shrink-0">
                 {initials}
               </div>
-              <span className="text-sm text-foreground/60 hidden md:block max-w-[140px] truncate">
+              <span className="text-sm text-muted-foreground hidden md:block max-w-[140px] truncate">
                 {safeName}
               </span>
             </div>
 
-            <div className="h-5 w-px bg-black/10 dark:bg-white/10" />
+            <div className="hidden sm:block h-5 w-px bg-border" />
 
             {/* Sign out */}
             <button
               onClick={onSignOut}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium text-foreground/40 hover:text-red-500 hover:bg-red-500/8 transition-all duration-200"
+              className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/8 transition-colors duration-150"
               title="Sign out"
             >
               <LogOut className="w-3.5 h-3.5" />

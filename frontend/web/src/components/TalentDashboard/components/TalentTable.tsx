@@ -180,10 +180,10 @@ function StyledCheckbox({
         aria-label={ariaLabel}
       />
       <div
-        className={`h-4 w-4 rounded border-2 transition-all duration-150 flex items-center justify-center ${
+        className={`h-4 w-4 rounded border-2 transition-colors duration-150 flex items-center justify-center ${
           checked || indeterminate
-            ? "bg-indigo-500 border-indigo-500 shadow-sm shadow-indigo-500/30"
-            : "border-foreground/20 dark:border-white/20 bg-transparent hover:border-indigo-400/60 dark:hover:border-indigo-400/60"
+            ? "bg-primary border-primary"
+            : "border-border-strong bg-transparent hover:border-primary/60"
         }`}
       >
         {indeterminate && !checked ? (
@@ -226,15 +226,20 @@ export function TalentTable({
     selectionEnabled && profiles.some((p) => selectedPks!.has(p.pk)) && !allOnPageSelected;
 
   return (
-    <div className="relative z-10 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-black/7 dark:border-white/7 overflow-hidden shadow-xl shadow-black/5 animate-slide-in-up">
-      {/* Top shimmer line */}
-      <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-indigo-500/60 to-transparent" />
-      <div className="overflow-x-auto">
-        <Table className="table-fixed w-full">
+    <div className="relative z-10 bg-card rounded-2xl border border-border overflow-hidden animate-slide-in-up">
+      {/*
+        Fixed pixel widths (not percentages) so every column keeps enough
+        room for its worst-case content — e.g. "Placed at Other Company" or
+        "Yankee White" — sized to fit within ~1200px (a 1280px laptop screen)
+        without needing horizontal scroll. The Table component already
+        provides its own overflow-x-auto wrapper as a fallback for narrower
+        viewports.
+      */}
+      <Table className="table-fixed w-full min-w-[1210px]">
           <TableHeader>
-            <TableRow className="border-black/10 dark:border-white/10 hover:bg-transparent">
+            <TableRow className="border-border hover:bg-transparent">
               {selectionEnabled && (
-                <TableHead className="w-[40px] pl-4">
+                <TableHead className="w-[44px] pl-4">
                   <StyledCheckbox
                     checked={allOnPageSelected}
                     indeterminate={someOnPageSelected}
@@ -245,7 +250,7 @@ export function TalentTable({
                   />
                 </TableHead>
               )}
-              <TableHead className={`text-foreground/60 ${selectionEnabled ? "w-[20%]" : "w-[22%]"}`}>
+              <TableHead className="text-muted-foreground w-[220px]">
                 <SortableHeader
                   label="Candidate"
                   field="name"
@@ -254,7 +259,7 @@ export function TalentTable({
                   onSort={onSort}
                 />
               </TableHead>
-              <TableHead className="text-foreground/60 w-[15%]">
+              <TableHead className="text-muted-foreground w-[160px]">
                 <SortableHeader
                   label="Job Title"
                   field="job_title"
@@ -263,7 +268,7 @@ export function TalentTable({
                   onSort={onSort}
                 />
               </TableHead>
-              <TableHead className="text-foreground/60 w-[12%]">
+              <TableHead className="text-muted-foreground w-[130px]">
                 <SortableHeader
                   label="Location"
                   field="location_state"
@@ -272,7 +277,7 @@ export function TalentTable({
                   onSort={onSort}
                 />
               </TableHead>
-              <TableHead className="text-foreground/60 w-[10%]">
+              <TableHead className="text-muted-foreground w-[140px]">
                 <SortableHeader
                   label="Clearance"
                   field="clearance_level"
@@ -281,7 +286,7 @@ export function TalentTable({
                   onSort={onSort}
                 />
               </TableHead>
-              <TableHead className="text-foreground/60 w-[11%]">
+              <TableHead className="text-muted-foreground w-[110px]">
                 <SortableHeader
                   label="Req. Salary"
                   field="requested_salary"
@@ -290,7 +295,7 @@ export function TalentTable({
                   onSort={onSort}
                 />
               </TableHead>
-              <TableHead className="text-foreground/60 w-[8%]">
+              <TableHead className="text-muted-foreground w-[70px]">
                 <SortableHeader
                   label="Exp."
                   field="years_of_experience"
@@ -299,7 +304,7 @@ export function TalentTable({
                   onSort={onSort}
                 />
               </TableHead>
-              <TableHead className="text-foreground/60 w-[14%]">
+              <TableHead className="text-muted-foreground w-[230px]">
                 <SortableHeader
                   label="Status"
                   field="status"
@@ -308,7 +313,7 @@ export function TalentTable({
                   onSort={onSort}
                 />
               </TableHead>
-              <TableHead className="text-foreground/60 w-[8%]">
+              <TableHead className="text-muted-foreground w-[100px]">
                 <SortableHeader
                   label="Received"
                   field="date_received"
@@ -327,8 +332,8 @@ export function TalentTable({
                     {isLoading ? (
                       <>
                         <div className="relative">
-                          <div className="h-12 w-12 border-2 border-indigo-500/30 rounded-full" />
-                          <div className="absolute inset-0 h-12 w-12 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                          <div className="h-12 w-12 border-2 border-primary/25 rounded-full" />
+                          <div className="absolute inset-0 h-12 w-12 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                         </div>
                         <div className="text-center">
                           <p className="text-foreground/60 font-medium">
@@ -342,11 +347,11 @@ export function TalentTable({
                     ) : (
                       <>
                         <div className="relative">
-                          <div className="p-4 bg-gray-200/50 dark:bg-slate-800/50 rounded-2xl">
-                            <Users className="h-10 w-10 text-foreground/20" />
+                          <div className="p-4 bg-secondary rounded-2xl">
+                            <Users className="h-10 w-10 text-muted-foreground/50" />
                           </div>
-                          <div className="absolute -top-1 -right-1 p-1.5 bg-gray-200 dark:bg-slate-800 rounded-full border border-black/10 dark:border-white/10">
-                            <Search className="h-4 w-4 text-foreground/30" />
+                          <div className="absolute -top-1 -right-1 p-1.5 bg-secondary rounded-full border border-border">
+                            <Search className="h-4 w-4 text-muted-foreground" />
                           </div>
                         </div>
                         <div className="text-center max-w-sm">
@@ -362,7 +367,7 @@ export function TalentTable({
                         {activeFilterCount > 0 && (
                           <button
                             onClick={onClearFilters}
-                            className="mt-2 px-4 py-2 rounded-lg bg-indigo-500/20 border border-indigo-500/30 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-500/30 transition-all text-sm font-medium flex items-center gap-2"
+                            className="mt-2 px-4 py-2 rounded-lg bg-accent text-accent-foreground hover:bg-accent/70 transition-colors text-sm font-medium flex items-center gap-2"
                           >
                             <X className="h-4 w-4" />
                             Clear all filters
@@ -377,7 +382,7 @@ export function TalentTable({
               profiles.map((profile) => (
                 <TableRow
                   key={profile.pk}
-                  className={`border-black/4 dark:border-white/4 cursor-pointer hover:bg-indigo-500/4 dark:hover:bg-indigo-400/4 transition-all duration-150 group ${selectionEnabled && selectedPks!.has(profile.pk) ? "bg-indigo-500/6 dark:bg-indigo-400/6" : ""}`}
+                  className={`border-border/60 cursor-pointer hover:bg-secondary transition-colors duration-150 group ${selectionEnabled && selectedPks!.has(profile.pk) ? "bg-accent" : ""}`}
                   onClick={() => onSelectProfile(profile)}
                 >
                   {selectionEnabled && (
@@ -396,7 +401,7 @@ export function TalentTable({
                   <TableCell>
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="relative shrink-0">
-                        <div className="h-9 w-9 rounded-full bg-linear-to-br from-indigo-500/40 to-violet-600/40 flex items-center justify-center border border-indigo-500/20 dark:border-indigo-400/20 text-indigo-600 dark:text-indigo-300 font-semibold text-sm shadow-sm">
+                        <div className="h-9 w-9 rounded-full bg-accent flex items-center justify-center text-accent-foreground font-semibold text-sm">
                           {(profile.name || "?").charAt(0).toUpperCase()}
                         </div>
                         {(() => {
@@ -404,7 +409,7 @@ export function TalentTable({
                           if (warnings.length === 0) return null;
                           return (
                             <span
-                              className="absolute -top-1 -right-1 flex items-center justify-center h-4 w-4 rounded-full bg-amber-500 border-2 border-white dark:border-slate-800"
+                              className="absolute -top-1 -right-1 flex items-center justify-center h-4 w-4 rounded-full bg-warning border-2 border-card"
                               title={warnings
                                 .map((w) => WARNING_LABELS[w])
                                 .join(", ")}
@@ -417,7 +422,7 @@ export function TalentTable({
                         })()}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="font-medium text-foreground group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors truncate">
+                        <p className="font-medium text-foreground group-hover:text-primary transition-colors truncate">
                           {searchActive && searchTerm && profile.name ? (
                             <NamePrefixHighlight
                               name={profile.name}
@@ -457,9 +462,16 @@ export function TalentTable({
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-1.5 text-foreground/70">
-                      <MapPin className="h-3.5 w-3.5 text-foreground/40" />
-                      <span>
+                    <div className="flex items-center gap-1.5 min-w-0 text-foreground/70">
+                      <MapPin className="h-3.5 w-3.5 text-foreground/40 shrink-0" />
+                      <span
+                        className="truncate"
+                        title={
+                          profile.location?.city
+                            ? `${profile.location.city}, ${profile.location_state || ""}`
+                            : profile.location_state || undefined
+                        }
+                      >
                         {profile.location?.city
                           ? `${profile.location.city}, `
                           : ""}
@@ -472,7 +484,7 @@ export function TalentTable({
                   </TableCell>
                   <TableCell className="text-foreground/70 font-medium">
                     {profile.requested_salary ? (
-                      <span className="text-emerald-400">
+                      <span className="text-foreground">
                         ${profile.requested_salary.toLocaleString()}
                         <span className="text-foreground/40 text-xs">/yr</span>
                       </span>
@@ -507,8 +519,7 @@ export function TalentTable({
               ))
             )}
           </TableBody>
-        </Table>
-      </div>
+      </Table>
     </div>
   );
 }

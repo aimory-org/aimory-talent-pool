@@ -11,9 +11,7 @@ interface ClearanceBadgeProps {
 
 export function ClearanceBadge({ level }: ClearanceBadgeProps) {
   if (!level) return null;
-  const cls =
-    clearanceColors[level] ||
-    "bg-slate-500/15 text-slate-600 dark:text-slate-300 border-slate-500/25";
+  const cls = clearanceColors[level] || "bg-secondary text-muted-foreground border-transparent";
   return (
     <span
       className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold border tracking-wide ${cls}`}

@@ -69,61 +69,58 @@ const FIELD_LABELS: Record<string, string> = {
   archived: "archived status",
 };
 
+// Nine activity types collapsed to the app's restrained semantic set —
+// the icon + label distinguish the specific action, color only signals
+// its general nature (neutral edit / meaningful change / addition /
+// removal / destructive).
 const ACTION_CONFIG: Record<
   ActionType,
   { label: string; badge: string; dot: string }
 > = {
   edit: {
     label: "Edit",
-    badge: "bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20",
-    dot: "bg-blue-500",
+    badge: "bg-secondary text-muted-foreground border-transparent",
+    dot: "bg-muted-foreground",
   },
   status_change: {
     label: "Status Change",
-    badge:
-      "bg-violet-500/10 text-violet-700 dark:text-violet-300 border-violet-500/20",
-    dot: "bg-violet-500",
+    badge: "bg-accent text-accent-foreground border-transparent",
+    dot: "bg-primary",
   },
   delete: {
     label: "Delete",
-    badge: "bg-red-500/10 text-red-700 dark:text-red-300 border-red-500/20",
-    dot: "bg-red-500",
+    badge: "bg-destructive/10 text-destructive border-destructive/20",
+    dot: "bg-destructive",
   },
   tag_add: {
     label: "Tag Added",
-    badge:
-      "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20",
-    dot: "bg-emerald-500",
+    badge: "bg-success/10 text-success border-success/20",
+    dot: "bg-success",
   },
   tag_remove: {
     label: "Tag Removed",
-    badge:
-      "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20",
-    dot: "bg-amber-500",
+    badge: "bg-warning/10 text-warning border-warning/20",
+    dot: "bg-warning",
   },
   new_candidate: {
     label: "New Candidate",
-    badge:
-      "bg-teal-500/10 text-teal-700 dark:text-teal-300 border-teal-500/20",
-    dot: "bg-teal-500",
+    badge: "bg-success/10 text-success border-success/20",
+    dot: "bg-success",
   },
   new_job_description: {
     label: "New Job Description",
-    badge:
-      "bg-violet-500/10 text-violet-700 dark:text-violet-300 border-violet-500/20",
-    dot: "bg-violet-500",
+    badge: "bg-accent text-accent-foreground border-transparent",
+    dot: "bg-primary",
   },
   archive_jd: {
     label: "Archived",
-    badge:
-      "bg-orange-500/10 text-orange-700 dark:text-orange-300 border-orange-500/20",
-    dot: "bg-orange-500",
+    badge: "bg-warning/10 text-warning border-warning/20",
+    dot: "bg-warning",
   },
   unarchive_jd: {
     label: "Unarchived",
-    badge:
-      "bg-orange-300/10 text-orange-500 dark:text-orange-200 border-orange-400/20",
-    dot: "bg-orange-400",
+    badge: "bg-secondary text-muted-foreground border-transparent",
+    dot: "bg-muted-foreground",
   },
 };
 
@@ -138,14 +135,6 @@ const ACTION_FILTERS: { value: ActionType | "all"; label: string }[] = [
   { value: "tag_remove", label: "Tags Removed" },
   { value: "archive_jd", label: "JD Archived" },
   { value: "unarchive_jd", label: "JD Unarchived" },
-];
-
-const AVATAR_COLORS = [
-  "from-indigo-500 to-violet-600",
-  "from-emerald-500 to-teal-600",
-  "from-rose-500 to-pink-600",
-  "from-amber-500 to-orange-600",
-  "from-sky-500 to-blue-600",
 ];
 
 function formatDate(iso: string) {
@@ -164,11 +153,6 @@ function formatTime(iso: string) {
     minute: "2-digit",
     hour12: true,
   });
-}
-
-function avatarColor(name: string) {
-  const hash = [...name].reduce((acc, c) => acc + c.charCodeAt(0), 0);
-  return AVATAR_COLORS[hash % AVATAR_COLORS.length];
 }
 
 function getInitials(name: string) {
@@ -437,7 +421,7 @@ export function RecruiterActivity() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by recruiter, candidate, or notes..."
-            className="w-full h-10 pl-10 pr-4 rounded-xl bg-black/5 dark:bg-white/5 border border-black/7 dark:border-white/7 text-sm text-foreground placeholder-foreground/30 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/30 transition-all"
+            className="w-full h-10 pl-10 pr-4 rounded-xl bg-secondary border border-border text-sm text-foreground placeholder-foreground/30 focus:outline-none focus:ring-2 focus:ring-ring/40 focus:border-ring transition-colors"
           />
           {search && (
             <button
@@ -452,13 +436,13 @@ export function RecruiterActivity() {
         <div className="relative">
           <button
             onClick={() => setShowFilter((v) => !v)}
-            className="flex items-center gap-2 h-10 px-4 rounded-xl border border-black/7 dark:border-white/7 bg-black/5 dark:bg-white/5 text-sm font-medium text-foreground/60 hover:text-foreground hover:bg-black/10 dark:hover:bg-white/10 transition-all"
+            className="flex items-center gap-2 h-10 px-4 rounded-xl border border-border bg-secondary text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
           >
             <span>{currentAction?.label}</span>
             <ChevronDown className="h-3.5 w-3.5" />
           </button>
           {showFilter && (
-            <div className="absolute right-0 mt-2 w-44 rounded-xl border border-black/7 dark:border-white/7 bg-white dark:bg-slate-800 shadow-xl shadow-black/10 z-20 py-1 animate-slide-in-up">
+            <div className="absolute right-0 mt-2 w-44 rounded-xl border border-border bg-popover shadow-lg z-20 py-1 animate-slide-in-up">
               {ACTION_FILTERS.map((filterOption) => (
                 <button
                   key={filterOption.value}
@@ -468,8 +452,8 @@ export function RecruiterActivity() {
                   }}
                   className={`w-full text-left px-4 py-2 text-sm transition-colors ${
                     actionFilter === filterOption.value
-                      ? "text-indigo-600 dark:text-indigo-400 bg-indigo-500/10"
-                      : "text-foreground/60 hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5"
+                      ? "text-primary bg-accent"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary"
                   }`}
                 >
                   {filterOption.label}
@@ -482,7 +466,7 @@ export function RecruiterActivity() {
         <button
           onClick={() => void loadEvents()}
           title="Refresh recruiter activity"
-          className="h-10 w-10 shrink-0 rounded-xl border border-black/7 dark:border-white/7 bg-black/5 dark:bg-white/5 text-foreground/60 hover:text-foreground hover:bg-black/10 dark:hover:bg-white/10 transition-all flex items-center justify-center"
+          className="h-10 w-10 shrink-0 rounded-xl border border-border bg-secondary text-muted-foreground hover:text-foreground hover:bg-accent transition-colors flex items-center justify-center"
         >
           {isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -493,7 +477,7 @@ export function RecruiterActivity() {
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 p-3 mb-4 rounded-2xl border border-red-500/20 bg-red-500/8 text-sm text-red-600 dark:text-red-400">
+        <div className="flex items-center gap-2 p-3 mb-4 rounded-2xl border border-destructive/20 bg-destructive/8 text-sm text-destructive">
           <AlertCircle className="h-4 w-4 shrink-0" />
           Failed to load recruiter activity.
         </div>
@@ -525,26 +509,18 @@ export function RecruiterActivity() {
         ) : (
           paginatedEvents.map((event, index) => {
             const config = ACTION_CONFIG[event.action];
-            const gradient = avatarColor(event.recruiter_name);
             const isPipeline =
               event.action === "new_candidate" ||
               event.action === "new_job_description";
-            const avatarBg = isPipeline
-              ? event.action === "new_job_description"
-                ? "from-violet-500 to-purple-600"
-                : "from-teal-500 to-emerald-600"
-              : gradient;
 
             return (
               <div
                 key={event.id}
-                className="animate-fade-in flex gap-3 p-4 rounded-2xl border border-black/6 dark:border-white/6 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm hover:border-indigo-500/20 hover:bg-white/80 dark:hover:bg-slate-800/80 transition-all duration-200"
+                className="animate-fade-in flex gap-3 p-4 rounded-2xl border border-border/60 bg-card hover:bg-secondary transition-colors duration-150"
                 style={{ animationDelay: `${index * 30}ms` }}
               >
                 {/* Avatar */}
-                <div
-                  className={`shrink-0 h-9 w-9 rounded-xl bg-linear-to-br ${avatarBg} flex items-center justify-center text-white shadow-sm`}
-                >
+                <div className="shrink-0 h-9 w-9 rounded-xl bg-accent flex items-center justify-center text-accent-foreground">
                   {event.action === "new_candidate" ? (
                     <UserPlus className="w-4 h-4" />
                   ) : event.action === "new_job_description" ? (
@@ -593,23 +569,23 @@ export function RecruiterActivity() {
                   {/* Row 3: diff chips or description */}
                   {event.old_value && event.new_value ? (
                     <div className="flex items-center gap-2 text-xs flex-wrap">
-                      <span className="px-2 py-0.5 rounded bg-red-500/8 text-red-600 dark:text-red-400 line-through font-mono max-w-[180px] truncate">
+                      <span className="px-2 py-0.5 rounded bg-destructive/8 text-destructive line-through font-mono max-w-[180px] truncate">
                         {event.old_value}
                       </span>
                       <span className="text-foreground/30">&rarr;</span>
-                      <span className="px-2 py-0.5 rounded bg-emerald-500/8 text-emerald-700 dark:text-emerald-400 font-mono max-w-[180px] truncate">
+                      <span className="px-2 py-0.5 rounded bg-success/8 text-success font-mono max-w-[180px] truncate">
                         {event.new_value}
                       </span>
                     </div>
                   ) : event.new_value ? (
                     <div className="flex items-center gap-2 text-xs">
-                      <span className="px-2 py-0.5 rounded bg-emerald-500/8 text-emerald-700 dark:text-emerald-400 font-mono max-w-[220px] truncate">
+                      <span className="px-2 py-0.5 rounded bg-success/8 text-success font-mono max-w-[220px] truncate">
                         {event.new_value}
                       </span>
                     </div>
                   ) : event.old_value ? (
                     <div className="flex items-center gap-2 text-xs">
-                      <span className="px-2 py-0.5 rounded bg-red-500/8 text-red-600 dark:text-red-400 line-through font-mono max-w-[220px] truncate">
+                      <span className="px-2 py-0.5 rounded bg-destructive/8 text-destructive line-through font-mono max-w-[220px] truncate">
                         {event.old_value}
                       </span>
                     </div>

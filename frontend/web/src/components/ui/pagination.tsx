@@ -65,7 +65,7 @@ export function Pagination({
             className={cn(
               "h-8 min-w-8 px-2 flex items-center justify-center rounded-lg text-sm font-medium transition-all",
               page === currentPage
-                ? "bg-linear-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/25"
+                ? "bg-primary text-primary-foreground shadow-sm"
                 : "border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 text-foreground/60 hover:text-foreground hover:bg-black/10 dark:hover:bg-white/10",
             )}
           >

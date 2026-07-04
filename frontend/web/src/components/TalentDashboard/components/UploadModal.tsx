@@ -78,15 +78,7 @@ export function UploadModal({ isOpen, onClose, onUpload }: UploadModalProps) {
     }
   };
 
-  const getFileIcon = (file: File) => {
-    if (file.type === "application/pdf") {
-      return <FileText className="h-8 w-8 text-red-500" />;
-    }
-    if (file.type === "application/docx") {
-      return <FileText className="h-8 w-8 text-green-500" />;
-    }
-    return <Upload className="h-8 w-8 text-gray-500" />;
-  };
+  const getFileIcon = () => <FileText className="h-8 w-8 text-primary" />;
 
   if (!isOpen) return null;
 
@@ -100,7 +92,7 @@ export function UploadModal({ isOpen, onClose, onUpload }: UploadModalProps) {
 
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="w-full max-w-md rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-slate-800 p-6 shadow-2xl">
+        <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl">
           <div className="space-y-4">
             <div>
               <h2 className="text-xl font-semibold text-foreground">
@@ -121,22 +113,22 @@ export function UploadModal({ isOpen, onClose, onUpload }: UploadModalProps) {
                 border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
                 ${
                   isDragOver
-                    ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950/20"
-                    : "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
+                    ? "border-primary bg-accent"
+                    : "border-border-strong hover:border-muted-foreground"
                 }
-                ${selectedFile ? "bg-green-50 dark:bg-green-950/20 border-green-500" : ""}
+                ${selectedFile ? "bg-success/10 border-success" : ""}
               `}
             >
               {selectedFile ? (
                 <div className="space-y-2">
-                  <div className="flex justify-center">{getFileIcon(selectedFile)}</div>
+                  <div className="flex justify-center">{getFileIcon()}</div>
                   <p className="text-sm font-medium text-foreground truncate px-2">
                     {selectedFile.name}
                   </p>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <Upload className="h-8 w-8 text-gray-400 mx-auto" />
+                  <Upload className="h-8 w-8 text-muted-foreground mx-auto" />
                   <p className="text-sm text-muted-foreground">
                     Click to browse or drag and drop
                   </p>
@@ -158,9 +150,9 @@ export function UploadModal({ isOpen, onClose, onUpload }: UploadModalProps) {
 
             {/* Success message */}
             {uploadSuccess && (
-              <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-                <p className="text-sm text-emerald-600 dark:text-emerald-300">
+              <div className="rounded-lg bg-success/10 border border-success/20 px-3 py-2 flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-success shrink-0" />
+                <p className="text-sm text-success">
                   Uploaded! Processing will begin shortly.
                 </p>
               </div>
@@ -168,8 +160,8 @@ export function UploadModal({ isOpen, onClose, onUpload }: UploadModalProps) {
 
             {/* Error message */}
             {error && (
-              <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-2">
-                <p className="text-sm text-red-600 dark:text-red-300">
+              <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2">
+                <p className="text-sm text-destructive">
                   {error}
                 </p>
               </div>
@@ -180,7 +172,7 @@ export function UploadModal({ isOpen, onClose, onUpload }: UploadModalProps) {
                 type="button"
                 onClick={onClose}
                 disabled={isUploading}
-                className="flex-1 h-9 px-4 rounded-lg border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 text-sm font-medium text-foreground/60 hover:text-foreground hover:bg-black/10 dark:hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                className="flex-1 h-9 px-4 rounded-lg border border-border bg-secondary text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Cancel
               </button>
@@ -188,7 +180,7 @@ export function UploadModal({ isOpen, onClose, onUpload }: UploadModalProps) {
                 type="button"
                 onClick={handleSubmit}
                 disabled={!selectedFile || isUploading || uploadSuccess}
-                className="flex-1 h-9 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                className="flex-1 h-9 px-4 rounded-lg bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
               >
                 {isUploading ? (
                   <>
