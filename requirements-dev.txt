@@ -4,7 +4,7 @@
 # Install with: pip install -r requirements-dev.txt
 
 # AWS SDK - matches Lambda runtime
-boto3>=1.43.36
+boto3>=1.43.40
 opensearch-py>=3.2.0     # Used by list_talents and sync_to_opensearch Lambdas
 
 # Testing
