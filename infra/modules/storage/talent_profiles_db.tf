@@ -20,11 +20,23 @@ resource "aws_dynamodb_table" "talent_profiles" {
     type = "S"
   }
 
+  attribute {
+    name = "content_hash"
+    type = "S"
+  }
+
   # GSI for querying by status and date_received (e.g., find stale candidates)
   global_secondary_index {
     name            = "status-date-index"
     hash_key        = "status"
     range_key       = "date_received"
+    projection_type = "ALL"
+  }
+
+  # GSI for exact-duplicate detection: look up existing profiles by resume content hash
+  global_secondary_index {
+    name            = "content-hash-index"
+    hash_key        = "content_hash"
     projection_type = "ALL"
   }
 

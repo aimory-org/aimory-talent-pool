@@ -213,8 +213,8 @@ resource "aws_iam_role_policy" "pipeline_dynamodb" {
       {
         Sid      = "TargetTable"
         Effect   = "Allow"
-        Action   = ["dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:Scan", "dynamodb:GetItem"]
-        Resource = var.target_table_arn
+        Action   = ["dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:Scan", "dynamodb:GetItem", "dynamodb:Query"]
+        Resource = [var.target_table_arn, "${var.target_table_arn}/index/*"]
       },
       {
         Sid    = "LookupTables"

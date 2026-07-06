@@ -159,6 +159,7 @@ def _create_talent_profiles_table():
             {"AttributeName": "clearance_level", "AttributeType": "S"},
             {"AttributeName": "location_state", "AttributeType": "S"},
             {"AttributeName": "name_lower", "AttributeType": "S"},
+            {"AttributeName": "content_hash", "AttributeType": "S"},
         ],
         GlobalSecondaryIndexes=[
             {
@@ -192,6 +193,11 @@ def _create_talent_profiles_table():
             {
                 "IndexName": "name-index",
                 "KeySchema": [{"AttributeName": "name_lower", "KeyType": "HASH"}],
+                "Projection": {"ProjectionType": "ALL"},
+            },
+            {
+                "IndexName": "content-hash-index",
+                "KeySchema": [{"AttributeName": "content_hash", "KeyType": "HASH"}],
                 "Projection": {"ProjectionType": "ALL"},
             },
         ],
