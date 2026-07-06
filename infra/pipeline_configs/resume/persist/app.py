@@ -1,8 +1,10 @@
+import hashlib
 import os
 from datetime import datetime, timezone
 from decimal import Decimal
 
 import boto3
+from boto3.dynamodb.conditions import Key
 
 TABLE_NAME = os.environ["TALENT_PROFILES_TABLE"]
 AUDIT_LOG_TABLE = os.environ.get("AUDIT_LOG_TABLE", "")
@@ -14,6 +16,25 @@ INDUSTRY_CATEGORIES_LOOKUP_TABLE = os.environ.get("INDUSTRY_CATEGORIES_LOOKUP_TA
 
 dynamodb = boto3.resource("dynamodb")
 table = dynamodb.Table(TABLE_NAME)
+s3_client = boto3.client("s3")
+
+# Fields diffed for audit history when a content-hash match updates an existing
+# profile in place. Mirrors the field set update_talent tracks.
+_AUDIT_DIFF_FIELDS = [
+    "name",
+    "contact",
+    "summary",
+    "service_category",
+    "industry_category",
+    "job_title",
+    "skillsets",
+    "years_of_experience",
+    "clearance_level",
+    "certifications",
+    "companies",
+    "location",
+    "requested_salary",
+]
 
 # State name to abbreviation mapping
 _STATE_ABBREVS = {
@@ -429,7 +450,7 @@ def _populate_lookup_tables(profile):
             industries_table.put_item(Item={"industry_category": industry, "updated_at": now})
 
 
-def _write_audit_entry(pk, action, timestamp, candidate_name=None):
+def _write_audit_entry(pk, action, timestamp, candidate_name=None, changes=None):
     if not AUDIT_LOG_TABLE:
         return
 
@@ -443,11 +464,51 @@ def _write_audit_entry(pk, action, timestamp, candidate_name=None):
     }
     if candidate_name:
         item["candidate_name"] = candidate_name
+    if changes:
+        item["changes"] = changes
 
     try:
         dynamodb.Table(AUDIT_LOG_TABLE).put_item(Item=item)
     except Exception as exc:
         print(f"Warning: failed to write pipeline audit entry for {pk}: {exc}")
+
+
+def _compute_content_hash(resume_text):
+    """SHA-256 of normalized resume text, used to detect byte-for-byte duplicate uploads."""
+    if not resume_text or not resume_text.strip():
+        return ""
+    normalized = " ".join(resume_text.split()).lower()
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+
+
+def _find_content_duplicate(content_hash, current_pk):
+    """Return the pk of an existing profile with identical resume content, if any."""
+    if not content_hash:
+        return None
+    try:
+        response = table.query(
+            IndexName="content-hash-index",
+            KeyConditionExpression=Key("content_hash").eq(content_hash),
+            ProjectionExpression="pk",
+        )
+        for candidate in response.get("Items", []):
+            if candidate["pk"] != current_pk:
+                return candidate["pk"]
+        return None
+    except Exception:
+        # Don't fail the pipeline over duplicate detection
+        return None
+
+
+def _compute_changes(old_item, new_item):
+    """Diff a fixed set of profile fields for the audit history timeline."""
+    changes = {}
+    for field in _AUDIT_DIFF_FIELDS:
+        old_value = old_item.get(field)
+        new_value = new_item.get(field)
+        if old_value != new_value:
+            changes[field] = {"old": old_value, "new": new_value}
+    return changes
 
 
 def _check_duplicate(name_lower, current_pk):
@@ -493,10 +554,12 @@ def handler(event, context):
     now = datetime.now(timezone.utc).isoformat()
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
-    # Get resume text from the normalize step (for full-text search)
+    # Get resume text from the normalize step (for full-text search and content hashing)
     resume_text = ""
     if event.get("normalized") and event["normalized"].get("text"):
         resume_text = event["normalized"]["text"]
+
+    content_hash = _compute_content_hash(resume_text)
 
     # Denormalized fields for filtering
     name_lower = profile["name"].lower() if profile["name"] else "unknown"
@@ -512,8 +575,11 @@ def handler(event, context):
     industry_category = profile["industry_category"] if profile["industry_category"] else "Unknown"
     job_title = profile["job_title"] if profile["job_title"] else "Unknown"
 
-    # Check for duplicate candidates (same name)
-    existing_pk = _check_duplicate(name_lower, pk)
+    # Exact-content duplicate: identical normalized resume text already exists under a
+    # different key (e.g. the same file re-uploaded with a new name). Merge into that
+    # record instead of creating a second profile.
+    content_duplicate_pk = _find_content_duplicate(content_hash, pk)
+    target_pk = content_duplicate_pk or pk
 
     # Preserve recruiter-curated fields if the record already exists
     existing = None
@@ -522,11 +588,7 @@ def handler(event, context):
     existing_tags = []
     existing_date_received = today
     try:
-        existing = table.get_item(
-            Key={"pk": pk},
-            ProjectionExpression="#s, notes, tags, date_received",
-            ExpressionAttributeNames={"#s": "status"},
-        ).get("Item")
+        existing = table.get_item(Key={"pk": target_pk}).get("Item")
         if existing:
             existing_status = existing.get("status", "Potential Candidate")
             existing_notes = existing.get("notes", "")
@@ -535,10 +597,20 @@ def handler(event, context):
     except Exception:
         pass  # If lookup fails, use defaults
 
+    # Check for duplicate candidates by name — skip when this upload is already being
+    # merged into an existing record via an exact content-hash match.
+    existing_pk = None if content_duplicate_pk else _check_duplicate(name_lower, pk)
+
+    if content_duplicate_pk and existing:
+        # Keep pointing at the original resume file rather than the redundant re-upload.
+        item_bucket, item_key = existing.get("bucket", bucket), existing.get("key", key)
+    else:
+        item_bucket, item_key = bucket, key
+
     item = {
-        "pk": pk,
-        "bucket": bucket,
-        "key": key,
+        "pk": target_pk,
+        "bucket": item_bucket,
+        "key": item_key,
         "name": profile["name"],
         "name_lower": name_lower,
         "contact": profile["contact"],
@@ -564,21 +636,37 @@ def handler(event, context):
         "updated_at": now,
     }
 
-    # If duplicate found, flag it but still create the new record
+    if content_hash:
+        item["content_hash"] = content_hash
+
+    # If duplicate found by name, flag it but still create the new record
     if existing_pk:
         item["possible_duplicate_of"] = existing_pk
 
-    table.put_item(Item=_to_decimal(item))
+    item = _to_decimal(item)
+    table.put_item(Item=item)
 
     # Populate lookup tables for dropdown menus
     _populate_lookup_tables(profile)
 
-    _write_audit_entry(pk, "UPDATE" if existing else "CREATE", now, item.get("name"))
+    if content_duplicate_pk:
+        changes = _compute_changes(existing or {}, item)
+        _write_audit_entry(target_pk, "UPDATE", now, item.get("name"), changes=changes)
+        # Content already merged into the existing record — the redundant re-upload
+        # doesn't need to stick around in S3.
+        if (bucket, key) != (item_bucket, item_key):
+            try:
+                s3_client.delete_object(Bucket=bucket, Key=key)
+            except Exception as exc:
+                print(f"Warning: failed to delete duplicate resume {bucket}/{key}: {exc}")
+    else:
+        _write_audit_entry(pk, "UPDATE" if existing else "CREATE", now, item.get("name"))
 
     return {
         "status": "ok",
         "step": "persist",
-        "pk": pk,
+        "pk": target_pk,
         "updated_at": now,
         "possible_duplicate_of": existing_pk,
+        "content_duplicate_of": content_duplicate_pk,
     }

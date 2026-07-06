@@ -5,6 +5,7 @@ from decimal import Decimal
 import pytest
 from _lambda_loader import load as _load_lambda
 from boto3.dynamodb.conditions import Key
+from botocore.exceptions import ClientError
 
 
 def _reload_app():
@@ -497,3 +498,109 @@ class TestPersistDuplicateDetection:
         item = all_tables["talent_profiles"].get_item(Key={"pk": "test-bucket#raw/resume2.pdf"}).get("Item")
         assert item is not None
         assert "possible_duplicate_of" not in item
+
+
+# ── Content-hash duplicate prevention tests ────────────────────────────────
+
+BUCKET = "test-resume-bucket"
+
+
+def _content_event(profile, key, text, bucket=BUCKET):
+    return {"extracted": profile, "bucket": bucket, "key": key, "normalized": {"text": text}}
+
+
+class TestPersistContentHashDedup:
+    def test_exact_content_match_merges_into_existing_record(self, all_tables, s3_buckets, sample_profile):
+        s3_buckets.put_object(Bucket=BUCKET, Key="raw/sarah-chen.pdf", Body=b"v1")
+        s3_buckets.put_object(Bucket=BUCKET, Key="raw/sarah-chen-v2.pdf", Body=b"v2")
+        shared_text = "Sarah Chen Senior Engineer ten years experience"
+
+        app = _reload_app()
+        result1 = app.handler(_content_event(sample_profile, "raw/sarah-chen.pdf", shared_text), None)
+        assert result1["pk"] == f"{BUCKET}#raw/sarah-chen.pdf"
+        assert result1["content_duplicate_of"] is None
+
+        app = _reload_app()
+        result2 = app.handler(_content_event(sample_profile, "raw/sarah-chen-v2.pdf", shared_text), None)
+
+        # The renamed re-upload merges into the original — no second profile created.
+        assert result2["pk"] == f"{BUCKET}#raw/sarah-chen.pdf"
+        assert result2["content_duplicate_of"] == f"{BUCKET}#raw/sarah-chen.pdf"
+
+        table = all_tables["talent_profiles"]
+        assert table.get_item(Key={"pk": f"{BUCKET}#raw/sarah-chen-v2.pdf"}).get("Item") is None
+        assert table.get_item(Key={"pk": f"{BUCKET}#raw/sarah-chen.pdf"}).get("Item") is not None
+
+    def test_exact_content_match_deletes_redundant_s3_object(self, all_tables, s3_buckets, sample_profile):
+        s3_buckets.put_object(Bucket=BUCKET, Key="raw/resume.pdf", Body=b"v1")
+        s3_buckets.put_object(Bucket=BUCKET, Key="raw/resume-copy.pdf", Body=b"v2")
+        shared_text = "identical resume text"
+
+        app = _reload_app()
+        app.handler(_content_event(sample_profile, "raw/resume.pdf", shared_text), None)
+        app = _reload_app()
+        app.handler(_content_event(sample_profile, "raw/resume-copy.pdf", shared_text), None)
+
+        with pytest.raises(ClientError):
+            s3_buckets.head_object(Bucket=BUCKET, Key="raw/resume-copy.pdf")
+        # Original file is untouched.
+        s3_buckets.head_object(Bucket=BUCKET, Key="raw/resume.pdf")
+
+    def test_exact_content_match_writes_audit_diff(self, all_tables, s3_buckets, sample_profile):
+        s3_buckets.put_object(Bucket=BUCKET, Key="raw/resume.pdf", Body=b"v1")
+        s3_buckets.put_object(Bucket=BUCKET, Key="raw/resume-copy.pdf", Body=b"v2")
+        shared_text = "identical resume text"
+
+        app = _reload_app()
+        result1 = app.handler(_content_event(sample_profile, "raw/resume.pdf", shared_text), None)
+
+        profile2 = {**sample_profile, "job_title": "Staff Engineer"}
+        app = _reload_app()
+        app.handler(_content_event(profile2, "raw/resume-copy.pdf", shared_text), None)
+
+        entries = all_tables["audit_log"].query(KeyConditionExpression=Key("pk").eq(result1["pk"]))["Items"]
+        assert sorted(e["action"] for e in entries) == ["CREATE", "UPDATE"]
+        update_entry = next(e for e in entries if e["action"] == "UPDATE")
+        assert update_entry["changes"]["job_title"] == {
+            "old": "Senior Software Engineer",
+            "new": "Staff Engineer",
+        }
+
+    def test_different_content_creates_separate_records(self, all_tables, s3_buckets, sample_profile):
+        s3_buckets.put_object(Bucket=BUCKET, Key="raw/resume1.pdf", Body=b"v1")
+        s3_buckets.put_object(Bucket=BUCKET, Key="raw/resume2.pdf", Body=b"v2")
+
+        app = _reload_app()
+        app.handler(_content_event(sample_profile, "raw/resume1.pdf", "resume text one"), None)
+        app = _reload_app()
+        result2 = app.handler(_content_event(sample_profile, "raw/resume2.pdf", "resume text two"), None)
+
+        assert result2["content_duplicate_of"] is None
+        table = all_tables["talent_profiles"]
+        assert table.get_item(Key={"pk": f"{BUCKET}#raw/resume1.pdf"}).get("Item") is not None
+        assert table.get_item(Key={"pk": f"{BUCKET}#raw/resume2.pdf"}).get("Item") is not None
+        s3_buckets.head_object(Bucket=BUCKET, Key="raw/resume1.pdf")
+        s3_buckets.head_object(Bucket=BUCKET, Key="raw/resume2.pdf")
+
+    def test_reprocessing_same_key_is_not_a_content_duplicate(self, all_tables, s3_buckets, sample_profile):
+        s3_buckets.put_object(Bucket=BUCKET, Key="raw/resume.pdf", Body=b"v1")
+        shared_text = "identical resume text"
+        event = _content_event(sample_profile, "raw/resume.pdf", shared_text)
+
+        app = _reload_app()
+        app.handler(event, None)
+        app = _reload_app()
+        result = app.handler(event, None)
+
+        assert result["content_duplicate_of"] is None
+        # Reprocessing must not delete the file it was triggered by.
+        s3_buckets.head_object(Bucket=BUCKET, Key="raw/resume.pdf")
+
+    def test_empty_resume_text_skips_content_hash_matching(self, all_tables, sample_profile):
+        app = _reload_app()
+        result1 = app.handler(_make_event(sample_profile, bucket=BUCKET, key="raw/resume1.pdf"), None)
+        app = _reload_app()
+        result2 = app.handler(_make_event(sample_profile, bucket=BUCKET, key="raw/resume2.pdf"), None)
+
+        assert result1["content_duplicate_of"] is None
+        assert result2["content_duplicate_of"] is None
