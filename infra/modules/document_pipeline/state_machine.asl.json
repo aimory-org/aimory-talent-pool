@@ -1,6 +1,6 @@
 {
   "Comment": "Document processing pipeline: S3 -> Textract -> Normalize -> LLM -> Persist",
-  "TimeoutSeconds": 600,
+  "TimeoutSeconds": 1800,
   "StartAt": "ClassifyAndPrep",
   "States": {
     "ClassifyAndPrep": {
@@ -69,6 +69,21 @@
       "Type": "Task",
       "Resource": "${lambda_llm_extract_arn}",
       "ResultPath": "$.extracted",
+      "Retry": [
+        {
+          "Comment": "Batch uploads can exhaust the Bedrock quota faster than the Lambda's internal backoff can absorb; retry the whole extraction with long intervals so queued documents drain.",
+          "ErrorEquals": [
+            "States.TaskFailed",
+            "States.Timeout",
+            "Lambda.TooManyRequestsException",
+            "Lambda.ServiceException"
+          ],
+          "IntervalSeconds": 60,
+          "MaxAttempts": 3,
+          "BackoffRate": 2.0,
+          "JitterStrategy": "FULL"
+        }
+      ],
       "Next": "CheckIsValid"
     },
     "CheckIsValid": {

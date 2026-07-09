@@ -20,6 +20,7 @@ import {
   matchCandidates,
   getJdUploadUrl,
   getResumeUploadUrl,
+  RateLimitError,
 } from "@/lib/api";
 
 // Mock the aws-amplify auth module
@@ -323,6 +324,33 @@ describe("API Client", () => {
       );
 
       await expect(listTalents()).rejects.toThrow();
+    });
+
+    it("throws RateLimitError on 429 responses", async () => {
+      server.use(
+        http.get(`${API_BASE}/talents`, () => {
+          return HttpResponse.json(
+            { error: "Too many requests" },
+            { status: 429, headers: { "Retry-After": "7" } },
+          );
+        }),
+      );
+
+      const error = await listTalents().catch((e) => e);
+      expect(error).toBeInstanceOf(RateLimitError);
+      expect((error as RateLimitError).retryAfterSeconds).toBe(7);
+    });
+
+    it("throws RateLimitError without retryAfter when header missing", async () => {
+      server.use(
+        http.get(`${API_BASE}/talents`, () => {
+          return HttpResponse.json({ error: "Slow down" }, { status: 429 });
+        }),
+      );
+
+      const error = await listTalents().catch((e) => e);
+      expect(error).toBeInstanceOf(RateLimitError);
+      expect((error as RateLimitError).retryAfterSeconds).toBeUndefined();
     });
   });
 

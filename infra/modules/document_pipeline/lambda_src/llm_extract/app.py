@@ -123,9 +123,13 @@ def handler(event, context):
   {document_text}
   """
 
-    # Retry with exponential backoff for throttling
+    # Retry with exponential backoff for throttling. Delays are capped so the
+    # total sleep (~180s worst case) stays well within the Lambda's 300s
+    # timeout; if throttling persists beyond that, the Step Functions retry
+    # policy on this state takes over with longer intervals.
     max_retries = 8
     base_delay = 3
+    max_delay = 45
     resp = None
 
     for attempt in range(max_retries):
@@ -140,7 +144,7 @@ def handler(event, context):
         except ClientError as e:
             error_code = e.response.get("Error", {}).get("Code", "")
             if error_code == "ThrottlingException" and attempt < max_retries - 1:
-                delay = base_delay * (2**attempt) + random.uniform(0, 1)
+                delay = min(base_delay * (2**attempt), max_delay) + random.uniform(0, 1)
                 print(f"Throttled, retrying in {delay:.1f}s (attempt {attempt + 1}/{max_retries})")
                 time.sleep(delay)
             else:

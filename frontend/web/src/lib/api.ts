@@ -16,6 +16,28 @@ if (!API_BASE_URL) {
 }
 
 /**
+ * Thrown when the backend (or S3) rejects a request because a rate limit was
+ * hit (HTTP 429, or S3 503 SlowDown). Callers can use `retryAfterSeconds`
+ * to schedule a retry.
+ */
+export class RateLimitError extends Error {
+  retryAfterSeconds?: number;
+
+  constructor(message: string, retryAfterSeconds?: number) {
+    super(message);
+    this.name = "RateLimitError";
+    this.retryAfterSeconds = retryAfterSeconds;
+  }
+}
+
+function parseRetryAfter(response: Response): number | undefined {
+  const header = response.headers.get("Retry-After");
+  if (!header) return undefined;
+  const seconds = Number(header);
+  return Number.isFinite(seconds) && seconds >= 0 ? seconds : undefined;
+}
+
+/**
  * Get the current user's JWT token for API calls.
  */
 async function getAuthToken(): Promise<string> {
@@ -44,6 +66,13 @@ async function apiFetch<T>(
       ...options.headers,
     },
   });
+
+  if (response.status === 429) {
+    throw new RateLimitError(
+      "Too many requests. Please wait a moment and try again.",
+      parseRetryAfter(response),
+    );
+  }
 
   if (!response.ok) {
     const error = await response
@@ -447,18 +476,32 @@ export async function getJdUploadUrl(
 }
 
 /**
- * Upload a job description file via presigned URL, then return the S3 key.
+ * PUT a file to a presigned S3 URL, translating throttling responses
+ * (429, or S3 503 SlowDown) into RateLimitError.
  */
-export async function uploadJobDescription(file: File): Promise<string> {
-  const { uploadUrl, key } = await getJdUploadUrl(file.name, file.type);
+async function putToPresignedUrl(uploadUrl: string, file: File): Promise<void> {
   const resp = await fetch(uploadUrl, {
     method: "PUT",
     headers: { "Content-Type": file.type },
     body: file,
   });
+  if (resp.status === 429 || resp.status === 503) {
+    throw new RateLimitError(
+      "Storage is receiving too many requests. Please wait a moment and try again.",
+      parseRetryAfter(resp),
+    );
+  }
   if (!resp.ok) {
     throw new Error(`Upload failed: ${resp.status} ${resp.statusText}`);
   }
+}
+
+/**
+ * Upload a job description file via presigned URL, then return the S3 key.
+ */
+export async function uploadJobDescription(file: File): Promise<string> {
+  const { uploadUrl, key } = await getJdUploadUrl(file.name, file.type);
+  await putToPresignedUrl(uploadUrl, file);
   return key;
 }
 
@@ -489,14 +532,7 @@ export async function getResumeUploadUrl(
  */
 export async function uploadResume(file: File): Promise<string> {
   const { uploadUrl, key } = await getResumeUploadUrl(file.name, file.type);
-  const resp = await fetch(uploadUrl, {
-    method: "PUT",
-    headers: { "Content-Type": file.type },
-    body: file,
-  });
-  if (!resp.ok) {
-    throw new Error(`Upload failed: ${resp.status} ${resp.statusText}`);
-  }
+  await putToPresignedUrl(uploadUrl, file);
   return key;
 }
 
