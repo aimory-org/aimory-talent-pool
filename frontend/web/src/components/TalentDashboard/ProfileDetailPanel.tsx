@@ -23,6 +23,8 @@ import {
   XCircle,
   Plus,
   Minus,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Linkedin, Github } from "@/components/ui/brand-icons";
 import { Badge } from "@/components/ui/badge";
@@ -58,6 +60,8 @@ interface ProfileDetailPanelProps {
     jd: JobDescription;
     match: CandidateMatch | null;
   };
+  /** Full talent list, used to find sibling duplicates in the compare view */
+  allTalents?: TalentProfile[];
 }
 
 interface EditableProfile {
@@ -365,6 +369,7 @@ export function ProfileDetailPanel({
   onProfileUpdated,
   lookupTags = [],
   matchContext,
+  allTalents = [],
 }: ProfileDetailPanelProps) {
   const [resumeLoading, setResumeLoading] = useState(false);
   const [resumeUrl, setResumeUrl] = useState<string | null>(null);
@@ -373,6 +378,9 @@ export function ProfileDetailPanel({
   const [compareProfile, setCompareProfile] = useState<TalentProfile | null>(null);
   const [compareResumeUrl, setCompareResumeUrl] = useState<string | null>(null);
   const [compareLoading, setCompareLoading] = useState(false);
+  const [compareSubjects, setCompareSubjects] = useState<TalentProfile[]>([]);
+  const [currentSubjectIdx, setCurrentSubjectIdx] = useState(0);
+  const [subjectNavigating, setSubjectNavigating] = useState(false);
 
   // Edit mode state
   const [isEditMode, setIsEditMode] = useState(false);
@@ -605,11 +613,33 @@ export function ProfileDetailPanel({
       setCompareProfile(original);
       setResumeUrl(profile.key ? resolveResumeUrl(profile.key, thisResume.url) : null);
       setCompareResumeUrl(original.key ? resolveResumeUrl(original.key, origResume.url) : null);
+      // Collect all profiles that share the same possible_duplicate_of (siblings + current)
+      const siblings = allTalents.filter(
+        (t) => t.possible_duplicate_of === profile.possible_duplicate_of && t.pk !== profile.pk,
+      );
+      setCompareSubjects([profile, ...siblings]);
+      setCurrentSubjectIdx(0);
       setShowCompare(true);
     } catch {
       alert("Could not load resumes for comparison.");
     } finally {
       setCompareLoading(false);
+    }
+  };
+
+  const handleNavigateSubject = async (dir: -1 | 1) => {
+    if (compareSubjects.length < 2) return;
+    const newIdx = (currentSubjectIdx + dir + compareSubjects.length) % compareSubjects.length;
+    const newSubject = compareSubjects[newIdx];
+    setSubjectNavigating(true);
+    try {
+      const resume = newSubject.key ? await getResumeUrl(newSubject.key) : { url: "" };
+      setResumeUrl(newSubject.key ? resolveResumeUrl(newSubject.key, resume.url) : null);
+    } catch {
+      setResumeUrl(null);
+    } finally {
+      setCurrentSubjectIdx(newIdx);
+      setSubjectNavigating(false);
     }
   };
 
@@ -686,12 +716,14 @@ export function ProfileDetailPanel({
       return isNaN(d.getTime()) ? iso : d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
     };
 
+    const currentSubject = compareSubjects[currentSubjectIdx] ?? profile;
+
     const handleKeepNew = async () => {
       if (!confirm("Delete the original profile and keep this one? This cannot be undone.")) return;
       try {
         await deleteTalent(compareProfile.pk);
-        const updated = await updateTalent(profile.pk, { dismiss_duplicate: true });
-        onProfileUpdated?.(updated);
+        const updated = await updateTalent(currentSubject.pk, { dismiss_duplicate: true });
+        if (currentSubject.pk === profile.pk) onProfileUpdated?.(updated);
         setShowCompare(false);
         await onRefresh();
       } catch {
@@ -702,9 +734,9 @@ export function ProfileDetailPanel({
     const handleKeepOriginal = async () => {
       if (!confirm("Delete this profile and keep the original? This cannot be undone.")) return;
       try {
-        await deleteTalent(profile.pk);
+        await deleteTalent(currentSubject.pk);
         setShowCompare(false);
-        onClose();
+        if (currentSubject.pk === profile.pk) onClose();
         await onRefresh();
       } catch {
         alert("Failed to complete action.");
@@ -713,8 +745,8 @@ export function ProfileDetailPanel({
 
     const handleIgnore = async () => {
       try {
-        const updated = await updateTalent(profile.pk, { dismiss_duplicate: true });
-        onProfileUpdated?.(updated);
+        const updated = await updateTalent(currentSubject.pk, { dismiss_duplicate: true });
+        if (currentSubject.pk === profile.pk) onProfileUpdated?.(updated);
         setShowCompare(false);
       } catch {
         alert("Failed to dismiss duplicate flag.");
@@ -733,6 +765,29 @@ export function ProfileDetailPanel({
               <h2 className="text-sm font-semibold text-foreground">Resume Comparison</h2>
               <p className="text-xs text-muted-foreground">Possible duplicate — reviewing side by side</p>
             </div>
+            {compareSubjects.length > 1 && (
+              <div className="flex items-center gap-1 ml-2">
+                <button
+                  onClick={() => void handleNavigateSubject(-1)}
+                  disabled={subjectNavigating}
+                  className="p-1 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground disabled:opacity-40"
+                  title="Previous duplicate"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  {currentSubjectIdx + 1} / {compareSubjects.length}
+                </span>
+                <button
+                  onClick={() => void handleNavigateSubject(1)}
+                  disabled={subjectNavigating}
+                  className="p-1 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground disabled:opacity-40"
+                  title="Next duplicate"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -763,23 +818,26 @@ export function ProfileDetailPanel({
             <div className="flex-none px-4 py-2 bg-accent border-b border-border flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 min-w-0">
                 <div className="h-6 w-6 shrink-0 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold text-xs">
-                  {(profile.name || "?").charAt(0).toUpperCase()}
+                  {(currentSubject.name || "?").charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0">
-                  <span className="text-xs font-semibold text-foreground truncate block">{profile.name || "Unknown"}</span>
-                  <span className="text-xs text-muted-foreground">Submitted {formatDate(profile.date_received)}</span>
+                  <span className="text-xs font-semibold text-foreground truncate block">{currentSubject.name || "Unknown"}</span>
+                  <span className="text-xs text-muted-foreground">Submitted {formatDate(currentSubject.date_received)}</span>
                 </div>
               </div>
               <button
                 onClick={handleKeepNew}
-                className="shrink-0 px-2.5 py-1 rounded-lg text-xs font-medium bg-primary text-primary-foreground hover:bg-primary-hover transition-colors"
+                disabled={subjectNavigating}
+                className="shrink-0 px-2.5 py-1 rounded-lg text-xs font-medium bg-primary text-primary-foreground hover:bg-primary-hover transition-colors disabled:opacity-40"
               >
                 Keep New Resume
               </button>
             </div>
             <div className="flex-1 bg-background">
-              {resumeUrl ? (
-                <iframe src={resumeUrl} className="w-full h-full border-0" title={`Resume - ${profile.name || "Unknown"}`} />
+              {subjectNavigating ? (
+                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Loading...</div>
+              ) : resumeUrl ? (
+                <iframe src={resumeUrl} className="w-full h-full border-0" title={`Resume - ${currentSubject.name || "Unknown"}`} />
               ) : (
                 <div className="flex items-center justify-center h-full text-muted-foreground text-sm">No resume available</div>
               )}
@@ -2018,10 +2076,17 @@ export function ProfileDetailPanel({
             </div>
 
             {/* Possible Duplicate Warning */}
-            {!isEditMode && profile.possible_duplicate_of && (
+            {!isEditMode && profile.possible_duplicate_of && (() => {
+              const duplicateGroupSize = 1 + allTalents.filter(
+                (t) => t.possible_duplicate_of === profile.possible_duplicate_of && t.pk !== profile.pk,
+              ).length;
+              return (
               <div className="bg-warning/10 rounded-xl p-4 border border-warning/30">
                 <p className="text-warning text-sm font-medium mb-1">
-                  ⚠ Possible duplicate of another candidate
+                  ⚠{" "}
+                  {duplicateGroupSize > 1
+                    ? `Possible duplicate — ${duplicateGroupSize} candidates in this group`
+                    : "Possible duplicate of another candidate"}
                 </p>
                 <h3 className="text-warning text-xs font-semibold mb-1">
                   Please compare and confirm
@@ -2054,7 +2119,8 @@ export function ProfileDetailPanel({
                   </button>
                 </div>
               </div>
-            )}
+              );
+            })()}
 
             {/* Data Quality Warnings */}
             {!isEditMode &&

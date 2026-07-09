@@ -670,6 +670,7 @@ export function TalentDashboard() {
             onRefresh={refreshTalents}
             onProfileUpdated={handleProfileUpdated}
             lookupTags={lookupTags}
+            allTalents={talents}
           />
         </>
       )}
