@@ -48,7 +48,7 @@ import {
 import { StatusBadge } from "./components/StatusBadge";
 import { ClearanceBadge } from "./components/ClearanceBadge";
 import { ProfileHistory } from "./components/ProfileHistory";
-import { getProfileWarnings, WARNING_LABELS } from "./warnings";
+import { getProfileWarnings, WARNING_LABELS, findDuplicatePeers } from "./warnings";
 
 interface ProfileDetailPanelProps {
   profile: TalentProfile;
@@ -613,17 +613,52 @@ export function ProfileDetailPanel({
       setCompareProfile(original);
       setResumeUrl(profile.key ? resolveResumeUrl(profile.key, thisResume.url) : null);
       setCompareResumeUrl(original.key ? resolveResumeUrl(original.key, origResume.url) : null);
-      // Collect all profiles that share the same possible_duplicate_of (siblings + current)
-      const siblings = allTalents.filter(
-        (t) => t.possible_duplicate_of === profile.possible_duplicate_of && t.pk !== profile.pk,
-      );
-      setCompareSubjects([profile, ...siblings]);
-      setCurrentSubjectIdx(0);
+      // All profiles with the same name as the original (includes dismissed peers)
+      const peers = findDuplicatePeers(original.pk, allTalents);
+      const startIdx = Math.max(0, peers.findIndex((t) => t.pk === profile.pk));
+      setCompareSubjects(peers);
+      setCurrentSubjectIdx(startIdx);
       setShowCompare(true);
     } catch {
       alert("Could not load resumes for comparison.");
     } finally {
       setCompareLoading(false);
+    }
+  };
+
+  const handleCompareIncoming = async (incomingPk: string) => {
+    const peers = findDuplicatePeers(profile.pk, allTalents);
+    const startIdx = Math.max(0, peers.findIndex((t) => t.pk === incomingPk));
+    const initial = peers[startIdx];
+    if (!initial) return;
+    setCompareLoading(true);
+    try {
+      const [origResume, incomingResume] = await Promise.all([
+        profile.key ? getResumeUrl(profile.key) : Promise.resolve({ url: "" }),
+        initial.key ? getResumeUrl(initial.key) : Promise.resolve({ url: "" }),
+      ]);
+      setCompareProfile(profile);
+      setCompareResumeUrl(profile.key ? resolveResumeUrl(profile.key, origResume.url) : null);
+      setResumeUrl(initial.key ? resolveResumeUrl(initial.key, incomingResume.url) : null);
+      setCompareSubjects(peers);
+      setCurrentSubjectIdx(startIdx);
+      setShowCompare(true);
+    } catch {
+      alert("Could not load resumes for comparison.");
+    } finally {
+      setCompareLoading(false);
+    }
+  };
+
+  const handleIgnoreAllIncoming = async () => {
+    const active = findDuplicatePeers(profile.pk, allTalents).filter(
+      (t) => t.possible_duplicate_of === profile.pk,
+    );
+    try {
+      await Promise.all(active.map((t) => updateTalent(t.pk, { dismiss_duplicate: true })));
+      await onRefresh();
+    } catch {
+      alert("Failed to dismiss duplicate flags.");
     }
   };
 
@@ -725,6 +760,7 @@ export function ProfileDetailPanel({
         const updated = await updateTalent(currentSubject.pk, { dismiss_duplicate: true });
         if (currentSubject.pk === profile.pk) onProfileUpdated?.(updated);
         setShowCompare(false);
+        if (compareProfile.pk === profile.pk) onClose();
         await onRefresh();
       } catch {
         alert("Failed to complete action.");
@@ -2075,50 +2111,58 @@ export function ProfileDetailPanel({
               )}
             </div>
 
-            {/* Possible Duplicate Warning */}
-            {!isEditMode && profile.possible_duplicate_of && (() => {
-              const duplicateGroupSize = 1 + allTalents.filter(
-                (t) => t.possible_duplicate_of === profile.possible_duplicate_of && t.pk !== profile.pk,
-              ).length;
+            {/* Duplicate Warning — outgoing (this profile is a duplicate) or incoming (others duplicate this profile) */}
+            {!isEditMode && (() => {
+              const isOutgoing = !!profile.possible_duplicate_of;
+              const incomingPeers = isOutgoing ? [] : findDuplicatePeers(profile.pk, allTalents);
+              if (!isOutgoing && incomingPeers.length === 0) return null;
+
+              const peers = isOutgoing
+                ? findDuplicatePeers(profile.possible_duplicate_of!, allTalents)
+                : incomingPeers;
+              const duplicateGroupSize = 1 + peers.length;
+              const infoText = isOutgoing
+                ? profile.possible_duplicate_of!
+                : incomingPeers.map((p) => p.name || "Unknown").join(", ");
+
               return (
-              <div className="bg-warning/10 rounded-xl p-4 border border-warning/30">
-                <p className="text-warning text-sm font-medium mb-1">
-                  ⚠{" "}
-                  {duplicateGroupSize > 1
-                    ? `Possible duplicate — ${duplicateGroupSize} candidates in this group`
-                    : "Possible duplicate of another candidate"}
-                </p>
-                <h3 className="text-warning text-xs font-semibold mb-1">
-                  Please compare and confirm
-                </h3>
-                <p className="text-warning/70 text-xs mb-3 break-all">
-                  {profile.possible_duplicate_of}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={handleCompare}
-                    disabled={compareLoading}
-                    className="px-2.5 py-1 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-accent transition-colors disabled:opacity-50"
-                  >
-                    {compareLoading ? "Loading..." : "Compare"}
-                  </button>
-                  <button
-                    onClick={async () => {
-                      try {
-                        const updated = await updateTalent(profile.pk, {
-                          dismiss_duplicate: true,
-                        });
-                        onProfileUpdated?.(updated);
-                      } catch {
-                        alert("Failed to dismiss duplicate flag.");
+                <div className="bg-warning/10 rounded-xl p-4 border border-warning/30">
+                  <p className="text-warning text-sm font-medium mb-1">
+                    ⚠{" "}
+                    {duplicateGroupSize > 1
+                      ? `Possible duplicate — ${duplicateGroupSize} candidates in this group`
+                      : "Possible duplicate of another candidate"}
+                  </p>
+                  <h3 className="text-warning text-xs font-semibold mb-1">
+                    Please compare and confirm
+                  </h3>
+                  <p className="text-warning/70 text-xs mb-3 break-all">{infoText}</p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={isOutgoing ? handleCompare : () => void handleCompareIncoming(incomingPeers[0].pk)}
+                      disabled={compareLoading}
+                      className="px-2.5 py-1 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-accent transition-colors disabled:opacity-50"
+                    >
+                      {compareLoading ? "Loading..." : "Compare"}
+                    </button>
+                    <button
+                      onClick={isOutgoing
+                        ? async () => {
+                            try {
+                              const updated = await updateTalent(profile.pk, { dismiss_duplicate: true });
+                              onProfileUpdated?.(updated);
+                            } catch {
+                              alert("Failed to dismiss duplicate flag.");
+                            }
+                          }
+                        : () => void handleIgnoreAllIncoming()
                       }
-                    }}
-                    className="px-2.5 py-1 rounded-lg text-xs font-medium border border-warning/30 text-warning hover:bg-warning/20 transition-colors"
-                  >
-                    Ignore
-                  </button>
+                      className="px-2.5 py-1 rounded-lg text-xs font-medium border border-warning/30 text-warning hover:bg-warning/20 transition-colors"
+                    >
+                      Ignore
+                    </button>
+                  </div>
                 </div>
-              </div>
               );
             })()}
 

@@ -34,6 +34,8 @@ interface TalentTableProps {
   onToggleSelect?: (pk: string) => void;
   // Receives the PKs of all profiles on the current page plus the desired checked state
   onToggleSelectAll?: (pks: string[], allSelected: boolean) => void;
+  /** PKs that other profiles point to via possible_duplicate_of (for incoming-duplicate badges) */
+  duplicateTargetPks?: Set<string>;
 }
 
 /**
@@ -218,6 +220,7 @@ export function TalentTable({
   selectedPks,
   onToggleSelect,
   onToggleSelectAll,
+  duplicateTargetPks,
 }: TalentTableProps) {
   const selectionEnabled = !!selectedPks && !!onToggleSelect;
   const allOnPageSelected =
@@ -405,7 +408,7 @@ export function TalentTable({
                           {(profile.name || "?").charAt(0).toUpperCase()}
                         </div>
                         {(() => {
-                          const warnings = getProfileWarnings(profile);
+                          const warnings = getProfileWarnings(profile, duplicateTargetPks);
                           if (warnings.length === 0) return null;
                           return (
                             <span

@@ -365,34 +365,41 @@ export function TalentDashboard() {
     return result;
   }, [talents, sortField, sortDirection]);
 
+  // PKs that are referenced by other profiles via possible_duplicate_of
+  const duplicateTargetPks = useMemo(
+    () => new Set(talents.map((t) => t.possible_duplicate_of).filter(Boolean) as string[]),
+    [talents],
+  );
+
   // Client-side warnings filter
   const displayedProfiles = useMemo(() => {
     if (!warningsFilterActive) return sortedProfiles;
     if (selectedWarningTypes.length === 0) {
-      return sortedProfiles.filter((p) => getProfileWarnings(p).length > 0);
+      return sortedProfiles.filter((p) => getProfileWarnings(p, duplicateTargetPks).length > 0);
     }
     return sortedProfiles.filter((p) =>
-      getProfileWarnings(p).some((w) => selectedWarningTypes.includes(w)),
+      getProfileWarnings(p, duplicateTargetPks).some((w) => selectedWarningTypes.includes(w)),
     );
-  }, [sortedProfiles, warningsFilterActive, selectedWarningTypes]);
+  }, [sortedProfiles, warningsFilterActive, selectedWarningTypes, duplicateTargetPks]);
 
   const warningCounts = useMemo(() => {
     const counts: Record<WarningType, number> = {
       duplicate: 0,
+      incoming_duplicate: 0,
       missing_name: 0,
       missing_job_title: 0,
       no_skills: 0,
       no_location: 0,
     };
     for (const p of talents) {
-      for (const w of getProfileWarnings(p)) counts[w]++;
+      for (const w of getProfileWarnings(p, duplicateTargetPks)) counts[w]++;
     }
     return counts;
-  }, [talents]);
+  }, [talents, duplicateTargetPks]);
 
   const totalWarningCount = useMemo(
-    () => talents.filter((p) => getProfileWarnings(p).length > 0).length,
-    [talents],
+    () => talents.filter((p) => getProfileWarnings(p, duplicateTargetPks).length > 0).length,
+    [talents, duplicateTargetPks],
   );
 
   // Reset to first page when filters / sort change (derived-state avoids effect)
@@ -648,6 +655,7 @@ export function TalentDashboard() {
           selectedPks={selectedPks}
           onToggleSelect={handleToggleSelect}
           onToggleSelectAll={handleToggleSelectAll}
+          duplicateTargetPks={duplicateTargetPks}
         />
         <Pagination
           currentPage={safePage}
