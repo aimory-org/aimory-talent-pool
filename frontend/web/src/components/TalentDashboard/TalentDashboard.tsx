@@ -677,6 +677,7 @@ export function TalentDashboard() {
             onClose={() => setSelectedProfile(null)}
             onRefresh={refreshTalents}
             onProfileUpdated={handleProfileUpdated}
+            onProfilesDeleted={removeTalents}
             lookupTags={lookupTags}
             allTalents={talents}
           />

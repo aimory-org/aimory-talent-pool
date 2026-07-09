@@ -55,6 +55,8 @@ interface ProfileDetailPanelProps {
   onClose: () => void;
   onRefresh: () => Promise<void>;
   onProfileUpdated?: (updated: TalentProfile) => void;
+  /** Called after bulk-deleting profiles so the dashboard can drop them from local state immediately */
+  onProfilesDeleted?: (pks: string[]) => void;
   lookupTags?: string[];
   matchContext?: {
     jd: JobDescription;
@@ -367,6 +369,7 @@ export function ProfileDetailPanel({
   onClose,
   onRefresh,
   onProfileUpdated,
+  onProfilesDeleted,
   lookupTags = [],
   matchContext,
   allTalents = [],
@@ -753,27 +756,33 @@ export function ProfileDetailPanel({
 
     const currentSubject = compareSubjects[currentSubjectIdx] ?? profile;
 
+    const hasMultiple = compareSubjects.length > 1;
+
     const handleKeepNew = async () => {
-      if (!confirm("Delete the original profile and keep this one? This cannot be undone.")) return;
+      const confirmMsg = hasMultiple
+        ? `Keep this candidate and delete all ${compareSubjects.length} other${compareSubjects.length !== 1 ? "s" : ""}? This cannot be undone.`
+        : "Delete the original profile and keep this one? This cannot be undone.";
+      if (!confirm(confirmMsg)) return;
       try {
-        await deleteTalent(compareProfile.pk);
-        const updated = await updateTalent(currentSubject.pk, { dismiss_duplicate: true });
-        if (currentSubject.pk === profile.pk) onProfileUpdated?.(updated);
-        setShowCompare(false);
-        if (compareProfile.pk === profile.pk) onClose();
-        await onRefresh();
+        const toDelete = [compareProfile, ...compareSubjects.filter((t) => t.pk !== currentSubject.pk)];
+        await Promise.all(toDelete.map((t) => deleteTalent(t.pk)));
+        await updateTalent(currentSubject.pk, { dismiss_duplicate: true });
+        onProfilesDeleted?.(toDelete.map((t) => t.pk));
+        onClose();
       } catch {
         alert("Failed to complete action.");
       }
     };
 
     const handleKeepOriginal = async () => {
-      if (!confirm("Delete this profile and keep the original? This cannot be undone.")) return;
+      const confirmMsg = hasMultiple
+        ? `Keep the original and delete all ${compareSubjects.length} duplicate${compareSubjects.length !== 1 ? "s" : ""}? This cannot be undone.`
+        : "Delete this profile and keep the original? This cannot be undone.";
+      if (!confirm(confirmMsg)) return;
       try {
-        await deleteTalent(currentSubject.pk);
-        setShowCompare(false);
-        if (currentSubject.pk === profile.pk) onClose();
-        await onRefresh();
+        await Promise.all(compareSubjects.map((t) => deleteTalent(t.pk)));
+        onProfilesDeleted?.(compareSubjects.map((t) => t.pk));
+        onClose();
       } catch {
         alert("Failed to complete action.");
       }
@@ -866,7 +875,7 @@ export function ProfileDetailPanel({
                 disabled={subjectNavigating}
                 className="shrink-0 px-2.5 py-1 rounded-lg text-xs font-medium bg-primary text-primary-foreground hover:bg-primary-hover transition-colors disabled:opacity-40"
               >
-                Keep New Resume
+                {hasMultiple ? "Keep This, Delete All Others" : "Keep This Resume"}
               </button>
             </div>
             <div className="flex-1 bg-background">
@@ -895,7 +904,7 @@ export function ProfileDetailPanel({
                 onClick={handleKeepOriginal}
                 className="shrink-0 px-2.5 py-1 rounded-lg text-xs font-medium border border-border bg-card text-foreground hover:bg-accent transition-colors"
               >
-                Keep Original
+                {hasMultiple ? "Keep Original, Delete All Others" : "Keep Original"}
               </button>
             </div>
             <div className="flex-1 bg-background">
