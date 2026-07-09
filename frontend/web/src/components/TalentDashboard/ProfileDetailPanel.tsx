@@ -2121,10 +2121,6 @@ export function ProfileDetailPanel({
                 ? findDuplicatePeers(profile.possible_duplicate_of!, allTalents)
                 : incomingPeers;
               const duplicateGroupSize = 1 + peers.length;
-              const infoText = isOutgoing
-                ? profile.possible_duplicate_of!
-                : incomingPeers.map((p) => p.name || "Unknown").join(", ");
-
               return (
                 <div className="bg-warning/10 rounded-xl p-4 border border-warning/30">
                   <p className="text-warning text-sm font-medium mb-1">
@@ -2133,10 +2129,9 @@ export function ProfileDetailPanel({
                       ? `Possible duplicate — ${duplicateGroupSize} candidates in this group`
                       : "Possible duplicate of another candidate"}
                   </p>
-                  <h3 className="text-warning text-xs font-semibold mb-1">
+                  <h3 className="text-warning text-xs font-semibold mb-3">
                     Please compare and confirm
                   </h3>
-                  <p className="text-warning/70 text-xs mb-3 break-all">{infoText}</p>
                   <div className="flex flex-wrap gap-2">
                     <button
                       onClick={isOutgoing ? handleCompare : () => void handleCompareIncoming(incomingPeers[0].pk)}
