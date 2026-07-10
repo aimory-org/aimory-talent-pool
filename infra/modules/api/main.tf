@@ -39,6 +39,14 @@ resource "aws_apigatewayv2_stage" "default" {
   name        = "$default"
   auto_deploy = true
 
+  # Guardrail: cap request throughput so batch uploads or runaway clients
+  # can't exhaust downstream quotas (Lambda concurrency, Bedrock). Clients
+  # receive 429s, which the frontend handles with backoff and retry.
+  default_route_settings {
+    throttling_rate_limit  = 25
+    throttling_burst_limit = 50
+  }
+
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.api_logs.arn
     format = jsonencode({

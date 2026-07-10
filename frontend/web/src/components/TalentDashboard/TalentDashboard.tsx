@@ -49,7 +49,7 @@ export function TalentDashboard() {
   const [showProcessingBanner, setShowProcessingBanner] = useState(false);
   const processingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const pendingKeyRef = useRef<string | null>(null);
+  const pendingKeysRef = useRef<Set<string>>(new Set());
   const [page, setPage] = useState(1);
 
   // Bulk selection state
@@ -252,43 +252,55 @@ export function TalentDashboard() {
       clearTimeout(processingTimerRef.current);
       processingTimerRef.current = null;
     }
-    pendingKeyRef.current = null;
+    pendingKeysRef.current = new Set();
   }, []);
+
+  // Poll until every pending upload appears in the talent list, or timeout.
+  // Batch uploads register multiple keys against the same polling loop.
+  const startPolling = useCallback(() => {
+    if (pollingIntervalRef.current) return;
+    setShowProcessingBanner(true);
+
+    // Poll every 4 seconds, up to 5 min (batches process sequentially in the
+    // LLM pipeline, so multiple files take longer than a single upload)
+    const maxAttempts = 75;
+    let attempts = 0;
+
+    pollingIntervalRef.current = setInterval(async () => {
+      attempts++;
+      try {
+        const { items } = await listTalents();
+        let foundAny = false;
+        for (const key of pendingKeysRef.current) {
+          if (items.some((t) => t.key === key)) {
+            pendingKeysRef.current.delete(key);
+            foundAny = true;
+          }
+        }
+        if (foundAny) refreshTalents();
+        if (pendingKeysRef.current.size === 0 || attempts >= maxAttempts) {
+          stopPolling();
+          setShowProcessingBanner(false);
+        }
+      } catch {
+        // ignore transient poll errors
+      }
+    }, 4_000);
+  }, [refreshTalents, stopPolling]);
 
   const handleUploadSubmit = useCallback(
     async (file: File | null) => {
       if (!file) return;
       try {
         const key = await uploadResume(file);
-
-        stopPolling();
-        pendingKeyRef.current = key;
-        setShowProcessingBanner(true);
-
-        // Poll every 4 seconds until the new profile appears, or 2 min timeout
-        const maxAttempts = 30;
-        let attempts = 0;
-
-        pollingIntervalRef.current = setInterval(async () => {
-          attempts++;
-          try {
-            const { items } = await listTalents();
-            const found = items.some((t) => t.key === pendingKeyRef.current);
-            if (found || attempts >= maxAttempts) {
-              stopPolling();
-              setShowProcessingBanner(false);
-              if (found) refreshTalents();
-            }
-          } catch {
-            // ignore transient poll errors
-          }
-        }, 4_000);
+        pendingKeysRef.current.add(key);
+        startPolling();
       } catch (error) {
         console.error("Upload failed:", error);
         throw error;
       }
     },
-    [refreshTalents, stopPolling],
+    [startPolling],
   );
 
   // Clean up timers on unmount
