@@ -26,6 +26,7 @@ describe("FiltersPanel", () => {
     ],
     warningCounts: {
       duplicate: 0,
+      incoming_duplicate: 0,
       missing_name: 0,
       missing_job_title: 0,
       no_skills: 0,

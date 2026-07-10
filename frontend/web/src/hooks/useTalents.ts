@@ -126,7 +126,15 @@ export function useTalents(options: UseTalentsOptions = {}): UseTalentsResult {
 
   const removeTalents = useCallback((pks: string[]) => {
     const pkSet = new Set(pks);
-    setTalents((prev) => prev.filter((t) => !pkSet.has(t.pk)));
+    setTalents((prev) =>
+      prev
+        .filter((t) => !pkSet.has(t.pk))
+        .map((t) =>
+          t.possible_duplicate_of && pkSet.has(t.possible_duplicate_of)
+            ? { ...t, possible_duplicate_of: undefined }
+            : t,
+        ),
+    );
   }, []);
 
   return {
