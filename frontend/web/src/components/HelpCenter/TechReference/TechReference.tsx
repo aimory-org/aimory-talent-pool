@@ -18,7 +18,6 @@ import {
   FileText,
   Upload,
   Target,
-  Layers,
   AlertTriangle,
   GitMerge,
   Sparkles,
@@ -468,7 +467,7 @@ function MatchPipelineDiagram() {
       <div className="px-5 py-3 border-b border-border bg-secondary flex items-center gap-2">
         <div className="w-2 h-2 rounded-full bg-primary" />
         <span className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
-          Retrieve → Rerank → Score
+          Retrieve → Filter → Score
         </span>
       </div>
 
@@ -520,13 +519,6 @@ function MatchPipelineDiagram() {
               sub="clearance safety gate"
               icon={<Filter className="w-4 h-4" />}
               color="red"
-            />
-            <FlowArrow />
-            <ArchNode
-              label="Reranker"
-              sub="Cohere cross-encoder"
-              icon={<Layers className="w-4 h-4" />}
-              color="blue"
             />
             <FlowArrow label="top ~10" />
             <ArchNode
@@ -1146,19 +1138,6 @@ aimory-talent-pool-dev-frontend-{acct-id}   # S3`}</CodeBlock>
           </p>
         </SubSection>
 
-        <SubSection title="The reranker">
-          <p className="text-sm leading-relaxed">
-            Before any candidate reaches the LLM, a dedicated reranking
-            model (Cohere Rerank, via Bedrock) reads each candidate's full
-            résumé side-by-side with the job description and reorders the
-            fused list by genuine relevance — catching nuance that
-            keyword/embedding matching alone can miss. Its reordering is
-            blended back with the fusion order (also via RRF) rather than
-            replacing it outright, so one bad reranker call can't drop a
-            well-matched candidate out of contention entirely.
-          </p>
-        </SubSection>
-
         <SubSection title="Hard filters — the safety gate">
           <div className="flex gap-3 p-4 rounded-xl bg-destructive/5 border border-destructive/20 mb-3">
             <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
@@ -1174,7 +1153,7 @@ aimory-talent-pool-dev-frontend-{acct-id}   # S3`}</CodeBlock>
               differently, one path can surface a candidate the other would
               have excluded. The matcher re-applies the clearance
               requirement to the fully merged candidate set — after both
-              search paths have contributed and before reranking or
+              search paths have contributed and before
               scoring — so a clearance-ineligible candidate can never reach
               the scored results, regardless of which search method
               surfaced them.
@@ -1223,7 +1202,6 @@ aimory-talent-pool-dev-frontend-{acct-id}   # S3`}</CodeBlock>
             individual contribution to match quality.
           </p>
           <CodeBlock>{`?vector=true|false   # semantic résumé-chunk retrieval (default: true)
-?rerank=true|false   # Cohere cross-encoder reordering (default: true)
 ?expand=true|false   # lookup-table synonym expansion (default: false)
 ?limit=N             # number of ranked results to return`}</CodeBlock>
           <p className="text-sm mt-3">
