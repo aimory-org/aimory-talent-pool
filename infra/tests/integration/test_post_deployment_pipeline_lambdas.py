@@ -96,6 +96,14 @@ def _cleanup_audit_entries(pk: str):
 
 
 def _make_docx_bytes(text: str) -> bytes:
+    """Build a *valid* minimal OOXML .docx package.
+
+    Must include [Content_Types].xml and _rels/.rels, not just word/document.xml —
+    otherwise the archive is just a bare zip. The pipeline now hands the raw bytes
+    to Bedrock, which sniffs an incomplete package as application/zip and rejects
+    it. (The old text-extraction path read word/document.xml directly and tolerated
+    an incomplete package; document-block extraction does not.)
+    """
     ns = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
     root = ET.Element(f"{{{ns}}}document")
     body = ET.SubElement(root, f"{{{ns}}}body")
@@ -103,10 +111,31 @@ def _make_docx_bytes(text: str) -> bytes:
     run = ET.SubElement(paragraph, f"{{{ns}}}r")
     node = ET.SubElement(run, f"{{{ns}}}t")
     node.text = text
+    document_xml = ET.tostring(root, encoding="unicode")
+
+    content_types = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+        '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+        '<Default Extension="xml" ContentType="application/xml"/>'
+        '<Override PartName="/word/document.xml" '
+        'ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
+        "</Types>"
+    )
+    rels = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+        '<Relationship Id="rId1" '
+        'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" '
+        'Target="word/document.xml"/>'
+        "</Relationships>"
+    )
 
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w") as archive:
-        archive.writestr("word/document.xml", ET.tostring(root, encoding="unicode"))
+        archive.writestr("[Content_Types].xml", content_types)
+        archive.writestr("_rels/.rels", rels)
+        archive.writestr("word/document.xml", document_xml)
     return buffer.getvalue()
 
 

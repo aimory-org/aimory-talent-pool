@@ -505,23 +505,28 @@ class TestPersistDuplicateDetection:
 BUCKET = "test-resume-bucket"
 
 
-def _content_event(profile, key, text, bucket=BUCKET):
+def _content_event(profile, key, text="", bucket=BUCKET):
+    # `text` populates resume_text (stored for search); the content hash is
+    # computed from the raw S3 object bytes, not this text.
     return {"extracted": profile, "bucket": bucket, "key": key, "normalized": {"text": text}}
 
 
 class TestPersistContentHashDedup:
-    def test_exact_content_match_merges_into_existing_record(self, all_tables, s3_buckets, sample_profile):
-        s3_buckets.put_object(Bucket=BUCKET, Key="raw/sarah-chen.pdf", Body=b"v1")
-        s3_buckets.put_object(Bucket=BUCKET, Key="raw/sarah-chen-v2.pdf", Body=b"v2")
-        shared_text = "Sarah Chen Senior Engineer ten years experience"
+    """Content-hash dedup is byte-based: the hash is SHA-256 of the raw uploaded
+    file, so identical re-uploads merge regardless of extraction quality."""
+
+    def test_identical_bytes_merge_into_existing_record(self, all_tables, s3_buckets, sample_profile):
+        body = b"%PDF-1.4 identical resume bytes"
+        s3_buckets.put_object(Bucket=BUCKET, Key="raw/sarah-chen.pdf", Body=body)
+        s3_buckets.put_object(Bucket=BUCKET, Key="raw/sarah-chen-v2.pdf", Body=body)  # same bytes
 
         app = _reload_app()
-        result1 = app.handler(_content_event(sample_profile, "raw/sarah-chen.pdf", shared_text), None)
+        result1 = app.handler(_content_event(sample_profile, "raw/sarah-chen.pdf"), None)
         assert result1["pk"] == f"{BUCKET}#raw/sarah-chen.pdf"
         assert result1["content_duplicate_of"] is None
 
         app = _reload_app()
-        result2 = app.handler(_content_event(sample_profile, "raw/sarah-chen-v2.pdf", shared_text), None)
+        result2 = app.handler(_content_event(sample_profile, "raw/sarah-chen-v2.pdf"), None)
 
         # The renamed re-upload merges into the original — no second profile created.
         assert result2["pk"] == f"{BUCKET}#raw/sarah-chen.pdf"
@@ -531,32 +536,32 @@ class TestPersistContentHashDedup:
         assert table.get_item(Key={"pk": f"{BUCKET}#raw/sarah-chen-v2.pdf"}).get("Item") is None
         assert table.get_item(Key={"pk": f"{BUCKET}#raw/sarah-chen.pdf"}).get("Item") is not None
 
-    def test_exact_content_match_deletes_redundant_s3_object(self, all_tables, s3_buckets, sample_profile):
-        s3_buckets.put_object(Bucket=BUCKET, Key="raw/resume.pdf", Body=b"v1")
-        s3_buckets.put_object(Bucket=BUCKET, Key="raw/resume-copy.pdf", Body=b"v2")
-        shared_text = "identical resume text"
+    def test_identical_bytes_delete_redundant_s3_object(self, all_tables, s3_buckets, sample_profile):
+        body = b"identical bytes"
+        s3_buckets.put_object(Bucket=BUCKET, Key="raw/resume.pdf", Body=body)
+        s3_buckets.put_object(Bucket=BUCKET, Key="raw/resume-copy.pdf", Body=body)
 
         app = _reload_app()
-        app.handler(_content_event(sample_profile, "raw/resume.pdf", shared_text), None)
+        app.handler(_content_event(sample_profile, "raw/resume.pdf"), None)
         app = _reload_app()
-        app.handler(_content_event(sample_profile, "raw/resume-copy.pdf", shared_text), None)
+        app.handler(_content_event(sample_profile, "raw/resume-copy.pdf"), None)
 
         with pytest.raises(ClientError):
             s3_buckets.head_object(Bucket=BUCKET, Key="raw/resume-copy.pdf")
         # Original file is untouched.
         s3_buckets.head_object(Bucket=BUCKET, Key="raw/resume.pdf")
 
-    def test_exact_content_match_writes_audit_diff(self, all_tables, s3_buckets, sample_profile):
-        s3_buckets.put_object(Bucket=BUCKET, Key="raw/resume.pdf", Body=b"v1")
-        s3_buckets.put_object(Bucket=BUCKET, Key="raw/resume-copy.pdf", Body=b"v2")
-        shared_text = "identical resume text"
+    def test_identical_bytes_writes_audit_diff(self, all_tables, s3_buckets, sample_profile):
+        body = b"identical bytes"
+        s3_buckets.put_object(Bucket=BUCKET, Key="raw/resume.pdf", Body=body)
+        s3_buckets.put_object(Bucket=BUCKET, Key="raw/resume-copy.pdf", Body=body)
 
         app = _reload_app()
-        result1 = app.handler(_content_event(sample_profile, "raw/resume.pdf", shared_text), None)
+        result1 = app.handler(_content_event(sample_profile, "raw/resume.pdf"), None)
 
         profile2 = {**sample_profile, "job_title": "Staff Engineer"}
         app = _reload_app()
-        app.handler(_content_event(profile2, "raw/resume-copy.pdf", shared_text), None)
+        app.handler(_content_event(profile2, "raw/resume-copy.pdf"), None)
 
         entries = all_tables["audit_log"].query(KeyConditionExpression=Key("pk").eq(result1["pk"]))["Items"]
         assert sorted(e["action"] for e in entries) == ["CREATE", "UPDATE"]
@@ -566,14 +571,14 @@ class TestPersistContentHashDedup:
             "new": "Staff Engineer",
         }
 
-    def test_different_content_creates_separate_records(self, all_tables, s3_buckets, sample_profile):
-        s3_buckets.put_object(Bucket=BUCKET, Key="raw/resume1.pdf", Body=b"v1")
-        s3_buckets.put_object(Bucket=BUCKET, Key="raw/resume2.pdf", Body=b"v2")
+    def test_different_bytes_create_separate_records(self, all_tables, s3_buckets, sample_profile):
+        s3_buckets.put_object(Bucket=BUCKET, Key="raw/resume1.pdf", Body=b"bytes one")
+        s3_buckets.put_object(Bucket=BUCKET, Key="raw/resume2.pdf", Body=b"bytes two")
 
         app = _reload_app()
-        app.handler(_content_event(sample_profile, "raw/resume1.pdf", "resume text one"), None)
+        app.handler(_content_event(sample_profile, "raw/resume1.pdf"), None)
         app = _reload_app()
-        result2 = app.handler(_content_event(sample_profile, "raw/resume2.pdf", "resume text two"), None)
+        result2 = app.handler(_content_event(sample_profile, "raw/resume2.pdf"), None)
 
         assert result2["content_duplicate_of"] is None
         table = all_tables["talent_profiles"]
@@ -583,9 +588,8 @@ class TestPersistContentHashDedup:
         s3_buckets.head_object(Bucket=BUCKET, Key="raw/resume2.pdf")
 
     def test_reprocessing_same_key_is_not_a_content_duplicate(self, all_tables, s3_buckets, sample_profile):
-        s3_buckets.put_object(Bucket=BUCKET, Key="raw/resume.pdf", Body=b"v1")
-        shared_text = "identical resume text"
-        event = _content_event(sample_profile, "raw/resume.pdf", shared_text)
+        s3_buckets.put_object(Bucket=BUCKET, Key="raw/resume.pdf", Body=b"resume bytes")
+        event = _content_event(sample_profile, "raw/resume.pdf")
 
         app = _reload_app()
         app.handler(event, None)
@@ -596,11 +600,25 @@ class TestPersistContentHashDedup:
         # Reprocessing must not delete the file it was triggered by.
         s3_buckets.head_object(Bucket=BUCKET, Key="raw/resume.pdf")
 
-    def test_empty_resume_text_skips_content_hash_matching(self, all_tables, sample_profile):
+    def test_identical_bytes_dedup_even_with_unknown_name_and_empty_text(self, all_tables, s3_buckets, sample_profile):
+        # The gap this fix closes: scanned/image docs whose NAME and TEXT both fail
+        # to extract slip past both name-based flagging and (old) text-hash dedup.
+        # Byte-hash still catches identical re-uploads.
+        body = b"scanned image pdf bytes with no extractable text"
+        s3_buckets.put_object(Bucket=BUCKET, Key="raw/nameless.pdf", Body=body)
+        s3_buckets.put_object(Bucket=BUCKET, Key="raw/nameless-copy.pdf", Body=body)
+        nameless = {**sample_profile, "name": None}
+
         app = _reload_app()
-        result1 = app.handler(_make_event(sample_profile, bucket=BUCKET, key="raw/resume1.pdf"), None)
+        result1 = app.handler(_content_event(nameless, "raw/nameless.pdf", text=""), None)
         app = _reload_app()
-        result2 = app.handler(_make_event(sample_profile, bucket=BUCKET, key="raw/resume2.pdf"), None)
+        result2 = app.handler(_content_event(nameless, "raw/nameless-copy.pdf", text=""), None)
 
         assert result1["content_duplicate_of"] is None
-        assert result2["content_duplicate_of"] is None
+        assert result2["content_duplicate_of"] == f"{BUCKET}#raw/nameless.pdf"
+
+    def test_missing_s3_object_skips_content_hash(self, all_tables, s3_buckets, sample_profile):
+        # If the object can't be read, hashing degrades gracefully (no crash, no dedup).
+        app = _reload_app()
+        result = app.handler(_content_event(sample_profile, "raw/does-not-exist.pdf"), None)
+        assert result["content_duplicate_of"] is None
