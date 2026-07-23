@@ -2,7 +2,7 @@
 # Lambda functions for the document processing pipeline.
 #
 # 6 shared Lambdas (starter, classify, start_textract, check_textract,
-# fetch_textract, normalize) use source from this module's lambda_src/.
+# fetch_textract, gather_text) use source from this module's lambda_src/.
 #
 # llm_extract uses this module's lambda_src/ PLUS pipeline-specific config
 # files (schema.json, prompt.txt, hooks.py) bundled into the same zip.
@@ -36,7 +36,7 @@ locals {
       }
     }
 
-    normalize = { timeout = 30, memory = 512, env = {} }
+    gather_text = { timeout = 30, memory = 512, env = {} }
   }
 
   pdfminer_layer_ready = length(fileset(path.module, "layers/pdfminer/python/**")) > 0

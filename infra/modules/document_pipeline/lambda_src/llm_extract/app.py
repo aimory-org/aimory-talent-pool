@@ -12,6 +12,7 @@ AWS_REGION = os.environ.get("AWS_REGION", "us-east-1")
 
 bedrock_client = boto3.client("bedrock-runtime", region_name=AWS_REGION)
 dynamodb = boto3.resource("dynamodb", region_name=AWS_REGION)
+s3 = boto3.client("s3", region_name=AWS_REGION)
 
 # Lookup table names for injecting existing values into the prompt
 SKILLS_LOOKUP_TABLE = os.environ.get("SKILLS_LOOKUP_TABLE", "")
@@ -22,6 +23,10 @@ INDUSTRY_CATEGORIES_LOOKUP_TABLE = os.environ.get("INDUSTRY_CATEGORIES_LOOKUP_TA
 # Pipeline config files are bundled into the same zip by Terraform.
 # In tests, set PIPELINE_CONFIG_DIR env var to point to the config directory.
 _CONFIG_DIR = os.environ.get("PIPELINE_CONFIG_DIR", os.path.dirname(os.path.abspath(__file__)))
+
+# Converse document `format` values, keyed by file extension. The model reads the
+# document natively (visual layout for PDFs), so no pre-extracted text is needed.
+FORMAT_BY_EXT = {"pdf": "pdf", "docx": "docx", "doc": "doc"}
 
 
 def _load_config_file(filename):
@@ -67,18 +72,45 @@ def _fetch_lookup_values(table_name, key_attr):
         return []
 
 
-def _extract_text(event: dict) -> str:
+def _document_block(event: dict) -> dict:
+    """Build a Converse document content block from the raw S3 object.
+
+    The document is handed to the model as-is (Bedrock reads PDFs visually, so
+    scanned resumes work without OCR). We do NOT feed pre-extracted text here —
+    that path (for search/dedup storage) runs in parallel in the pipeline.
+    """
     try:
-        return str(event["normalized"]["text"])
+        bucket = event["bucket"]
+        key = event["key"]
     except KeyError as e:
-        raise ValueError(f"Missing normalized text in event: {e}")
+        raise ValueError(f"Missing bucket/key in event: {e}")
+
+    ext = key.rsplit(".", 1)[-1].lower() if "." in key else ""
+    fmt = FORMAT_BY_EXT.get(ext)
+    if not fmt:
+        raise ValueError(f"Unsupported file type for extraction: {ext!r}")
+
+    obj = s3.get_object(Bucket=bucket, Key=key)
+    data = obj["Body"].read()
+
+    # Converse document names allow alphanumerics, spaces, hyphens, parens and
+    # brackets only, with no consecutive spaces.
+    basename = key.rsplit("/", 1)[-1].rsplit(".", 1)[0]
+    name = re.sub(r"[^A-Za-z0-9 ()\[\]-]", " ", basename)
+    name = re.sub(r"\s+", " ", name).strip() or "document"
+
+    block = {"format": fmt, "name": name, "source": {"bytes": data}}
+    if fmt == "pdf":
+        # Citations unlock Claude's full visual understanding of the PDF pages.
+        block["citations"] = {"enabled": True}
+    return block
 
 
 def handler(event, context):
     if not MODEL_ID:
         raise ValueError("MODEL_ID env var is required (set to a Bedrock model ID available in your region).")
 
-    document_text = _extract_text(event)
+    document_block = _document_block(event)
 
     # Load pipeline-specific config
     schema = _load_schema()
@@ -119,8 +151,7 @@ def handler(event, context):
     user_prompt = f"""Target JSON schema:
   {schema_text}
   {lookups_context}
-  Document text:
-  {document_text}
+  The document to extract from is attached. Read it and extract every field per the schema.
   """
 
     # Retry with exponential backoff for throttling. Delays are capped so the
@@ -136,9 +167,10 @@ def handler(event, context):
         try:
             resp = bedrock_client.converse(
                 modelId=MODEL_ID,
-                messages=[{"role": "user", "content": [{"text": user_prompt}]}],
+                messages=[{"role": "user", "content": [{"document": document_block}, {"text": user_prompt}]}],
                 system=[{"text": system_instructions}],
-                inferenceConfig={"maxTokens": 4096, "temperature": 0.1, "topP": 0.9},
+                # Sonnet 4.6+ rejects temperature and top_p together; keep temperature only.
+                inferenceConfig={"maxTokens": 4096, "temperature": 0.1},
             )
             break
         except ClientError as e:
@@ -158,7 +190,9 @@ def handler(event, context):
     if not text_blocks:
         raise RuntimeError(f"No text content returned from model. Raw content: {content}")
 
-    raw = text_blocks[0].strip()
+    # With citations enabled the answer may be split across several text blocks;
+    # concatenate them before parsing the JSON object back out.
+    raw = "".join(text_blocks).strip()
     if raw.startswith("```"):
         raw = raw.strip("`")
         raw = raw.replace("json\n", "", 1).strip()

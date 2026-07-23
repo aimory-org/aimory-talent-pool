@@ -474,10 +474,17 @@ def _write_audit_entry(pk, action, timestamp, candidate_name=None, changes=None)
 
 
 def _compute_content_hash(resume_text):
-    """SHA-256 of normalized resume text, used to detect byte-for-byte duplicate uploads."""
+    """SHA-256 of normalized resume text, used to detect byte-for-byte duplicate uploads.
+
+    Bullet/pipe separators are folded to whitespace here so the hash stays stable
+    across the pipeline change that removed the text-normalization step (which
+    used to strip them before this ran). Without this, re-uploads of bulleted
+    resumes would no longer match records created before that change.
+    """
     if not resume_text or not resume_text.strip():
         return ""
-    normalized = " ".join(resume_text.split()).lower()
+    folded = resume_text.replace("|", " ").replace("•", " ")
+    normalized = " ".join(folded.split()).lower()
     return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
 
 

@@ -170,8 +170,8 @@ def test_pipeline_classify_lambda_docx_path():
         _delete_s3_object(RESUME_BUCKET, key)
 
 
-def test_pipeline_normalize_lambda_direct_text_path():
-    function_name = resolve_function_name("pipeline", "normalize", "PIPELINE_NORMALIZE_FUNCTION_NAME")
+def test_pipeline_gather_text_lambda_direct_text_path():
+    function_name = resolve_function_name("pipeline", "gather_text", "PIPELINE_GATHER_TEXT_FUNCTION_NAME")
     event = {
         "prep": {
             "skip_textract": True,

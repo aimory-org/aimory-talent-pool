@@ -226,7 +226,7 @@ function ArchitectureDiagram() {
             <FlowArrow label="S3 Event" />
             <ArchNode
               label="Document Pipeline"
-              sub="detect → extract → analyze → normalize → persist"
+              sub="AI extract ∥ text extract → persist"
               icon={<RefreshCw className="w-4 h-4" />}
               color="violet"
               wide
@@ -263,7 +263,7 @@ function ArchitectureDiagram() {
             <FlowArrow label="S3 Event" />
             <ArchNode
               label="Document Pipeline"
-              sub="detect → extract → analyze → normalize → persist"
+              sub="AI extract ∥ text extract → persist"
               icon={<RefreshCw className="w-4 h-4" />}
               color="violet"
               wide
@@ -277,9 +277,10 @@ function ArchitectureDiagram() {
             />
           </div>
           <p className="text-[10px] text-foreground/40 mt-2 ml-1">
-            Both pipelines share the same reusable Step Functions workflow
-            (detect_type → extract_text → analyze → normalize → persist) with
-            pipeline-specific prompts and persist logic
+            Both pipelines share the same reusable Step Functions workflow: an AI
+            branch (Claude reads the raw document) runs in parallel with a text
+            branch (extract + Textract → gather_text for search/dedup), then
+            merges into persist — with pipeline-specific prompts and persist logic
           </p>
         </div>
 
@@ -361,42 +362,42 @@ const PIPELINE_STEPS = [
     step: "starter",
     trigger: "S3 PutObject",
     action:
-      "Checks for duplicate in-flight executions (idempotency by S3 key). Starts a Step Functions execution passing { bucket, key }.",
+      "Checks for duplicate in-flight executions (idempotency by S3 key). Starts a Step Functions execution passing { bucket, key } into two parallel branches.",
     color: "violet" as const,
   },
   {
-    step: "detect_type",
-    trigger: "Step Functions",
+    step: "analyze (llm_extract)",
+    trigger: "Parallel · AI branch",
     action:
-      "Uses pdfminer to attempt native text extraction. If text is too short or empty, routes to the OCR branch. Otherwise skips directly to analyze.",
+      "Calls Amazon Bedrock (Claude Sonnet 4.6) with the raw document attached. Claude reads the document directly — PDFs are understood visually, so scanned resumes need no OCR here — and returns structured JSON including is_valid. Resume: name, contact, skills, clearance, companies, certifications, location, experience, summary. JD: title, summary, required/desired skills, certifications, clearance, experience, location, salary range.",
+    color: "violet" as const,
+  },
+  {
+    step: "detect_type (classify)",
+    trigger: "Parallel · text branch",
+    action:
+      "Runs concurrently with analyze. Uses pdfminer for native text extraction; if the text is too short or empty (scanned document), routes to the OCR step.",
     color: "blue" as const,
   },
   {
-    step: "extract_text",
-    trigger: "OCR branch only",
+    step: "extract_text (Textract)",
+    trigger: "text branch · OCR only",
     action:
-      "Calls Amazon Textract DetectDocumentText. Returns raw text from scanned images. Typically adds 30–60 s to processing time.",
+      "Calls Amazon Textract on scanned documents. Adds 30–60 s. This text is used only for full-text search and dedup — it is never sent to the LLM (the AI branch reads the raw document instead).",
     color: "amber" as const,
   },
   {
-    step: "analyze",
-    trigger: "Step Functions",
+    step: "gather_text",
+    trigger: "text branch",
     action:
-      "Calls Amazon Bedrock (Claude Sonnet) with a pipeline-specific prompt and JSON schema. Resume extraction: name, contact, skills, clearance, companies, certifications, location, experience, summary. JD extraction: title, summary, required/desired skills, certifications, clearance, experience, location, salary range.",
-    color: "violet" as const,
-  },
-  {
-    step: "normalize",
-    trigger: "Step Functions",
-    action:
-      "Validates and deduplicates extracted fields. Maps clearance strings to the enum. Builds skill_names and cert_names as comma-separated strings for OpenSearch.",
+      "Assembles the plain document text (direct extraction, or the Textract lines) deterministically — no reformatting. Used for full-text search, chunked embeddings, and content-hash dedup. Fault-tolerant: a text failure yields empty text and never sinks a good extraction.",
     color: "blue" as const,
   },
   {
     step: "persist",
-    trigger: "Step Functions",
+    trigger: "after both branches merge",
     action:
-      "Upserts the profile to DynamoDB. For resumes: updates talent_profiles and all 6 lookup tables; checks for name-based duplicates and flags matches. For JDs: updates job_descriptions with title-based duplicate detection. DynamoDB Streams then triggers opensearch_sync.",
+      "Once both branches complete and the document is confirmed valid, upserts the profile to DynamoDB. For resumes: updates talent_profiles and all 6 lookup tables; checks for name and content-hash duplicates and flags matches. For JDs: updates job_descriptions with title-based duplicate detection. DynamoDB Streams then triggers opensearch_sync.",
     color: "emerald" as const,
   },
 ];
@@ -414,9 +415,86 @@ function PipelineDiagram() {
       <div className="px-5 py-3 border-b border-border bg-secondary flex items-center gap-2">
         <div className="w-2 h-2 rounded-full bg-primary" />
         <span className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
-          Step Functions Express Workflow
+          Step Functions state machine
         </span>
       </div>
+
+      {/* Visual flow map — shows the two branches forking and merging */}
+      <div className="px-5 pt-5 border-b border-border pb-6">
+        <div className="overflow-x-auto">
+          <div className="flex flex-col items-center gap-2 min-w-max mx-auto">
+            <ArchNode
+              label="starter"
+              sub="S3 event → { bucket, key }"
+              icon={<Zap className="w-4 h-4" />}
+              color="violet"
+              wide
+            />
+            <FlowArrow label="forks into two parallel branches" vertical />
+
+            {/* The two branches, side by side */}
+            <div className="flex items-stretch gap-5">
+              {/* Branch A — AI */}
+              <div className="flex flex-col items-center gap-2 rounded-xl border border-border bg-accent/5 px-4 py-3">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/45">
+                  Branch A · AI
+                </span>
+                <ArchNode
+                  label="llm_extract"
+                  sub="Claude reads the raw document"
+                  icon={<Sparkles className="w-4 h-4" />}
+                  color="violet"
+                  wide
+                />
+                <span className="text-[10px] text-foreground/40 text-center max-w-[150px]">
+                  Structured JSON + is_valid. PDFs read visually — no OCR.
+                </span>
+              </div>
+
+              {/* Branch B — text */}
+              <div className="flex flex-col items-center gap-2 rounded-xl border border-border bg-secondary/40 px-4 py-3">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/45">
+                  Branch B · text (search / dedup)
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <ArchNode label="classify" sub="extract text" color="blue" />
+                  <FlowArrow />
+                  <ArchNode
+                    label="textract"
+                    sub="scanned only"
+                    color="amber"
+                  />
+                  <FlowArrow />
+                  <ArchNode label="gather_text" sub="plain text" color="blue" />
+                </div>
+                <span className="text-[10px] text-foreground/40 text-center max-w-[280px]">
+                  Deterministic text for full-text search, embeddings and
+                  content-hash dedup — never sent to the LLM.
+                </span>
+              </div>
+            </div>
+
+            <FlowArrow label="branches merge" vertical />
+            <ArchNode
+              label="CheckIsValid"
+              sub="drop non-résumés"
+              icon={<GitMerge className="w-4 h-4" />}
+              color="slate"
+              wide
+            />
+            <FlowArrow vertical />
+            <ArchNode
+              label="persist"
+              sub="DynamoDB → Streams → OpenSearch"
+              icon={<Database className="w-4 h-4" />}
+              color="emerald"
+              wide
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Per-step detail */}
       <div className="p-5 space-y-0">
         {PIPELINE_STEPS.map((s, i) => (
           <div key={s.step}>
@@ -641,7 +719,7 @@ const MODULES = [
     name: "document_pipeline/",
     color: "violet" as const,
     icon: <Cpu className="w-4 h-4" />,
-    desc: "Reusable Step Functions Express Workflow + Lambda functions + pdfminer layer. Instantiated twice: once for resumes (raw/ prefix → talent_profiles) and once for job descriptions (job-descriptions/raw/ → job_descriptions). Each instance has its own persist Lambda with pipeline-specific logic.",
+    desc: "Reusable Step Functions state machine + Lambda functions + pdfminer layer. Instantiated twice: once for resumes (raw/ prefix → talent_profiles) and once for job descriptions (job-descriptions/raw/ → job_descriptions). Each instance has its own persist Lambda with pipeline-specific logic.",
   },
   {
     name: "storage/",
@@ -896,7 +974,7 @@ aimory-talent-pool-dev-frontend-{acct-id}   # S3`}</CodeBlock>
         icon={<Cpu className="w-6 h-6" />}
       >
         <p>
-          Reusable Step Functions Express Workflow defined in{" "}
+          Reusable Step Functions state machine defined in{" "}
           <Mono>infra/modules/document_pipeline/</Mono>. Instantiated twice:
           once for resumes (<Mono>resumes/raw/</Mono> →{" "}
           <Mono>talent_profiles</Mono>) and once for job descriptions (

@@ -20,7 +20,7 @@ infra/
     │   └── lambda_src/       # Python handlers (list_talents, get_talent, etc.)
     ├── auth/                 # Cognito User Pool + Microsoft Entra ID federation
     ├── document_pipeline/    # Reusable document processing pipeline (see its README)
-    │   ├── lambda_src/       # Shared Lambdas (starter, classify, textract, normalize, llm_extract)
+    │   ├── lambda_src/       # Shared Lambdas (starter, classify, textract, gather_text, llm_extract)
     │   └── layers/           # Custom Lambda layers (pdfminer)
     ├── frontend/             # S3 + CloudFront static hosting
     ├── jobs/                 # Scheduled background jobs (stale checker, lookup dedup)
@@ -206,25 +206,25 @@ API Gateway is configured with a "JWT Authorizer" that knows the Cognito User Po
                                 │
                                 ▼
 ┌───────────────────────────────────────────────────────────────────┐
-│                      Step Functions Pipeline                       │
+│                Step Functions Pipeline (Parallel)                  │
 │                                                                   │
-│  ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐       │
-│  │ classify │──▶│  start   │──▶│  check   │──▶│  fetch   │       │
-│  │          │   │ textract │   │ textract │   │ textract │       │
-│  └────┬─────┘   └──────────┘   └──────────┘   └────┬─────┘       │
-│       │                              ▲              │             │
-│       │ (skip if                     │ (wait/poll)  │             │
-│       │  searchable PDF)             └──────────────┘             │
-│       │                                             │             │
-│       │         ┌───────────┐   ┌───────────┐   ┌───────────┐    │
-│       │         │ normalize │──▶│llm_extract│──▶│  persist  │    │
-│       │         │           │   │ (Bedrock) │   │           │    │
-│       │         └───────────┘   └───────────┘   └───────────┘    │
-│       │               ▲                                          │
-│       └───────────────┴─────────────────────────────────────┘    │
-│                       │                                          │
-│                       └── both paths converge at normalize       │
+│  Branch A (AI)                                                     │
+│  ┌───────────────────────────────────────────┐                   │
+│  │ llm_extract — Claude reads the raw         │                   │
+│  │ document (visual for PDFs) → JSON+is_valid │──┐                │
+│  └───────────────────────────────────────────┘  │                │
+│                                                  ▼                │
+│  Branch B (text, for search + dedup)         ┌───────┐  ┌───────┐ │
+│  ┌──────────┐  ┌──────────────────┐  ┌──────┐│ Check │─▶│persist│ │
+│  │ classify │─▶│ start/check/fetch │─▶│gather││ Valid │  └───────┘ │
+│  │ (extract │  │ textract (scanned)│  │ text ││       │            │
+│  │  text)   │  └──────────────────┘  └──────┘└───────┘            │
+│  └────┬─────┘         ▲                  ▲                        │
+│       │ (skip if      │ (wait/poll)      │                        │
+│       │  born-digital)└──────────────────┘                        │
+│       └───────────────────────────────────┘                       │
 │                                                                   │
+│  Branches run concurrently; both feed the Merge → Check → persist  │
 └───────────────────────────────────────────────────────────────────┘
                                 │
                                 ▼

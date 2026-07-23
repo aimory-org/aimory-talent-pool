@@ -1,89 +1,127 @@
 {
-  "Comment": "Document processing pipeline: S3 -> Textract -> Normalize -> LLM -> Persist",
+  "Comment": "Document pipeline: parallel AI extraction (reads the raw document) + text assembly (for search/dedup), then persist.",
   "TimeoutSeconds": 1800,
-  "StartAt": "ClassifyAndPrep",
+  "StartAt": "Ingest",
   "States": {
-    "ClassifyAndPrep": {
-      "Type": "Task",
-      "Resource": "${lambda_classify_arn}",
-      "ResultPath": "$.prep",
-      "Next": "ChooseTextPath"
-    },
-    "ChooseTextPath": {
-      "Type": "Choice",
-      "Choices": [
+    "Ingest": {
+      "Type": "Parallel",
+      "ResultPath": "$.branches",
+      "Next": "Merge",
+      "Branches": [
         {
-          "Variable": "$.prep.skip_textract",
-          "BooleanEquals": true,
-          "Next": "Normalize"
-        }
-      ],
-      "Default": "StartTextract"
-    },
-    "StartTextract": {
-      "Type": "Task",
-      "Resource": "${lambda_start_textract_arn}",
-      "ResultPath": "$.textract",
-      "Next": "WaitBeforeCheck"
-    },
-    "WaitBeforeCheck": {
-      "Type": "Wait",
-      "Seconds": 10,
-      "Next": "CheckTextract"
-    },
-    "CheckTextract": {
-      "Type": "Task",
-      "Resource": "${lambda_check_textract_arn}",
-      "ResultPath": "$.textractStatus",
-      "Next": "TextractStatusChoice"
-    },
-    "TextractStatusChoice": {
-      "Type": "Choice",
-      "Choices": [
-        {
-          "Variable": "$.textractStatus.status",
-          "StringEquals": "SUCCEEDED",
-          "Next": "FetchTextractBlocks"
+          "Comment": "AI branch: the LLM reads the raw document (visual for PDFs) and returns structured JSON, including is_valid.",
+          "StartAt": "LLMExtract",
+          "States": {
+            "LLMExtract": {
+              "Type": "Task",
+              "Resource": "${lambda_llm_extract_arn}",
+              "Retry": [
+                {
+                  "Comment": "Batch uploads can exhaust the Bedrock quota faster than the Lambda's internal backoff can absorb; retry the whole extraction with long intervals so queued documents drain.",
+                  "ErrorEquals": [
+                    "States.TaskFailed",
+                    "States.Timeout",
+                    "Lambda.TooManyRequestsException",
+                    "Lambda.ServiceException"
+                  ],
+                  "IntervalSeconds": 60,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2.0,
+                  "JitterStrategy": "FULL"
+                }
+              ],
+              "End": true
+            }
+          }
         },
         {
-          "Variable": "$.textractStatus.status",
-          "StringEquals": "FAILED",
-          "Next": "FailWorkflow"
+          "Comment": "Text branch: deterministic plain-text extraction for search + dedup. Fault-tolerant — a text failure yields empty text and never sinks a good extraction.",
+          "StartAt": "ExtractText",
+          "States": {
+            "ExtractText": {
+              "Type": "Task",
+              "Resource": "${lambda_classify_arn}",
+              "ResultPath": "$.prep",
+              "Catch": [{ "ErrorEquals": ["States.ALL"], "Next": "TextUnavailable" }],
+              "Next": "ChooseTextPath"
+            },
+            "ChooseTextPath": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.prep.skip_textract",
+                  "BooleanEquals": true,
+                  "Next": "GatherText"
+                }
+              ],
+              "Default": "StartTextract"
+            },
+            "StartTextract": {
+              "Type": "Task",
+              "Resource": "${lambda_start_textract_arn}",
+              "ResultPath": "$.textract",
+              "Catch": [{ "ErrorEquals": ["States.ALL"], "Next": "TextUnavailable" }],
+              "Next": "WaitBeforeCheck"
+            },
+            "WaitBeforeCheck": {
+              "Type": "Wait",
+              "Seconds": 10,
+              "Next": "CheckTextract"
+            },
+            "CheckTextract": {
+              "Type": "Task",
+              "Resource": "${lambda_check_textract_arn}",
+              "ResultPath": "$.textractStatus",
+              "Catch": [{ "ErrorEquals": ["States.ALL"], "Next": "TextUnavailable" }],
+              "Next": "TextractStatusChoice"
+            },
+            "TextractStatusChoice": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.textractStatus.status",
+                  "StringEquals": "SUCCEEDED",
+                  "Next": "FetchTextractBlocks"
+                },
+                {
+                  "Variable": "$.textractStatus.status",
+                  "StringEquals": "FAILED",
+                  "Next": "TextUnavailable"
+                }
+              ],
+              "Default": "WaitBeforeCheck"
+            },
+            "FetchTextractBlocks": {
+              "Type": "Task",
+              "Resource": "${lambda_fetch_textract_arn}",
+              "ResultPath": "$.textractBlocks",
+              "Catch": [{ "ErrorEquals": ["States.ALL"], "Next": "TextUnavailable" }],
+              "Next": "GatherText"
+            },
+            "GatherText": {
+              "Type": "Task",
+              "Resource": "${lambda_gather_text_arn}",
+              "Catch": [{ "ErrorEquals": ["States.ALL"], "Next": "TextUnavailable" }],
+              "End": true
+            },
+            "TextUnavailable": {
+              "Type": "Pass",
+              "Result": { "text": "", "line_count": 0 },
+              "End": true
+            }
+          }
         }
-      ],
-      "Default": "WaitBeforeCheck"
+      ]
     },
-    "FetchTextractBlocks": {
-      "Type": "Task",
-      "Resource": "${lambda_fetch_textract_arn}",
-      "ResultPath": "$.textractBlocks",
-      "Next": "Normalize"
-    },
-    "Normalize": {
-      "Type": "Task",
-      "Resource": "${lambda_normalize_arn}",
-      "ResultPath": "$.normalized",
-      "Next": "LLMExtract"
-    },
-    "LLMExtract": {
-      "Type": "Task",
-      "Resource": "${lambda_llm_extract_arn}",
-      "ResultPath": "$.extracted",
-      "Retry": [
-        {
-          "Comment": "Batch uploads can exhaust the Bedrock quota faster than the Lambda's internal backoff can absorb; retry the whole extraction with long intervals so queued documents drain.",
-          "ErrorEquals": [
-            "States.TaskFailed",
-            "States.Timeout",
-            "Lambda.TooManyRequestsException",
-            "Lambda.ServiceException"
-          ],
-          "IntervalSeconds": 60,
-          "MaxAttempts": 3,
-          "BackoffRate": 2.0,
-          "JitterStrategy": "FULL"
-        }
-      ],
+    "Merge": {
+      "Type": "Pass",
+      "Comment": "Reshape the two branch outputs back into the persist input contract (extracted + normalized.text).",
+      "Parameters": {
+        "bucket.$": "$.bucket",
+        "key.$": "$.key",
+        "extracted.$": "$.branches[0]",
+        "normalized.$": "$.branches[1]"
+      },
       "Next": "CheckIsValid"
     },
     "CheckIsValid": {
@@ -99,7 +137,7 @@
     },
     "InvalidDocument": {
       "Type": "Succeed",
-      "Comment": "Document was not valid for this pipeline - deleted from S3"
+      "Comment": "Document was not valid for this pipeline - deleted from S3 by the extract hooks"
     },
     "Persist": {
       "Type": "Task",
@@ -107,11 +145,6 @@
       "ResultPath": "$.persisted",
       "Next": "Done"
     },
-    "Done": { "Type": "Succeed" },
-    "FailWorkflow": {
-      "Type": "Fail",
-      "Error": "TextractFailed",
-      "Cause": "Textract job returned FAILED"
-    }
+    "Done": { "Type": "Succeed" }
   }
 }
