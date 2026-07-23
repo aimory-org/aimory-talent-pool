@@ -473,19 +473,27 @@ def _write_audit_entry(pk, action, timestamp, candidate_name=None, changes=None)
         print(f"Warning: failed to write pipeline audit entry for {pk}: {exc}")
 
 
-def _compute_content_hash(resume_text):
-    """SHA-256 of normalized resume text, used to detect byte-for-byte duplicate uploads.
+def _compute_content_hash(bucket, key):
+    """SHA-256 of the raw uploaded file bytes, used to detect duplicate uploads of
+    the same file (e.g. the same resume re-uploaded under a new name).
 
-    Bullet/pipe separators are folded to whitespace here so the hash stays stable
-    across the pipeline change that removed the text-normalization step (which
-    used to strip them before this ran). Without this, re-uploads of bulleted
-    resumes would no longer match records created before that change.
+    Byte-based rather than text-based so it works even when name or text
+    extraction fails — the documents most likely to slip past name-based dedup
+    (scanned / image-heavy) are exactly the ones whose text may be empty. Returns
+    "" if the object can't be read, in which case content dedup is skipped for
+    this upload (name-based duplicate flagging still applies).
     """
-    if not resume_text or not resume_text.strip():
+    if not bucket or not key:
         return ""
-    folded = resume_text.replace("|", " ").replace("•", " ")
-    normalized = " ".join(folded.split()).lower()
-    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+    try:
+        obj = s3_client.get_object(Bucket=bucket, Key=key)
+        data = obj["Body"].read()
+    except Exception as exc:
+        print(f"Warning: could not read {bucket}/{key} for content hash: {exc}")
+        return ""
+    if not data:
+        return ""
+    return hashlib.sha256(data).hexdigest()
 
 
 def _find_content_duplicate(content_hash, current_pk):
@@ -566,7 +574,7 @@ def handler(event, context):
     if event.get("normalized") and event["normalized"].get("text"):
         resume_text = event["normalized"]["text"]
 
-    content_hash = _compute_content_hash(resume_text)
+    content_hash = _compute_content_hash(bucket, key)
 
     # Denormalized fields for filtering
     name_lower = profile["name"].lower() if profile["name"] else "unknown"
