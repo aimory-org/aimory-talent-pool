@@ -21,17 +21,20 @@ def _default_function_name(kind: str, key: str) -> str:
     if not PROJECT_NAME or not ENVIRONMENT:
         return ""
 
+    # api and jobs Lambdas are named with hyphens (e.g. api-list-talents,
+    # lookup-dedup). Document-pipeline Lambdas keep the key verbatim, so
+    # underscores are preserved (e.g. llm_extract, gather_text, start_textract).
     if kind == "api":
         return f"{PROJECT_NAME}-{ENVIRONMENT}-api-{key.replace('_', '-')}"
 
-    if kind == "resume_pipeline":
+    if kind == "jobs":
         return f"{PROJECT_NAME}-{ENVIRONMENT}-{key.replace('_', '-')}"
+
+    if kind in {"pipeline", "resume_pipeline"}:
+        return f"{PROJECT_NAME}-{ENVIRONMENT}-{key}"
 
     if kind == "jd_pipeline":
-        return f"{PROJECT_NAME}-{ENVIRONMENT}-jd-{key.replace('_', '-')}"
-
-    if kind in {"pipeline", "jobs"}:
-        return f"{PROJECT_NAME}-{ENVIRONMENT}-{key.replace('_', '-')}"
+        return f"{PROJECT_NAME}-{ENVIRONMENT}-jd-{key}"
 
     return ""
 
