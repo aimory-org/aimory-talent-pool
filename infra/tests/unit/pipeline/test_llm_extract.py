@@ -146,9 +146,7 @@ class TestLLMExtractJSONRepair:
         event = _seed("raw/file.pdf")
         app = _reload_app()
         with patch.object(app, "bedrock_client") as mock_bedrock:
-            mock_bedrock.converse.return_value = {
-                "output": {"message": {"content": [{"text": "not json at all {{{"}]}}
-            }
+            mock_bedrock.converse.return_value = {"output": {"message": {"content": [{"text": "not json at all {{{"}]}}}
             with pytest.raises(RuntimeError, match="not valid JSON"):
                 app.handler(event, None)
 
@@ -159,9 +157,7 @@ class TestLLMExtractThrottling:
 
         event = _seed("raw/file.pdf")
         app = _reload_app()
-        throttle_err = ClientError(
-            {"Error": {"Code": "ThrottlingException", "Message": "Rate exceeded"}}, "Converse"
-        )
+        throttle_err = ClientError({"Error": {"Code": "ThrottlingException", "Message": "Rate exceeded"}}, "Converse")
         success_resp = _bedrock_response({"is_valid": True, "name": "X"})
         with patch.object(app.time, "sleep"), patch.object(app, "bedrock_client") as mock_bedrock:
             mock_bedrock.converse.side_effect = [throttle_err, throttle_err, success_resp]
@@ -174,9 +170,7 @@ class TestLLMExtractThrottling:
 
         event = _seed("raw/file.pdf")
         app = _reload_app()
-        throttle_err = ClientError(
-            {"Error": {"Code": "ThrottlingException", "Message": "Rate exceeded"}}, "Converse"
-        )
+        throttle_err = ClientError({"Error": {"Code": "ThrottlingException", "Message": "Rate exceeded"}}, "Converse")
         with patch.object(app.time, "sleep"), patch.object(app, "bedrock_client") as mock_bedrock:
             mock_bedrock.converse.side_effect = [throttle_err] * 8
             with pytest.raises(RuntimeError, match="Bedrock converse failed"):

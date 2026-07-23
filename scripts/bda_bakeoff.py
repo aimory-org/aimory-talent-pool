@@ -102,7 +102,9 @@ def extract_pdf_text(data: bytes) -> str:
     try:
         from pdfminer.high_level import extract_text
     except Exception as e:  # noqa: BLE001
-        raise RuntimeError("pdfminer.six not installed -- `pip install pdfminer.six` to run the `current` PDF path") from e
+        raise RuntimeError(
+            "pdfminer.six not installed -- `pip install pdfminer.six` to run the `current` PDF path"
+        ) from e
     return str(extract_text(io.BytesIO(data)))
 
 
@@ -240,6 +242,7 @@ def run_bda(client, model, system, schema_text, path, data, region):
 
 def fetch_bda_markdown(s3, job_meta_uri: str) -> str:
     """Walk the BDA standard-output job result and pull markdown (fallback: text)."""
+
     def read_json(uri):
         _, _, rest = uri.partition("s3://")
         bucket, _, key = rest.partition("/")
@@ -319,18 +322,23 @@ def main():
     rows = []
     for path in files:
         data = path.read_bytes()
-        print(f"### {path.name}  ({len(data)//1024} KB)")
+        print(f"### {path.name}  ({len(data) // 1024} KB)")
         for m in methods:
             try:
-                r = METHODS[m](client, args.model, prompt, schema_text, path, data, args.region) if m == "bda" \
+                r = (
+                    METHODS[m](client, args.model, prompt, schema_text, path, data, args.region)
+                    if m == "bda"
                     else METHODS[m](client, args.model, prompt, schema_text, path, data)
+                )
                 (args.out / f"{path.stem}.{m}.json").write_text(json.dumps(r.get("result"), indent=2))
                 s = summarize(r)
                 rows.append((path.name, m, s))
                 extra = f" bda={r['bda_elapsed_s']}s" if "bda_elapsed_s" in r else ""
-                print(f"  {m:9} valid={s['valid']!s:5} title={s['job_title']!r:24} "
-                      f"svc={s['svc']} ind=[{s['industry']}] skills={s['skills']} "
-                      f"{s['sec']}s thr={s['thr']} in_tok={s['toks']}{extra}")
+                print(
+                    f"  {m:9} valid={s['valid']!s:5} title={s['job_title']!r:24} "
+                    f"svc={s['svc']} ind=[{s['industry']}] skills={s['skills']} "
+                    f"{s['sec']}s thr={s['thr']} in_tok={s['toks']}{extra}"
+                )
             except Exception as e:  # noqa: BLE001
                 print(f"  {m:9} ERROR: {type(e).__name__}: {e}")
         print()

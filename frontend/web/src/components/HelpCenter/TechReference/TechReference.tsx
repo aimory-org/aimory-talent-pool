@@ -415,9 +415,86 @@ function PipelineDiagram() {
       <div className="px-5 py-3 border-b border-border bg-secondary flex items-center gap-2">
         <div className="w-2 h-2 rounded-full bg-primary" />
         <span className="text-xs font-semibold text-foreground/60 uppercase tracking-wider">
-          Step Functions Express Workflow
+          Step Functions state machine
         </span>
       </div>
+
+      {/* Visual flow map — shows the two branches forking and merging */}
+      <div className="px-5 pt-5 border-b border-border pb-6">
+        <div className="overflow-x-auto">
+          <div className="flex flex-col items-center gap-2 min-w-max mx-auto">
+            <ArchNode
+              label="starter"
+              sub="S3 event → { bucket, key }"
+              icon={<Zap className="w-4 h-4" />}
+              color="violet"
+              wide
+            />
+            <FlowArrow label="forks into two parallel branches" vertical />
+
+            {/* The two branches, side by side */}
+            <div className="flex items-stretch gap-5">
+              {/* Branch A — AI */}
+              <div className="flex flex-col items-center gap-2 rounded-xl border border-border bg-accent/5 px-4 py-3">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/45">
+                  Branch A · AI
+                </span>
+                <ArchNode
+                  label="llm_extract"
+                  sub="Claude reads the raw document"
+                  icon={<Sparkles className="w-4 h-4" />}
+                  color="violet"
+                  wide
+                />
+                <span className="text-[10px] text-foreground/40 text-center max-w-[150px]">
+                  Structured JSON + is_valid. PDFs read visually — no OCR.
+                </span>
+              </div>
+
+              {/* Branch B — text */}
+              <div className="flex flex-col items-center gap-2 rounded-xl border border-border bg-secondary/40 px-4 py-3">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/45">
+                  Branch B · text (search / dedup)
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <ArchNode label="classify" sub="extract text" color="blue" />
+                  <FlowArrow />
+                  <ArchNode
+                    label="textract"
+                    sub="scanned only"
+                    color="amber"
+                  />
+                  <FlowArrow />
+                  <ArchNode label="gather_text" sub="plain text" color="blue" />
+                </div>
+                <span className="text-[10px] text-foreground/40 text-center max-w-[280px]">
+                  Deterministic text for full-text search, embeddings and
+                  content-hash dedup — never sent to the LLM.
+                </span>
+              </div>
+            </div>
+
+            <FlowArrow label="branches merge" vertical />
+            <ArchNode
+              label="CheckIsValid"
+              sub="drop non-résumés"
+              icon={<GitMerge className="w-4 h-4" />}
+              color="slate"
+              wide
+            />
+            <FlowArrow vertical />
+            <ArchNode
+              label="persist"
+              sub="DynamoDB → Streams → OpenSearch"
+              icon={<Database className="w-4 h-4" />}
+              color="emerald"
+              wide
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Per-step detail */}
       <div className="p-5 space-y-0">
         {PIPELINE_STEPS.map((s, i) => (
           <div key={s.step}>
@@ -642,7 +719,7 @@ const MODULES = [
     name: "document_pipeline/",
     color: "violet" as const,
     icon: <Cpu className="w-4 h-4" />,
-    desc: "Reusable Step Functions Express Workflow + Lambda functions + pdfminer layer. Instantiated twice: once for resumes (raw/ prefix → talent_profiles) and once for job descriptions (job-descriptions/raw/ → job_descriptions). Each instance has its own persist Lambda with pipeline-specific logic.",
+    desc: "Reusable Step Functions state machine + Lambda functions + pdfminer layer. Instantiated twice: once for resumes (raw/ prefix → talent_profiles) and once for job descriptions (job-descriptions/raw/ → job_descriptions). Each instance has its own persist Lambda with pipeline-specific logic.",
   },
   {
     name: "storage/",
@@ -897,7 +974,7 @@ aimory-talent-pool-dev-frontend-{acct-id}   # S3`}</CodeBlock>
         icon={<Cpu className="w-6 h-6" />}
       >
         <p>
-          Reusable Step Functions Express Workflow defined in{" "}
+          Reusable Step Functions state machine defined in{" "}
           <Mono>infra/modules/document_pipeline/</Mono>. Instantiated twice:
           once for resumes (<Mono>resumes/raw/</Mono> →{" "}
           <Mono>talent_profiles</Mono>) and once for job descriptions (
