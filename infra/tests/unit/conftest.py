@@ -44,7 +44,7 @@ _LAMBDA_DIRS = [
     "modules/document_pipeline/lambda_src/start_textract",
     "modules/document_pipeline/lambda_src/check_textract",
     "modules/document_pipeline/lambda_src/fetch_textract",
-    "modules/document_pipeline/lambda_src/normalize",
+    "modules/document_pipeline/lambda_src/gather_text",
     "modules/document_pipeline/lambda_src/llm_extract",
     "pipeline_configs/resume/persist",
     "modules/document_pipeline/lambda_src/presign",

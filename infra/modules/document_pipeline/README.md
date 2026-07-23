@@ -9,11 +9,33 @@ document type (resumes, job descriptions, contracts, etc.).
 ```
 S3 Upload (prefix-filtered)
   └─► starter Lambda  →  Step Functions state machine
-        classify → textract loop → normalize → llm_extract → persist
+        ┌─ Branch A (AI):   llm_extract  ── reads the raw document (visual for
+        │                                    PDFs) → structured JSON + is_valid
+   Parallel                                                                     ─┐
+        └─ Branch B (text): classify → (Textract loop if scanned) → gather_text ─┘
+                                                     │ deterministic plain text
+        → CheckIsValid → persist
 ```
 
-All pipelines share the same 8-step state machine. The only things that change
-per document type are:
+The two branches run concurrently and merge before persist:
+
+- **Branch A** hands the raw document to Bedrock Converse. The model reads it
+  directly (PDFs are understood visually, so scanned resumes work without OCR)
+  and returns the structured JSON, including `is_valid`. It never sees
+  pre-extracted text.
+- **Branch B** produces a deterministic plain-text version of the document
+  (direct extraction for born-digital docs, Textract for scanned) used **only**
+  for full-text search, embeddings, and content-hash dedup — never for the LLM.
+  It is fault-tolerant: a text failure yields empty text and never sinks a good
+  extraction.
+
+`persist` receives both (`event["extracted"]` and `event["normalized"]["text"]`).
+The embedding/OpenSearch indexing is a **separate**, DynamoDB-Streams-triggered
+process (`modules/storage/.../sync_to_opensearch`) — the pipeline only writes
+`resume_text` onto the item.
+
+All pipelines share this same state machine. The only things that change per
+document type are:
 
 | What                   | Where                                      |
 |------------------------|---------------------------------------------|

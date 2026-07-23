@@ -35,7 +35,10 @@ variable "presign_api_key" {
 variable "bedrock_model_id" {
   description = "Bedrock model ID used by the pipeline for resume parsing"
   type        = string
-  default     = "us.anthropic.claude-sonnet-4-20250514-v1:0"
+  # Sonnet 4.6 is the newest Sonnet enabled in this account (Sonnet 5 is not yet
+  # granted model access). The document pipeline sends `temperature` only —
+  # Sonnet 4.6 rejects temperature and top_p together.
+  default = "us.anthropic.claude-sonnet-4-6"
 }
 
 variable "raw_prefix" {

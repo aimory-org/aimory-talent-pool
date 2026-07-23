@@ -75,7 +75,7 @@ variable "lookup_tables" {
 variable "bedrock_model_id" {
   type        = string
   description = "Bedrock model ID for LLM extraction"
-  default     = "us.anthropic.claude-sonnet-4-20250514-v1:0"
+  default     = "us.anthropic.claude-sonnet-4-6"
 }
 
 variable "pipeline_config_dir" {

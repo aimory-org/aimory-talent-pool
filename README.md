@@ -23,14 +23,15 @@ OneDrive Folder
   starter Lambda
       │
       ▼
-  Step Functions Pipeline
-  ┌───────────────────────────────────────────┐
-  │  detect_type → extract_text (OCR branch)  │
-  │            ↓                              │
-  │  enrich (Bedrock / Claude 3)              │
-  │            ↓                              │
-  │  normalize → persist → DynamoDB           │
-  └───────────────────────────────────────────┘
+  Step Functions Pipeline (two parallel branches)
+  ┌─────────────────────────────────────────────────────┐
+  │  AI:   llm_extract — Claude reads the raw document   │
+  │        (visual for PDFs) → structured JSON           │
+  │  text: extract text (+ Textract OCR if scanned)      │
+  │        → plain text for search / dedup               │
+  │                    ↓ merge                           │
+  │            persist → DynamoDB                        │
+  └─────────────────────────────────────────────────────┘
       │  DynamoDB Streams
       ▼
   OpenSearch (talent-profiles index)
@@ -100,7 +101,7 @@ aws cloudfront create-invalidation --distribution-id <id> --paths "/*"
 | **Frontend** | React 19, TypeScript, Vite, Tailwind CSS v4, AWS Amplify v6 |
 | **Auth** | AWS Cognito + Microsoft Entra ID federation |
 | **API** | API Gateway (HTTP API) + Lambda (Python 3.12) |
-| **Pipeline** | Step Functions, Textract (OCR), Bedrock / Claude 3 |
+| **Pipeline** | Step Functions, Bedrock / Claude Sonnet 4.6 (document extraction), Textract (OCR for scanned docs) |
 | **Storage** | S3, DynamoDB (profiles + 7 lookup tables), SSM |
 | **Search** | OpenSearch 2.11 (synced via DynamoDB Streams) |
 | **Infra** | Terraform, CloudFront, IAM |
