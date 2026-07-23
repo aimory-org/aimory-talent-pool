@@ -667,13 +667,25 @@ def handler(event, context):
     if content_duplicate_pk:
         changes = _compute_changes(existing or {}, item)
         _write_audit_entry(target_pk, "UPDATE", now, item.get("name"), changes=changes)
-        # Content already merged into the existing record — the redundant re-upload
+        # Content already merged into the canonical record — the redundant re-upload
         # doesn't need to stick around in S3.
         if (bucket, key) != (item_bucket, item_key):
             try:
                 s3_client.delete_object(Bucket=bucket, Key=key)
             except Exception as exc:
                 print(f"Warning: failed to delete duplicate resume {bucket}/{key}: {exc}")
+        # Remove any stale profile record sitting at this upload's own pk. Merges
+        # write to the canonical target_pk, so a pre-existing duplicate profile
+        # (e.g. created before byte-hash dedup, or an earlier reprocess) would
+        # otherwise linger, pointing at the now-deleted file. content_duplicate_pk
+        # is always a different pk than the current upload's, so this only removes
+        # a genuine duplicate; it's a no-op for a fresh re-upload (nothing was ever
+        # written at this pk). The DynamoDB stream propagates the removal to search.
+        if pk != target_pk:
+            try:
+                table.delete_item(Key={"pk": pk})
+            except Exception as exc:
+                print(f"Warning: failed to delete stale duplicate record {pk}: {exc}")
     else:
         _write_audit_entry(pk, "UPDATE" if existing else "CREATE", now, item.get("name"))
 

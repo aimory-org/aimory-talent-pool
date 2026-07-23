@@ -622,3 +622,27 @@ class TestPersistContentHashDedup:
         app = _reload_app()
         result = app.handler(_content_event(sample_profile, "raw/does-not-exist.pdf"), None)
         assert result["content_duplicate_of"] is None
+
+    def test_merge_removes_stale_duplicate_record(self, all_tables, s3_buckets, sample_profile):
+        # A byte-identical upload whose own pk already holds a (stale) profile —
+        # e.g. a pre-existing duplicate from before byte-hash dedup — merges into
+        # the canonical record AND the stale record is removed, not orphaned.
+        body = b"identical bytes"
+        s3_buckets.put_object(Bucket=BUCKET, Key="raw/canonical.pdf", Body=body)
+        s3_buckets.put_object(Bucket=BUCKET, Key="raw/dup.pdf", Body=body)
+        table = all_tables["talent_profiles"]
+
+        app = _reload_app()
+        app.handler(_content_event(sample_profile, "raw/canonical.pdf"), None)
+
+        # Pre-existing duplicate profile sitting at the dup's own pk.
+        dup_pk = f"{BUCKET}#raw/dup.pdf"
+        table.put_item(Item={"pk": dup_pk, "name": "Stale Dup", "name_lower": "stale dup"})
+
+        app = _reload_app()
+        result = app.handler(_content_event(sample_profile, "raw/dup.pdf"), None)
+
+        assert result["content_duplicate_of"] == f"{BUCKET}#raw/canonical.pdf"
+        assert table.get_item(Key={"pk": dup_pk}).get("Item") is None
+        # Canonical record survives.
+        assert table.get_item(Key={"pk": f"{BUCKET}#raw/canonical.pdf"}).get("Item") is not None
