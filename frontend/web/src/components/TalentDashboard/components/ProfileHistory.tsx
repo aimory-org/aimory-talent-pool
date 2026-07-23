@@ -21,6 +21,7 @@ import {
   type AuditEntry,
   type AuditFieldChange,
 } from "@/lib/api";
+import { CLEARANCE_LEVELS } from "@/types/talent";
 
 // ---------------------------------------------------------------------------
 // Action config
@@ -87,6 +88,10 @@ const FIELD_LABELS: Record<string, string> = {
   companies: "Work History",
 };
 
+const CLEARANCE_LABELS: Record<string, string> = Object.fromEntries(
+  CLEARANCE_LEVELS.map((c) => [c.value, c.label]),
+);
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -116,11 +121,17 @@ function formatAbsolute(ts: string): string {
   });
 }
 
-function formatValue(v: unknown): string {
+function formatValue(field: string, v: unknown): string {
   if (v === null || v === undefined || v === "") return "—";
   if (typeof v === "number") {
-    if (v >= 10_000) return `$${v.toLocaleString()}/yr`;
+    if (field === "requested_salary" || v >= 10_000)
+      return `$${v.toLocaleString()}/yr`;
+    if (field === "years_of_experience")
+      return `${v} ${v === 1 ? "year" : "years"}`;
     return String(v);
+  }
+  if (field === "clearance_level" && typeof v === "string") {
+    return CLEARANCE_LABELS[v] ?? v;
   }
   if (Array.isArray(v)) {
     if (v.length === 0) return "none";
@@ -129,6 +140,31 @@ function formatValue(v: unknown): string {
     return (v as string[]).join(", ");
   }
   return String(v);
+}
+
+/** Extract a display label from a list item, whether it's a plain string or an object with `name`. */
+function itemLabel(item: unknown): string {
+  if (item && typeof item === "object" && "name" in item) {
+    return String((item as { name: string }).name);
+  }
+  return String(item);
+}
+
+/**
+ * Diff two list-valued snapshots by item identity (case-insensitive name match)
+ * so an append shows up as an addition instead of a full-list replacement.
+ */
+function diffListField(
+  oldVal: unknown[],
+  newVal: unknown[],
+): { added: string[]; removed: string[] } {
+  const oldItems = oldVal.map(itemLabel).filter(Boolean);
+  const newItems = newVal.map(itemLabel).filter(Boolean);
+  const oldKeys = new Set(oldItems.map((s) => s.toLowerCase().trim()));
+  const newKeys = new Set(newItems.map((s) => s.toLowerCase().trim()));
+  const added = newItems.filter((s) => !oldKeys.has(s.toLowerCase().trim()));
+  const removed = oldItems.filter((s) => !newKeys.has(s.toLowerCase().trim()));
+  return { added, removed };
 }
 
 function sourceLabel(entry: AuditEntry): string | null {
@@ -149,8 +185,59 @@ function FieldDiff({
   change: AuditFieldChange;
 }) {
   const label = FIELD_LABELS[field] ?? field.replace(/_/g, " ");
-  const oldVal = formatValue(change.old);
-  const newVal = formatValue(change.new);
+
+  // List-valued fields (skills, certifications, work history, tags): diff by
+  // item identity so an append/removal reads as "+X" / "-Y" rather than a
+  // wholesale before/after replacement of the entire list.
+  if (Array.isArray(change.old) && Array.isArray(change.new)) {
+    const { added, removed } = diffListField(change.old, change.new);
+    if (added.length === 0 && removed.length === 0) {
+      return null; // e.g. reordered only — nothing meaningful to surface
+    }
+
+    return (
+      <div className="flex items-start gap-3 text-xs">
+        <span className="w-24 shrink-0 text-foreground/40 font-medium pt-0.5 truncate">
+          {label}
+        </span>
+        <div className="flex-1 min-w-0 space-y-1">
+          {added.length > 0 && (
+            <div className="flex items-start gap-1.5 flex-wrap">
+              <span className="text-success font-medium shrink-0 pt-0.5">
+                + Added
+              </span>
+              {added.map((item, i) => (
+                <span
+                  key={i}
+                  className="px-2 py-0.5 rounded-md bg-success/8 text-success border border-success/15 max-w-40 truncate"
+                >
+                  {item}
+                </span>
+              ))}
+            </div>
+          )}
+          {removed.length > 0 && (
+            <div className="flex items-start gap-1.5 flex-wrap">
+              <span className="text-destructive font-medium shrink-0 pt-0.5">
+                − Removed
+              </span>
+              {removed.map((item, i) => (
+                <span
+                  key={i}
+                  className="px-2 py-0.5 rounded-md bg-destructive/8 text-destructive border border-destructive/15 line-through decoration-destructive/50 max-w-40 truncate"
+                >
+                  {item}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  const oldVal = formatValue(field, change.old);
+  const newVal = formatValue(field, change.new);
 
   return (
     <div className="flex items-start gap-3 text-xs">
@@ -183,7 +270,13 @@ function FieldDiff({
 function AuditCard({ entry, isLast }: { entry: AuditEntry; isLast: boolean }) {
   const [expanded, setExpanded] = useState(false);
   const cfg = ACTION_CFG[entry.action];
-  const changeKeys = entry.changes ? Object.keys(entry.changes) : [];
+  // Summary text is long-form and noisy in a diff view — omit it from the log entirely.
+  const changes = entry.changes
+    ? Object.fromEntries(
+        Object.entries(entry.changes).filter(([field]) => field !== "summary"),
+      )
+    : undefined;
+  const changeKeys = changes ? Object.keys(changes) : [];
   const hasChanges = changeKeys.length > 0;
   const system = sourceLabel(entry);
   const displayName = entry.user_name ?? entry.user_email.split("@")[0];
@@ -236,10 +329,14 @@ function AuditCard({ entry, isLast }: { entry: AuditEntry; isLast: boolean }) {
               </span>
             )}
 
-            {/* Field count */}
+            {/* What changed, at a glance */}
             {changeKeys.length > 1 && (
-              <span className="text-[11px] text-foreground/35">
-                {changeKeys.length} fields
+              <span className="text-[11px] text-foreground/35 truncate max-w-[220px]">
+                {changeKeys.length <= 3
+                  ? changeKeys
+                      .map((k) => FIELD_LABELS[k] ?? k.replace(/_/g, " "))
+                      .join(", ")
+                  : `${changeKeys.length} fields`}
               </span>
             )}
           </div>
@@ -270,7 +367,7 @@ function AuditCard({ entry, isLast }: { entry: AuditEntry; isLast: boolean }) {
         {/* Expanded diff */}
         {expanded && hasChanges && (
           <div className="mt-2 p-3 rounded-lg bg-black/3 dark:bg-white/3 border border-black/6 dark:border-white/6 space-y-1.5">
-            {Object.entries(entry.changes!).map(([field, change]) => (
+            {Object.entries(changes!).map(([field, change]) => (
               <FieldDiff key={field} field={field} change={change} />
             ))}
           </div>
