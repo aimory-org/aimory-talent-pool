@@ -5,10 +5,12 @@
  * (and the presigned S3 URL granting access to it) inside our own app
  * instead of proxying it through a third-party viewer.
  *
- * Both cases sit inside the same gray backdrop / white page / drop-shadow
+ * Both cases sit inside the same dark backdrop / white page / drop-shadow
  * frame so switching between a PDF and a DOCX resume doesn't jump between
- * two different-looking viewers. The PDF wrapper below mirrors the exact
- * values docx-preview's own injected `.docx-wrapper` CSS uses.
+ * two different-looking viewers. The PDF wrapper below mirrors the padding
+ * and shadow docx-preview's own injected `.docx-wrapper` CSS uses, but with
+ * the backdrop recolored to match the app's dark theme instead of
+ * docx-preview's default flat gray.
  */
 import { useEffect, useRef, useState } from "react";
 import { renderAsync } from "docx-preview";
@@ -25,6 +27,9 @@ function isDocx(key: string) {
 }
 
 const PAGE_SHADOW = "0 0 10px rgba(0, 0, 0, 0.5)";
+// Matches the app's dark-theme --card token so the viewer canvas fits the
+// brand palette instead of docx-preview's default flat gray.
+const BACKDROP = "#221a29";
 
 export function DocumentViewer({ url, fileKey, title }: DocumentViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -48,6 +53,13 @@ export function DocumentViewer({ url, fileKey, title }: DocumentViewerProps) {
         await renderAsync(blob, containerRef.current, undefined, {
           className: "docx-preview",
         });
+        if (cancelled) return;
+        // docx-preview hardcodes its wrapper background to "gray"; override
+        // it inline so it matches the rest of the frame.
+        const wrapper = containerRef.current.querySelector<HTMLElement>(
+          ".docx-preview-wrapper",
+        );
+        if (wrapper) wrapper.style.background = BACKDROP;
       } catch {
         if (!cancelled) setError(true);
       } finally {
@@ -64,7 +76,7 @@ export function DocumentViewer({ url, fileKey, title }: DocumentViewerProps) {
     return (
       <div
         className="w-full h-full overflow-auto flex justify-center p-[30px]"
-        style={{ background: "gray" }}
+        style={{ background: BACKDROP }}
       >
         <div
           className="w-full max-w-[850px] bg-white shrink-0"
@@ -77,7 +89,7 @@ export function DocumentViewer({ url, fileKey, title }: DocumentViewerProps) {
   }
 
   return (
-    <div className="w-full h-full overflow-auto" style={{ background: "gray" }}>
+    <div className="w-full h-full overflow-auto" style={{ background: BACKDROP }}>
       {loading && (
         <div className="flex items-center justify-center h-full text-white text-sm">
           Loading document...
