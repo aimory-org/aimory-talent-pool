@@ -185,9 +185,7 @@ config, add corresponding tests that load the config files:
 
 ```python
 # Set PIPELINE_CONFIG_DIR so the shared llm_extract handler finds your config
-os.environ["PIPELINE_CONFIG_DIR"] = str(
-    Path(__file__).resolve().parents[3] / "pipeline_configs" / "<name>"
-)
+os.environ["PIPELINE_CONFIG_DIR"] = str(Path(__file__).resolve().parents[3] / "pipeline_configs" / "<name>")
 ```
 
 Run all pipeline tests:
