@@ -167,6 +167,50 @@ function diffListField(
   return { added, removed };
 }
 
+type TextDiff =
+  | { type: "append"; unchanged: string; added: string }
+  | { type: "prepend"; unchanged: string; added: string }
+  | { type: "shrink-end"; unchanged: string; removed: string }
+  | { type: "shrink-start"; unchanged: string; removed: string }
+  | { type: "replace" };
+
+/**
+ * Detect whether a string field change is a pure append/prepend/truncation
+ * so we can show only the delta (e.g. "cool" -> "cool and rules" renders the
+ * unchanged "cool" plain plus " and rules" as an addition) instead of the
+ * full before/after strings.
+ */
+function diffText(oldStr: string, newStr: string): TextDiff {
+  if (oldStr && newStr.startsWith(oldStr)) {
+    return { type: "append", unchanged: oldStr, added: newStr.slice(oldStr.length) };
+  }
+  if (oldStr && newStr.endsWith(oldStr)) {
+    return { type: "prepend", unchanged: oldStr, added: newStr.slice(0, newStr.length - oldStr.length) };
+  }
+  if (newStr && oldStr.startsWith(newStr)) {
+    return { type: "shrink-end", unchanged: newStr, removed: oldStr.slice(newStr.length) };
+  }
+  if (newStr && oldStr.endsWith(newStr)) {
+    return { type: "shrink-start", unchanged: newStr, removed: oldStr.slice(0, oldStr.length - newStr.length) };
+  }
+  return { type: "replace" };
+}
+
+/**
+ * Whether a field change actually renders something in FieldDiff. List fields
+ * can come back from the backend as "changed" (reordered, metadata-only diff)
+ * even though there's no visible added/removed item — those must be excluded
+ * everywhere a change is counted or named, not just in the expanded diff,
+ * otherwise the summary line names fields that show nothing when expanded.
+ */
+function fieldChangeIsVisible(change: AuditFieldChange): boolean {
+  if (Array.isArray(change.old) && Array.isArray(change.new)) {
+    const { added, removed } = diffListField(change.old, change.new);
+    return added.length > 0 || removed.length > 0;
+  }
+  return true;
+}
+
 function sourceLabel(entry: AuditEntry): string | null {
   if (entry.user_email === "pipeline@system") return "Pipeline";
   if (entry.user_email === "dedup@system") return "Dedup";
@@ -197,7 +241,7 @@ function FieldDiff({
 
     return (
       <div className="flex items-start gap-3 text-xs">
-        <span className="w-24 shrink-0 text-foreground/40 font-medium pt-0.5 truncate">
+        <span className="w-24 shrink-0 text-foreground/40 font-medium pt-0.5">
           {label}
         </span>
         <div className="flex-1 min-w-0 space-y-1">
@@ -209,7 +253,7 @@ function FieldDiff({
               {added.map((item, i) => (
                 <span
                   key={i}
-                  className="px-2 py-0.5 rounded-md bg-success/8 text-success border border-success/15 max-w-40 truncate"
+                  className="px-2 py-0.5 rounded-md bg-success/8 text-success border border-success/15"
                 >
                   {item}
                 </span>
@@ -224,7 +268,7 @@ function FieldDiff({
               {removed.map((item, i) => (
                 <span
                   key={i}
-                  className="px-2 py-0.5 rounded-md bg-destructive/8 text-destructive border border-destructive/15 line-through decoration-destructive/50 max-w-40 truncate"
+                  className="px-2 py-0.5 rounded-md bg-destructive/8 text-destructive border border-destructive/15 line-through decoration-destructive/50"
                 >
                   {item}
                 </span>
@@ -236,17 +280,64 @@ function FieldDiff({
     );
   }
 
+  // Plain-text fields: if the change is a pure append/prepend/truncation,
+  // show only the delta highlighted rather than the full before/after strings.
+  if (typeof change.old === "string" && typeof change.new === "string") {
+    const diff = diffText(change.old, change.new);
+    if (diff.type !== "replace") {
+      const isAddition = diff.type === "append" || diff.type === "prepend";
+      const deltaCls = isAddition
+        ? "bg-success/8 text-success border-success/15"
+        : "bg-destructive/8 text-destructive border-destructive/15 line-through decoration-destructive/50";
+      const delta = isAddition ? diff.added : diff.removed;
+
+      if (!diff.unchanged) {
+        // Whole value was added or removed — nothing "unchanged" to anchor to.
+        return (
+          <div className="flex items-start gap-3 text-xs">
+            <span className="w-24 shrink-0 text-foreground/40 font-medium pt-0.5">
+              {label}
+            </span>
+            <span className={`px-2 py-0.5 rounded-md border ${deltaCls}`}>
+              {delta}
+            </span>
+          </div>
+        );
+      }
+
+      const prefix = diff.type === "prepend" || diff.type === "shrink-start" ? delta : diff.unchanged;
+      const suffix = diff.type === "prepend" || diff.type === "shrink-start" ? diff.unchanged : delta;
+      const prefixIsDelta = diff.type === "prepend" || diff.type === "shrink-start";
+
+      return (
+        <div className="flex items-start gap-3 text-xs">
+          <span className="w-24 shrink-0 text-foreground/40 font-medium pt-0.5">
+            {label}
+          </span>
+          <span className="px-2 py-0.5 rounded-md border border-border bg-secondary/60 text-foreground/70">
+            <span className={prefixIsDelta ? `rounded px-0.5 border ${deltaCls}` : ""}>
+              {prefix}
+            </span>
+            <span className={!prefixIsDelta ? `rounded px-0.5 border ${deltaCls}` : ""}>
+              {suffix}
+            </span>
+          </span>
+        </div>
+      );
+    }
+  }
+
   const oldVal = formatValue(field, change.old);
   const newVal = formatValue(field, change.new);
 
   return (
     <div className="flex items-start gap-3 text-xs">
-      <span className="w-24 shrink-0 text-foreground/40 font-medium pt-0.5 truncate">
+      <span className="w-24 shrink-0 text-foreground/40 font-medium pt-0.5">
         {label}
       </span>
       <div className="flex items-center gap-1.5 flex-wrap min-w-0">
         {oldVal !== "—" && (
-          <span className="px-2 py-0.5 rounded-md bg-destructive/8 text-destructive border border-destructive/15 line-through decoration-destructive/50 max-w-40 truncate">
+          <span className="px-2 py-0.5 rounded-md bg-destructive/8 text-destructive border border-destructive/15 line-through decoration-destructive/50">
             {oldVal}
           </span>
         )}
@@ -254,7 +345,7 @@ function FieldDiff({
           <ArrowRight className="w-3 h-3 text-foreground/25 shrink-0" />
         )}
         {newVal !== "—" && (
-          <span className="px-2 py-0.5 rounded-md bg-success/8 text-success border border-success/15 max-w-40 truncate">
+          <span className="px-2 py-0.5 rounded-md bg-success/8 text-success border border-success/15">
             {newVal}
           </span>
         )}
@@ -270,10 +361,15 @@ function FieldDiff({
 function AuditCard({ entry, isLast }: { entry: AuditEntry; isLast: boolean }) {
   const [expanded, setExpanded] = useState(false);
   const cfg = ACTION_CFG[entry.action];
-  // Summary text is long-form and noisy in a diff view — omit it from the log entirely.
+  // Summary text is long-form and noisy in a diff view — omit it from the log
+  // entirely. Also drop any field whose diff renders nothing (see
+  // fieldChangeIsVisible) so the header summary never names a field that
+  // shows no visible change when expanded.
   const changes = entry.changes
     ? Object.fromEntries(
-        Object.entries(entry.changes).filter(([field]) => field !== "summary"),
+        Object.entries(entry.changes).filter(
+          ([field, change]) => field !== "summary" && fieldChangeIsVisible(change),
+        ),
       )
     : undefined;
   const changeKeys = changes ? Object.keys(changes) : [];
