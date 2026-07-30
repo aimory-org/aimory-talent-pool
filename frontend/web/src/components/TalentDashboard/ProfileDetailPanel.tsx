@@ -48,6 +48,7 @@ import {
 import { StatusBadge } from "./components/StatusBadge";
 import { ClearanceBadge } from "./components/ClearanceBadge";
 import { ProfileHistory } from "./components/ProfileHistory";
+import { DocumentViewer } from "./components/DocumentViewer";
 import { getProfileWarnings, WARNING_LABELS, findDuplicatePeers } from "./warnings";
 
 interface ProfileDetailPanelProps {
@@ -577,17 +578,7 @@ export function ProfileDetailPanel({
     setResumeLoading(true);
     try {
       const { url } = await getResumeUrl(profile.key);
-      const isDocx =
-        profile.key.toLowerCase().endsWith(".docx") ||
-        profile.key.toLowerCase().endsWith(".doc");
-
-      if (isDocx) {
-        setResumeUrl(
-          `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`,
-        );
-      } else {
-        setResumeUrl(url);
-      }
+      setResumeUrl(url);
       setShowResume(true);
     } catch (error) {
       console.error("Failed to get resume URL:", error);
@@ -595,13 +586,6 @@ export function ProfileDetailPanel({
     } finally {
       setResumeLoading(false);
     }
-  };
-
-  const resolveResumeUrl = (key: string, rawUrl: string) => {
-    const isDocx = key.toLowerCase().endsWith(".docx") || key.toLowerCase().endsWith(".doc");
-    return isDocx
-      ? `https://docs.google.com/gview?url=${encodeURIComponent(rawUrl)}&embedded=true`
-      : rawUrl;
   };
 
   const handleCompare = async () => {
@@ -614,8 +598,8 @@ export function ProfileDetailPanel({
         original.key ? getResumeUrl(original.key) : Promise.resolve({ url: "" }),
       ]);
       setCompareProfile(original);
-      setResumeUrl(profile.key ? resolveResumeUrl(profile.key, thisResume.url) : null);
-      setCompareResumeUrl(original.key ? resolveResumeUrl(original.key, origResume.url) : null);
+      setResumeUrl(profile.key ? thisResume.url : null);
+      setCompareResumeUrl(original.key ? origResume.url : null);
       // All profiles with the same name as the original (includes dismissed peers)
       const peers = findDuplicatePeers(original.pk, allTalents);
       const startIdx = Math.max(0, peers.findIndex((t) => t.pk === profile.pk));
@@ -641,8 +625,8 @@ export function ProfileDetailPanel({
         initial.key ? getResumeUrl(initial.key) : Promise.resolve({ url: "" }),
       ]);
       setCompareProfile(profile);
-      setCompareResumeUrl(profile.key ? resolveResumeUrl(profile.key, origResume.url) : null);
-      setResumeUrl(initial.key ? resolveResumeUrl(initial.key, incomingResume.url) : null);
+      setCompareResumeUrl(profile.key ? origResume.url : null);
+      setResumeUrl(initial.key ? incomingResume.url : null);
       setCompareSubjects(peers);
       setCurrentSubjectIdx(startIdx);
       setShowCompare(true);
@@ -672,7 +656,7 @@ export function ProfileDetailPanel({
     setSubjectNavigating(true);
     try {
       const resume = newSubject.key ? await getResumeUrl(newSubject.key) : { url: "" };
-      setResumeUrl(newSubject.key ? resolveResumeUrl(newSubject.key, resume.url) : null);
+      setResumeUrl(newSubject.key ? resume.url : null);
     } catch {
       setResumeUrl(null);
     } finally {
@@ -882,7 +866,11 @@ export function ProfileDetailPanel({
               {subjectNavigating ? (
                 <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Loading...</div>
               ) : resumeUrl ? (
-                <iframe src={resumeUrl} className="w-full h-full border-0" title={`Resume - ${currentSubject.name || "Unknown"}`} />
+                <DocumentViewer
+                  url={resumeUrl}
+                  fileKey={currentSubject.key || ""}
+                  title={`Resume - ${currentSubject.name || "Unknown"}`}
+                />
               ) : (
                 <div className="flex items-center justify-center h-full text-muted-foreground text-sm">No resume available</div>
               )}
@@ -909,7 +897,11 @@ export function ProfileDetailPanel({
             </div>
             <div className="flex-1 bg-background">
               {compareResumeUrl ? (
-                <iframe src={compareResumeUrl} className="w-full h-full border-0" title={`Resume - ${compareProfile.name || "Unknown"}`} />
+                <DocumentViewer
+                  url={compareResumeUrl}
+                  fileKey={compareProfile.key || ""}
+                  title={`Resume - ${compareProfile.name || "Unknown"}`}
+                />
               ) : (
                 <div className="flex items-center justify-center h-full text-muted-foreground text-sm">No resume available</div>
               )}
@@ -958,11 +950,11 @@ export function ProfileDetailPanel({
         </div>
         {/* Split content: resume (left) + editable profile (right) */}
         <div className="flex-1 flex min-h-0">
-          {/* Resume iframe — takes majority of space */}
+          {/* Resume viewer — takes majority of space */}
           <div className="flex-1 bg-background border-r border-border">
-            <iframe
-              src={resumeUrl}
-              className="w-full h-full border-0"
+            <DocumentViewer
+              url={resumeUrl}
+              fileKey={profile.key || ""}
               title={`Resume - ${profile.name || "Unknown"}`}
             />
           </div>

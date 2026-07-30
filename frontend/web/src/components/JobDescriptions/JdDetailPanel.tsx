@@ -29,6 +29,7 @@ import {
 import type { JobDescription, CandidateMatch } from "@/types/jobDescription";
 import type { TalentProfile } from "@/types/talent";
 import { ClearanceBadge } from "@/components/TalentDashboard/components/ClearanceBadge";
+import { DocumentViewer } from "@/components/TalentDashboard/components/DocumentViewer";
 import { ProfileDetailPanel } from "@/components/TalentDashboard/ProfileDetailPanel";
 
 interface JdDetailPanelProps {
@@ -184,16 +185,7 @@ export function JdDetailPanel({
     setDocumentLoading(true);
     try {
       const { url } = await getResumeUrl(jd.key);
-      const isDocx =
-        jd.key.toLowerCase().endsWith(".docx") ||
-        jd.key.toLowerCase().endsWith(".doc");
-      if (isDocx) {
-        setDocumentUrl(
-          `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`,
-        );
-      } else {
-        setDocumentUrl(url);
-      }
+      setDocumentUrl(url);
       setShowDocument(true);
     } catch (error) {
       console.error("Failed to get document URL:", error);
@@ -276,9 +268,9 @@ export function JdDetailPanel({
         {/* Split content: document (left) + summary sidebar (right) */}
         <div className="flex-1 flex min-h-0">
           <div className="flex-1 bg-background border-r border-border">
-            <iframe
-              src={documentUrl}
-              className="w-full h-full border-0"
+            <DocumentViewer
+              url={documentUrl}
+              fileKey={jd.key || ""}
               title={`Job Description - ${jd.title || "Document"}`}
             />
           </div>
