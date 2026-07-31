@@ -172,48 +172,59 @@ function diffListField(
   return { added, removed };
 }
 
-type TextDiff =
-  | { type: "append"; unchanged: string; added: string }
-  | { type: "prepend"; unchanged: string; added: string }
-  | { type: "shrink-end"; unchanged: string; removed: string }
-  | { type: "shrink-start"; unchanged: string; removed: string }
-  | { type: "replace" };
+type ScalarDiff = {
+  prefix: string;
+  oldMiddle: string;
+  newMiddle: string;
+  suffix: string;
+};
 
 /**
- * Detect whether a string field change is a pure append/prepend/truncation
- * so we can show only the delta (e.g. "cool" -> "cool and rules" renders the
- * unchanged "cool" plain plus " and rules" as an addition) instead of the
- * full before/after strings.
+ * Find the longest common prefix and suffix between two formatted values so
+ * a diff only highlights the part that actually changed — e.g. "3 years" ->
+ * "5 years" highlights just "3"/"5" and leaves " years" plain, and
+ * "cool" -> "cool and rules" leaves "cool" plain and highlights only
+ * " and rules" — instead of crossing off the entire value.
  */
-function diffText(oldStr: string, newStr: string): TextDiff {
-  if (oldStr && newStr.startsWith(oldStr)) {
-    return { type: "append", unchanged: oldStr, added: newStr.slice(oldStr.length) };
+function diffScalar(oldStr: string, newStr: string): ScalarDiff {
+  const maxPrefix = Math.min(oldStr.length, newStr.length);
+  let prefixLen = 0;
+  while (prefixLen < maxPrefix && oldStr[prefixLen] === newStr[prefixLen]) {
+    prefixLen++;
   }
-  if (oldStr && newStr.endsWith(oldStr)) {
-    return { type: "prepend", unchanged: oldStr, added: newStr.slice(0, newStr.length - oldStr.length) };
+
+  const maxSuffix = maxPrefix - prefixLen;
+  let suffixLen = 0;
+  while (
+    suffixLen < maxSuffix &&
+    oldStr[oldStr.length - 1 - suffixLen] === newStr[newStr.length - 1 - suffixLen]
+  ) {
+    suffixLen++;
   }
-  if (newStr && oldStr.startsWith(newStr)) {
-    return { type: "shrink-end", unchanged: newStr, removed: oldStr.slice(newStr.length) };
-  }
-  if (newStr && oldStr.endsWith(newStr)) {
-    return { type: "shrink-start", unchanged: newStr, removed: oldStr.slice(0, oldStr.length - newStr.length) };
-  }
-  return { type: "replace" };
+
+  return {
+    prefix: oldStr.slice(0, prefixLen),
+    oldMiddle: oldStr.slice(prefixLen, oldStr.length - suffixLen),
+    newMiddle: newStr.slice(prefixLen, newStr.length - suffixLen),
+    suffix: oldStr.slice(oldStr.length - suffixLen),
+  };
 }
 
 /**
  * Whether a field change actually renders something in FieldDiff. List fields
  * can come back from the backend as "changed" (reordered, metadata-only diff)
- * even though there's no visible added/removed item — those must be excluded
- * everywhere a change is counted or named, not just in the expanded diff,
- * otherwise the summary line names fields that show nothing when expanded.
+ * even though there's no visible added/removed item, and other fields can
+ * format to the same display string despite differing raw values — those
+ * must be excluded everywhere a change is counted or named, not just in the
+ * expanded diff, otherwise the summary line names a field that shows no
+ * visible change when expanded.
  */
-function fieldChangeIsVisible(change: AuditFieldChange): boolean {
+function fieldChangeIsVisible(field: string, change: AuditFieldChange): boolean {
   if (Array.isArray(change.old) && Array.isArray(change.new)) {
     const { added, removed } = diffListField(change.old, change.new);
     return added.length > 0 || removed.length > 0;
   }
-  return true;
+  return formatValue(field, change.old) !== formatValue(field, change.new);
 }
 
 function sourceLabel(entry: AuditEntry): string | null {
@@ -342,76 +353,117 @@ function FieldDiff({
     );
   }
 
-  // Plain-text fields: if the change is a pure append/prepend/truncation,
-  // show only the delta highlighted rather than the full before/after strings.
-  if (typeof change.old === "string" && typeof change.new === "string") {
-    const diff = diffText(change.old, change.new);
-    if (diff.type !== "replace") {
-      const isAddition = diff.type === "append" || diff.type === "prepend";
-      const deltaCls = isAddition
-        ? "bg-success/8 text-success border-success/15"
-        : "bg-destructive/8 text-destructive border-destructive/15 line-through decoration-destructive/50";
-      const delta = isAddition ? diff.added : diff.removed;
+  // Years of experience: diff the number itself and keep the "year(s)" unit
+  // plain. A generic string diff breaks here because "year" -> "years" (or
+  // vice versa) ends in a different letter, so the common-suffix scan fails
+  // at the very last character and falls back to a full replacement.
+  if (field === "years_of_experience") {
+    const oldNum = typeof change.old === "number" ? change.old : null;
+    const newNum = typeof change.new === "number" ? change.new : null;
+    if (oldNum === newNum) return null;
+    const unit = (newNum ?? oldNum) === 1 ? "year" : "years";
 
-      if (!diff.unchanged) {
-        // Whole value was added or removed — nothing "unchanged" to anchor to.
-        return (
-          <div className="flex items-start gap-3 text-xs">
-            <span className="w-24 shrink-0 text-foreground/40 font-medium pt-0.5">
-              {label}
+    return (
+      <div className="flex items-start gap-3 text-xs">
+        <span className="w-24 shrink-0 text-foreground/40 font-medium pt-0.5">
+          {label}
+        </span>
+        <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+          {oldNum !== null && (
+            <span className="px-2 py-0.5 rounded-md bg-destructive/8 text-destructive border border-destructive/15 line-through decoration-destructive/50">
+              {oldNum}
             </span>
-            <span className={`px-2 py-0.5 rounded-md border ${deltaCls}`}>
-              {delta}
+          )}
+          {oldNum !== null && newNum !== null && (
+            <ArrowRight className="w-3 h-3 text-foreground/25 shrink-0" />
+          )}
+          {newNum !== null && (
+            <span className="px-2 py-0.5 rounded-md bg-success/8 text-success border border-success/15">
+              {newNum}
             </span>
-          </div>
-        );
-      }
-
-      const prefix = diff.type === "prepend" || diff.type === "shrink-start" ? delta : diff.unchanged;
-      const suffix = diff.type === "prepend" || diff.type === "shrink-start" ? diff.unchanged : delta;
-      const prefixIsDelta = diff.type === "prepend" || diff.type === "shrink-start";
-
-      return (
-        <div className="flex items-start gap-3 text-xs">
-          <span className="w-24 shrink-0 text-foreground/40 font-medium pt-0.5">
-            {label}
-          </span>
-          <span className="px-2 py-0.5 rounded-md border border-border bg-secondary/60 text-foreground/70">
-            <span className={prefixIsDelta ? `rounded px-0.5 border ${deltaCls}` : ""}>
-              {prefix}
-            </span>
-            <span className={!prefixIsDelta ? `rounded px-0.5 border ${deltaCls}` : ""}>
-              {suffix}
-            </span>
-          </span>
+          )}
+          <span className="text-foreground/70">{unit}</span>
         </div>
-      );
-    }
+      </div>
+    );
   }
 
-  const oldVal = formatValue(field, change.old);
-  const newVal = formatValue(field, change.new);
+  // Every other field: format both sides the same way it's displayed
+  // elsewhere (numbers, clearance labels, free text, ...), then highlight
+  // only the part of the formatted value that actually changed rather than
+  // crossing off the whole thing.
+  const oldStr = formatValue(field, change.old);
+  const newStr = formatValue(field, change.new);
+
+  if (oldStr === newStr) return null; // no visible difference despite raw values differing
+
+  if (oldStr === "—") {
+    return (
+      <div className="flex items-start gap-3 text-xs">
+        <span className="w-24 shrink-0 text-foreground/40 font-medium pt-0.5">
+          {label}
+        </span>
+        <span className="px-2 py-0.5 rounded-md bg-success/8 text-success border border-success/15">
+          {newStr}
+        </span>
+      </div>
+    );
+  }
+
+  if (newStr === "—") {
+    return (
+      <div className="flex items-start gap-3 text-xs">
+        <span className="w-24 shrink-0 text-foreground/40 font-medium pt-0.5">
+          {label}
+        </span>
+        <span className="px-2 py-0.5 rounded-md bg-destructive/8 text-destructive border border-destructive/15 line-through decoration-destructive/50">
+          {oldStr}
+        </span>
+      </div>
+    );
+  }
+
+  const { prefix, oldMiddle, newMiddle, suffix } = diffScalar(oldStr, newStr);
+
+  if (!prefix && !suffix) {
+    // No shared context — a genuine full replacement.
+    return (
+      <div className="flex items-start gap-3 text-xs">
+        <span className="w-24 shrink-0 text-foreground/40 font-medium pt-0.5">
+          {label}
+        </span>
+        <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+          <span className="px-2 py-0.5 rounded-md bg-destructive/8 text-destructive border border-destructive/15 line-through decoration-destructive/50">
+            {oldMiddle}
+          </span>
+          <ArrowRight className="w-3 h-3 text-foreground/25 shrink-0" />
+          <span className="px-2 py-0.5 rounded-md bg-success/8 text-success border border-success/15">
+            {newMiddle}
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-start gap-3 text-xs">
       <span className="w-24 shrink-0 text-foreground/40 font-medium pt-0.5">
         {label}
       </span>
-      <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-        {oldVal !== "—" && (
-          <span className="px-2 py-0.5 rounded-md bg-destructive/8 text-destructive border border-destructive/15 line-through decoration-destructive/50">
-            {oldVal}
+      <span className="px-2 py-0.5 rounded-md border border-border bg-secondary/60 text-foreground/70">
+        {prefix}
+        {oldMiddle && (
+          <span className="rounded px-0.5 border bg-destructive/8 text-destructive border-destructive/15 line-through decoration-destructive/50">
+            {oldMiddle}
           </span>
         )}
-        {oldVal !== "—" && newVal !== "—" && (
-          <ArrowRight className="w-3 h-3 text-foreground/25 shrink-0" />
-        )}
-        {newVal !== "—" && (
-          <span className="px-2 py-0.5 rounded-md bg-success/8 text-success border border-success/15">
-            {newVal}
+        {newMiddle && (
+          <span className="rounded px-0.5 border bg-success/8 text-success border-success/15">
+            {newMiddle}
           </span>
         )}
-      </div>
+        {suffix}
+      </span>
     </div>
   );
 }
@@ -430,7 +482,7 @@ function AuditCard({ entry, isLast }: { entry: AuditEntry; isLast: boolean }) {
   const changes = entry.changes
     ? Object.fromEntries(
         Object.entries(entry.changes).filter(
-          ([field, change]) => field !== "summary" && fieldChangeIsVisible(change),
+          ([field, change]) => field !== "summary" && fieldChangeIsVisible(field, change),
         ),
       )
     : undefined;
