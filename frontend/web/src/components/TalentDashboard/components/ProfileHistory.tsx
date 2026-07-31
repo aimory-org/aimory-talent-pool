@@ -81,6 +81,7 @@ const FIELD_LABELS: Record<string, string> = {
   "contact.phone": "Phone",
   "contact.linkedin": "LinkedIn",
   "contact.github": "GitHub",
+  location: "Location",
   "location.city": "City",
   "location.state": "State",
   skillsets: "Skills",
@@ -138,6 +139,10 @@ function formatValue(field: string, v: unknown): string {
     if (typeof v[0] === "object" && v[0] !== null && "name" in v[0])
       return (v as { name: string }[]).map((x) => x.name).join(", ");
     return (v as string[]).join(", ");
+  }
+  if (field === "location" && typeof v === "object") {
+    const loc = v as { city?: string | null; state?: string | null };
+    return [loc.city, loc.state].filter(Boolean).join(", ") || "—";
   }
   return String(v);
 }
@@ -275,6 +280,63 @@ function FieldDiff({
               ))}
             </div>
           )}
+        </div>
+      </div>
+    );
+  }
+
+  // Location: city and state change independently — only strike/highlight the
+  // part that actually changed instead of crossing off the whole "City, State".
+  if (
+    field === "location" &&
+    change.old &&
+    typeof change.old === "object" &&
+    change.new &&
+    typeof change.new === "object"
+  ) {
+    const oldLoc = change.old as { city?: string | null; state?: string | null };
+    const newLoc = change.new as { city?: string | null; state?: string | null };
+    const cityChanged = (oldLoc.city ?? null) !== (newLoc.city ?? null);
+    const stateChanged = (oldLoc.state ?? null) !== (newLoc.state ?? null);
+
+    const renderPart = (oldPart: string | null | undefined, newPart: string | null | undefined, changed: boolean) => {
+      if (!changed) {
+        return oldPart ? (
+          <span className="px-2 py-0.5 rounded-md border border-border bg-secondary/60 text-foreground/70">
+            {oldPart}
+          </span>
+        ) : null;
+      }
+      return (
+        <>
+          {oldPart && (
+            <span className="px-2 py-0.5 rounded-md bg-destructive/8 text-destructive border border-destructive/15 line-through decoration-destructive/50">
+              {oldPart}
+            </span>
+          )}
+          {oldPart && newPart && (
+            <ArrowRight className="w-3 h-3 text-foreground/25 shrink-0" />
+          )}
+          {newPart && (
+            <span className="px-2 py-0.5 rounded-md bg-success/8 text-success border border-success/15">
+              {newPart}
+            </span>
+          )}
+        </>
+      );
+    };
+
+    return (
+      <div className="flex items-start gap-3 text-xs">
+        <span className="w-24 shrink-0 text-foreground/40 font-medium pt-0.5">
+          {label}
+        </span>
+        <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+          {renderPart(oldLoc.city, newLoc.city, cityChanged)}
+          {(oldLoc.city || newLoc.city) && (oldLoc.state || newLoc.state) && (
+            <span className="text-foreground/25">,</span>
+          )}
+          {renderPart(oldLoc.state, newLoc.state, stateChanged)}
         </div>
       </div>
     );
