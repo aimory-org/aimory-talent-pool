@@ -130,10 +130,12 @@ describe("ProfileHistory", () => {
         ?.closest("button");
       if (expandBtn) {
         await user.click(expandBtn);
-        // The diff should show old/new values
+        // The diff should show the changed portions of the old/new values.
+        // diffScalar extracts the shared suffix " Candidate", so only the
+        // differing parts "Potential" and "Active" appear as standalone spans.
         await waitFor(() => {
-          expect(screen.getByText("Potential Candidate")).toBeInTheDocument();
-          expect(screen.getByText("Active Candidate")).toBeInTheDocument();
+          expect(screen.getByText("Potential")).toBeInTheDocument();
+          expect(screen.getByText("Active")).toBeInTheDocument();
         });
       }
     });
