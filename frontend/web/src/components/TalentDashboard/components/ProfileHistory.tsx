@@ -21,6 +21,7 @@ import {
   type AuditEntry,
   type AuditFieldChange,
 } from "@/lib/api";
+import { CLEARANCE_LEVELS } from "@/types/talent";
 
 // ---------------------------------------------------------------------------
 // Action config
@@ -80,12 +81,17 @@ const FIELD_LABELS: Record<string, string> = {
   "contact.phone": "Phone",
   "contact.linkedin": "LinkedIn",
   "contact.github": "GitHub",
+  location: "Location",
   "location.city": "City",
   "location.state": "State",
   skillsets: "Skills",
   certifications: "Certifications",
   companies: "Work History",
 };
+
+const CLEARANCE_LABELS: Record<string, string> = Object.fromEntries(
+  CLEARANCE_LEVELS.map((c) => [c.value, c.label]),
+);
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -116,11 +122,17 @@ function formatAbsolute(ts: string): string {
   });
 }
 
-function formatValue(v: unknown): string {
+function formatValue(field: string, v: unknown): string {
   if (v === null || v === undefined || v === "") return "—";
   if (typeof v === "number") {
-    if (v >= 10_000) return `$${v.toLocaleString()}/yr`;
+    if (field === "requested_salary" || v >= 10_000)
+      return `$${v.toLocaleString()}/yr`;
+    if (field === "years_of_experience")
+      return `${v} ${v === 1 ? "year" : "years"}`;
     return String(v);
+  }
+  if (field === "clearance_level" && typeof v === "string") {
+    return CLEARANCE_LABELS[v] ?? v;
   }
   if (Array.isArray(v)) {
     if (v.length === 0) return "none";
@@ -128,7 +140,91 @@ function formatValue(v: unknown): string {
       return (v as { name: string }[]).map((x) => x.name).join(", ");
     return (v as string[]).join(", ");
   }
+  if (field === "location" && typeof v === "object") {
+    const loc = v as { city?: string | null; state?: string | null };
+    return [loc.city, loc.state].filter(Boolean).join(", ") || "—";
+  }
   return String(v);
+}
+
+/** Extract a display label from a list item, whether it's a plain string or an object with `name`. */
+function itemLabel(item: unknown): string {
+  if (item && typeof item === "object" && "name" in item) {
+    return String((item as { name: string }).name);
+  }
+  return String(item);
+}
+
+/**
+ * Diff two list-valued snapshots by item identity (case-insensitive name match)
+ * so an append shows up as an addition instead of a full-list replacement.
+ */
+function diffListField(
+  oldVal: unknown[],
+  newVal: unknown[],
+): { added: string[]; removed: string[] } {
+  const oldItems = oldVal.map(itemLabel).filter(Boolean);
+  const newItems = newVal.map(itemLabel).filter(Boolean);
+  const oldKeys = new Set(oldItems.map((s) => s.toLowerCase().trim()));
+  const newKeys = new Set(newItems.map((s) => s.toLowerCase().trim()));
+  const added = newItems.filter((s) => !oldKeys.has(s.toLowerCase().trim()));
+  const removed = oldItems.filter((s) => !newKeys.has(s.toLowerCase().trim()));
+  return { added, removed };
+}
+
+type ScalarDiff = {
+  prefix: string;
+  oldMiddle: string;
+  newMiddle: string;
+  suffix: string;
+};
+
+/**
+ * Find the longest common prefix and suffix between two formatted values so
+ * a diff only highlights the part that actually changed — e.g. "3 years" ->
+ * "5 years" highlights just "3"/"5" and leaves " years" plain, and
+ * "cool" -> "cool and rules" leaves "cool" plain and highlights only
+ * " and rules" — instead of crossing off the entire value.
+ */
+function diffScalar(oldStr: string, newStr: string): ScalarDiff {
+  const maxPrefix = Math.min(oldStr.length, newStr.length);
+  let prefixLen = 0;
+  while (prefixLen < maxPrefix && oldStr[prefixLen] === newStr[prefixLen]) {
+    prefixLen++;
+  }
+
+  const maxSuffix = maxPrefix - prefixLen;
+  let suffixLen = 0;
+  while (
+    suffixLen < maxSuffix &&
+    oldStr[oldStr.length - 1 - suffixLen] === newStr[newStr.length - 1 - suffixLen]
+  ) {
+    suffixLen++;
+  }
+
+  return {
+    prefix: oldStr.slice(0, prefixLen),
+    oldMiddle: oldStr.slice(prefixLen, oldStr.length - suffixLen),
+    newMiddle: newStr.slice(prefixLen, newStr.length - suffixLen),
+    suffix: oldStr.slice(oldStr.length - suffixLen),
+  };
+}
+
+/**
+ * Whether a field change actually renders something in FieldDiff. List fields
+ * can come back from the backend as "changed" (reordered, metadata-only diff)
+ * even though there's no visible added/removed item, and other fields can
+ * format to the same display string despite differing raw values — those
+ * must be excluded everywhere a change is counted or named, not just in the
+ * expanded diff, otherwise the summary line names a field that shows no
+ * visible change when expanded.
+ */
+function fieldChangeIsVisible(field: string, change: AuditFieldChange): boolean {
+  if (Array.isArray(change.old) && Array.isArray(change.new)) {
+    const { added, removed } = diffListField(change.old, change.new);
+    return added.length > 0 || removed.length > 0;
+  }
+  return formatValue(field, change.old) !== formatValue(field, change.new);
 }
 
 function sourceLabel(entry: AuditEntry): string | null {
@@ -149,29 +245,225 @@ function FieldDiff({
   change: AuditFieldChange;
 }) {
   const label = FIELD_LABELS[field] ?? field.replace(/_/g, " ");
-  const oldVal = formatValue(change.old);
-  const newVal = formatValue(change.new);
+
+  // List-valued fields (skills, certifications, work history, tags): diff by
+  // item identity so an append/removal reads as "+X" / "-Y" rather than a
+  // wholesale before/after replacement of the entire list.
+  if (Array.isArray(change.old) && Array.isArray(change.new)) {
+    const { added, removed } = diffListField(change.old, change.new);
+    if (added.length === 0 && removed.length === 0) {
+      return null; // e.g. reordered only — nothing meaningful to surface
+    }
+
+    return (
+      <div className="flex items-start gap-3 text-xs">
+        <span className="w-24 shrink-0 text-foreground/40 font-medium pt-0.5">
+          {label}
+        </span>
+        <div className="flex-1 min-w-0 space-y-1">
+          {added.length > 0 && (
+            <div className="flex items-start gap-1.5 flex-wrap">
+              <span className="text-success font-medium shrink-0 pt-0.5">
+                + Added
+              </span>
+              {added.map((item, i) => (
+                <span
+                  key={i}
+                  className="px-2 py-0.5 rounded-md bg-success/8 text-success border border-success/15"
+                >
+                  {item}
+                </span>
+              ))}
+            </div>
+          )}
+          {removed.length > 0 && (
+            <div className="flex items-start gap-1.5 flex-wrap">
+              <span className="text-destructive font-medium shrink-0 pt-0.5">
+                − Removed
+              </span>
+              {removed.map((item, i) => (
+                <span
+                  key={i}
+                  className="px-2 py-0.5 rounded-md bg-destructive/8 text-destructive border border-destructive/15 line-through decoration-destructive/50"
+                >
+                  {item}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Location: city and state change independently — only strike/highlight the
+  // part that actually changed instead of crossing off the whole "City, State".
+  if (
+    field === "location" &&
+    change.old &&
+    typeof change.old === "object" &&
+    change.new &&
+    typeof change.new === "object"
+  ) {
+    const oldLoc = change.old as { city?: string | null; state?: string | null };
+    const newLoc = change.new as { city?: string | null; state?: string | null };
+    const cityChanged = (oldLoc.city ?? null) !== (newLoc.city ?? null);
+    const stateChanged = (oldLoc.state ?? null) !== (newLoc.state ?? null);
+
+    const renderPart = (oldPart: string | null | undefined, newPart: string | null | undefined, changed: boolean) => {
+      if (!changed) {
+        return oldPart ? (
+          <span className="px-2 py-0.5 rounded-md border border-border bg-secondary/60 text-foreground/70">
+            {oldPart}
+          </span>
+        ) : null;
+      }
+      return (
+        <>
+          {oldPart && (
+            <span className="px-2 py-0.5 rounded-md bg-destructive/8 text-destructive border border-destructive/15 line-through decoration-destructive/50">
+              {oldPart}
+            </span>
+          )}
+          {oldPart && newPart && (
+            <ArrowRight className="w-3 h-3 text-foreground/25 shrink-0" />
+          )}
+          {newPart && (
+            <span className="px-2 py-0.5 rounded-md bg-success/8 text-success border border-success/15">
+              {newPart}
+            </span>
+          )}
+        </>
+      );
+    };
+
+    return (
+      <div className="flex items-start gap-3 text-xs">
+        <span className="w-24 shrink-0 text-foreground/40 font-medium pt-0.5">
+          {label}
+        </span>
+        <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+          {renderPart(oldLoc.city, newLoc.city, cityChanged)}
+          {(oldLoc.city || newLoc.city) && (oldLoc.state || newLoc.state) && (
+            <span className="text-foreground/25">,</span>
+          )}
+          {renderPart(oldLoc.state, newLoc.state, stateChanged)}
+        </div>
+      </div>
+    );
+  }
+
+  // Years of experience: diff the number itself and keep the "year(s)" unit
+  // plain. A generic string diff breaks here because "year" -> "years" (or
+  // vice versa) ends in a different letter, so the common-suffix scan fails
+  // at the very last character and falls back to a full replacement.
+  if (field === "years_of_experience") {
+    const oldNum = typeof change.old === "number" ? change.old : null;
+    const newNum = typeof change.new === "number" ? change.new : null;
+    if (oldNum === newNum) return null;
+    const unit = (newNum ?? oldNum) === 1 ? "year" : "years";
+
+    return (
+      <div className="flex items-start gap-3 text-xs">
+        <span className="w-24 shrink-0 text-foreground/40 font-medium pt-0.5">
+          {label}
+        </span>
+        <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+          {oldNum !== null && (
+            <span className="px-2 py-0.5 rounded-md bg-destructive/8 text-destructive border border-destructive/15 line-through decoration-destructive/50">
+              {oldNum}
+            </span>
+          )}
+          {oldNum !== null && newNum !== null && (
+            <ArrowRight className="w-3 h-3 text-foreground/25 shrink-0" />
+          )}
+          {newNum !== null && (
+            <span className="px-2 py-0.5 rounded-md bg-success/8 text-success border border-success/15">
+              {newNum}
+            </span>
+          )}
+          <span className="text-foreground/70">{unit}</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Every other field: format both sides the same way it's displayed
+  // elsewhere (numbers, clearance labels, free text, ...), then highlight
+  // only the part of the formatted value that actually changed rather than
+  // crossing off the whole thing.
+  const oldStr = formatValue(field, change.old);
+  const newStr = formatValue(field, change.new);
+
+  if (oldStr === newStr) return null; // no visible difference despite raw values differing
+
+  if (oldStr === "—") {
+    return (
+      <div className="flex items-start gap-3 text-xs">
+        <span className="w-24 shrink-0 text-foreground/40 font-medium pt-0.5">
+          {label}
+        </span>
+        <span className="px-2 py-0.5 rounded-md bg-success/8 text-success border border-success/15">
+          {newStr}
+        </span>
+      </div>
+    );
+  }
+
+  if (newStr === "—") {
+    return (
+      <div className="flex items-start gap-3 text-xs">
+        <span className="w-24 shrink-0 text-foreground/40 font-medium pt-0.5">
+          {label}
+        </span>
+        <span className="px-2 py-0.5 rounded-md bg-destructive/8 text-destructive border border-destructive/15 line-through decoration-destructive/50">
+          {oldStr}
+        </span>
+      </div>
+    );
+  }
+
+  const { prefix, oldMiddle, newMiddle, suffix } = diffScalar(oldStr, newStr);
+
+  if (!prefix && !suffix) {
+    // No shared context — a genuine full replacement.
+    return (
+      <div className="flex items-start gap-3 text-xs">
+        <span className="w-24 shrink-0 text-foreground/40 font-medium pt-0.5">
+          {label}
+        </span>
+        <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+          <span className="px-2 py-0.5 rounded-md bg-destructive/8 text-destructive border border-destructive/15 line-through decoration-destructive/50">
+            {oldMiddle}
+          </span>
+          <ArrowRight className="w-3 h-3 text-foreground/25 shrink-0" />
+          <span className="px-2 py-0.5 rounded-md bg-success/8 text-success border border-success/15">
+            {newMiddle}
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-start gap-3 text-xs">
-      <span className="w-24 shrink-0 text-foreground/40 font-medium pt-0.5 truncate">
+      <span className="w-24 shrink-0 text-foreground/40 font-medium pt-0.5">
         {label}
       </span>
-      <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-        {oldVal !== "—" && (
-          <span className="px-2 py-0.5 rounded-md bg-destructive/8 text-destructive border border-destructive/15 line-through decoration-destructive/50 max-w-40 truncate">
-            {oldVal}
+      <span className="px-2 py-0.5 rounded-md border border-border bg-secondary/60 text-foreground/70">
+        {prefix}
+        {oldMiddle && (
+          <span className="rounded px-0.5 border bg-destructive/8 text-destructive border-destructive/15 line-through decoration-destructive/50">
+            {oldMiddle}
           </span>
         )}
-        {oldVal !== "—" && newVal !== "—" && (
-          <ArrowRight className="w-3 h-3 text-foreground/25 shrink-0" />
-        )}
-        {newVal !== "—" && (
-          <span className="px-2 py-0.5 rounded-md bg-success/8 text-success border border-success/15 max-w-40 truncate">
-            {newVal}
+        {newMiddle && (
+          <span className="rounded px-0.5 border bg-success/8 text-success border-success/15">
+            {newMiddle}
           </span>
         )}
-      </div>
+        {suffix}
+      </span>
     </div>
   );
 }
@@ -183,7 +475,18 @@ function FieldDiff({
 function AuditCard({ entry, isLast }: { entry: AuditEntry; isLast: boolean }) {
   const [expanded, setExpanded] = useState(false);
   const cfg = ACTION_CFG[entry.action];
-  const changeKeys = entry.changes ? Object.keys(entry.changes) : [];
+  // Summary text is long-form and noisy in a diff view — omit it from the log
+  // entirely. Also drop any field whose diff renders nothing (see
+  // fieldChangeIsVisible) so the header summary never names a field that
+  // shows no visible change when expanded.
+  const changes = entry.changes
+    ? Object.fromEntries(
+        Object.entries(entry.changes).filter(
+          ([field, change]) => field !== "summary" && fieldChangeIsVisible(field, change),
+        ),
+      )
+    : undefined;
+  const changeKeys = changes ? Object.keys(changes) : [];
   const hasChanges = changeKeys.length > 0;
   const system = sourceLabel(entry);
   const displayName = entry.user_name ?? entry.user_email.split("@")[0];
@@ -236,10 +539,14 @@ function AuditCard({ entry, isLast }: { entry: AuditEntry; isLast: boolean }) {
               </span>
             )}
 
-            {/* Field count */}
+            {/* What changed, at a glance */}
             {changeKeys.length > 1 && (
-              <span className="text-[11px] text-foreground/35">
-                {changeKeys.length} fields
+              <span className="text-[11px] text-foreground/35 truncate max-w-[220px]">
+                {changeKeys.length <= 3
+                  ? changeKeys
+                      .map((k) => FIELD_LABELS[k] ?? k.replace(/_/g, " "))
+                      .join(", ")
+                  : `${changeKeys.length} fields`}
               </span>
             )}
           </div>
@@ -270,7 +577,7 @@ function AuditCard({ entry, isLast }: { entry: AuditEntry; isLast: boolean }) {
         {/* Expanded diff */}
         {expanded && hasChanges && (
           <div className="mt-2 p-3 rounded-lg bg-black/3 dark:bg-white/3 border border-black/6 dark:border-white/6 space-y-1.5">
-            {Object.entries(entry.changes!).map(([field, change]) => (
+            {Object.entries(changes!).map(([field, change]) => (
               <FieldDiff key={field} field={field} change={change} />
             ))}
           </div>
