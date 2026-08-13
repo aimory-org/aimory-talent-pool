@@ -46,6 +46,7 @@ export function TalentDashboard() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [warningsFilterActive, setWarningsFilterActive] = useState(false);
   const [selectedWarningTypes, setSelectedWarningTypes] = useState<WarningType[]>([]);
+  const [starredFilterActive, setStarredFilterActive] = useState(false);
   const [showProcessingBanner, setShowProcessingBanner] = useState(false);
   const processingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -79,6 +80,7 @@ export function TalentDashboard() {
     refresh: refreshTalents,
     mergeTalent,
     bulkUpdateStatus,
+    toggleStar,
     removeTalents,
   } = useTalents({
     status: filters.status || undefined,
@@ -120,6 +122,17 @@ export function TalentDashboard() {
       setSelectedProfile(updated);
     },
     [mergeTalent],
+  );
+
+  const handleToggleStar = useCallback(
+    async (pk: string) => {
+      try {
+        await toggleStar(pk);
+      } catch {
+        showToast("Failed to update starred candidate. Please try again.", "error");
+      }
+    },
+    [toggleStar, showToast],
   );
 
   // Selection handlers
@@ -383,16 +396,24 @@ export function TalentDashboard() {
     [talents],
   );
 
-  // Client-side warnings filter
+  // Client-side starred + warnings filters
   const displayedProfiles = useMemo(() => {
-    if (!warningsFilterActive) return sortedProfiles;
-    if (selectedWarningTypes.length === 0) {
-      return sortedProfiles.filter((p) => getProfileWarnings(p, duplicateTargetPks).length > 0);
+    let result = sortedProfiles;
+    if (starredFilterActive) {
+      result = result.filter((p) => p.starred);
     }
-    return sortedProfiles.filter((p) =>
-      getProfileWarnings(p, duplicateTargetPks).some((w) => selectedWarningTypes.includes(w)),
-    );
-  }, [sortedProfiles, warningsFilterActive, selectedWarningTypes, duplicateTargetPks]);
+    if (warningsFilterActive) {
+      result =
+        selectedWarningTypes.length === 0
+          ? result.filter((p) => getProfileWarnings(p, duplicateTargetPks).length > 0)
+          : result.filter((p) =>
+              getProfileWarnings(p, duplicateTargetPks).some((w) => selectedWarningTypes.includes(w)),
+            );
+    }
+    return result;
+  }, [sortedProfiles, warningsFilterActive, selectedWarningTypes, duplicateTargetPks, starredFilterActive]);
+
+  const starredCount = useMemo(() => talents.filter((p) => p.starred).length, [talents]);
 
   const warningCounts = useMemo(() => {
     const counts: Record<WarningType, number> = {
@@ -415,7 +436,7 @@ export function TalentDashboard() {
   );
 
   // Reset to first page when filters / sort change (derived-state avoids effect)
-  const resetKey = `${JSON.stringify(filters)}|${sortField}|${sortDirection}|${String(warningsFilterActive)}|${selectedWarningTypes.join(",")}`;
+  const resetKey = `${JSON.stringify(filters)}|${sortField}|${sortDirection}|${String(warningsFilterActive)}|${selectedWarningTypes.join(",")}|${String(starredFilterActive)}`;
   const [lastResetKey, setLastResetKey] = useState(resetKey);
   if (lastResetKey !== resetKey) {
     setLastResetKey(resetKey);
@@ -596,6 +617,9 @@ export function TalentDashboard() {
             }}
             selectedWarningTypes={selectedWarningTypes}
             onWarningTypesChange={setSelectedWarningTypes}
+            starredCount={starredCount}
+            starredFilterActive={starredFilterActive}
+            onToggleStarredFilter={() => setStarredFilterActive((active) => !active)}
           />
         )}
 
@@ -668,6 +692,7 @@ export function TalentDashboard() {
           onToggleSelect={handleToggleSelect}
           onToggleSelectAll={handleToggleSelectAll}
           duplicateTargetPks={duplicateTargetPks}
+          onToggleStar={handleToggleStar}
         />
         <Pagination
           currentPage={safePage}

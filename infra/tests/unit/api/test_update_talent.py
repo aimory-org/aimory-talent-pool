@@ -99,6 +99,22 @@ class TestUpdateTalentSuccess:
         body = json.loads(resp["body"])
         assert body["profile"]["status"] == "Placed with us"
 
+    def test_update_starred(self, talent_profiles_table):
+        talent_profiles_table.put_item(Item={"pk": "b#k", "starred": False})
+        app = _reload_app()
+        resp = app.handler(_make_event("b#k", {"starred": True}), None)
+        assert resp["statusCode"] == 200
+        body = json.loads(resp["body"])
+        assert body["profile"]["starred"] is True
+
+    def test_unstar(self, talent_profiles_table):
+        talent_profiles_table.put_item(Item={"pk": "b#k", "starred": True})
+        app = _reload_app()
+        resp = app.handler(_make_event("b#k", {"starred": False}), None)
+        assert resp["statusCode"] == 200
+        body = json.loads(resp["body"])
+        assert body["profile"]["starred"] is False
+
     def test_update_requested_salary_decimal(self, talent_profiles_table):
         talent_profiles_table.put_item(Item={"pk": "b#k"})
         app = _reload_app()

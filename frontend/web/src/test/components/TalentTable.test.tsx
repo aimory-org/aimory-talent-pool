@@ -136,6 +136,49 @@ describe("TalentTable", () => {
     });
   });
 
+  describe("Star toggle", () => {
+    it("does not render a star column when onToggleStar is omitted", () => {
+      render(<TalentTable {...defaultProps} />);
+
+      expect(screen.queryByLabelText(/^Star John Doe$/)).not.toBeInTheDocument();
+    });
+
+    it("calls onToggleStar with the profile pk when the star is clicked", async () => {
+      const onToggleStar = vi.fn();
+      const onSelectProfile = vi.fn();
+      render(
+        <TalentTable
+          {...defaultProps}
+          onSelectProfile={onSelectProfile}
+          onToggleStar={onToggleStar}
+        />,
+      );
+
+      await userEvent.click(screen.getByLabelText("Star John Doe"));
+
+      expect(onToggleStar).toHaveBeenCalledWith(mockTalents[0].pk);
+      // Clicking the star must not also open the profile detail panel
+      expect(onSelectProfile).not.toHaveBeenCalled();
+    });
+
+    it("shows a filled star and yellow row highlight for starred profiles", () => {
+      const starredTalents = [{ ...mockTalents[0], starred: true }, ...mockTalents.slice(1)];
+      render(
+        <TalentTable
+          {...defaultProps}
+          profiles={starredTalents}
+          onToggleStar={vi.fn()}
+        />,
+      );
+
+      const starButton = screen.getByLabelText("Remove John Doe from starred");
+      expect(starButton.querySelector("svg")).toHaveClass("fill-yellow-400");
+
+      const row = screen.getByText("John Doe").closest("tr");
+      expect(row).toHaveClass("bg-yellow-50");
+    });
+  });
+
   describe("Loading state", () => {
     it("shows loading indicator when isLoading is true", () => {
       render(<TalentTable {...defaultProps} profiles={[]} isLoading={true} />);

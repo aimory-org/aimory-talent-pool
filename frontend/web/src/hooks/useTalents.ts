@@ -20,6 +20,8 @@ export interface UseTalentsResult {
   updateStatus: (pk: string, status: CandidateStatus) => Promise<void>;
   /** Bulk update status for multiple talents optimistically */
   bulkUpdateStatus: (pks: string[], status: CandidateStatus) => Promise<{ updated_count: number; failed_pks: string[] }>;
+  /** Toggle a talent's starred flag optimistically */
+  toggleStar: (pk: string) => Promise<void>;
   /** Replace a single talent in the local list (e.g. after an edit) */
   mergeTalent: (updated: TalentProfile) => void;
   /** Remove multiple talents from local state (after bulk delete) */
@@ -120,6 +122,25 @@ export function useTalents(options: UseTalentsOptions = {}): UseTalentsResult {
     [talents],
   );
 
+  const toggleStar = useCallback(
+    async (pk: string) => {
+      const previousTalents = talents;
+      const nextStarred = !talents.find((t) => t.pk === pk)?.starred;
+      setTalents((prev) =>
+        prev.map((t) => (t.pk === pk ? { ...t, starred: nextStarred } : t)),
+      );
+
+      try {
+        await updateTalent(pk, { starred: nextStarred });
+      } catch (err) {
+        // Rollback on error
+        setTalents(previousTalents);
+        throw err;
+      }
+    },
+    [talents],
+  );
+
   const mergeTalent = useCallback((updated: TalentProfile) => {
     setTalents((prev) => prev.map((t) => (t.pk === updated.pk ? updated : t)));
   }, []);
@@ -144,6 +165,7 @@ export function useTalents(options: UseTalentsOptions = {}): UseTalentsResult {
     refresh,
     updateStatus,
     bulkUpdateStatus,
+    toggleStar,
     mergeTalent,
     removeTalents,
   };

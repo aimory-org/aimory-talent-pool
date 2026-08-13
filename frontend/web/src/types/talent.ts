@@ -30,6 +30,7 @@ export interface TalentProfile {
   requested_salary: number | null;
   notes: string;
   tags: string[];
+  starred?: boolean;
   resume_text: string;
   possible_duplicate_of?: string;
   status: CandidateStatus;

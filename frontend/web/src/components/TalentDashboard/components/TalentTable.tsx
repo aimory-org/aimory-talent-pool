@@ -2,7 +2,7 @@
  * Table component for displaying talent profiles.
  */
 import { useRef } from "react";
-import { Users, Search, MapPin, ChevronRight, X } from "lucide-react";
+import { Users, Search, MapPin, ChevronRight, X, Star } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -36,6 +36,8 @@ interface TalentTableProps {
   onToggleSelectAll?: (pks: string[], allSelected: boolean) => void;
   /** PKs that other profiles point to via possible_duplicate_of (for incoming-duplicate badges) */
   duplicateTargetPks?: Set<string>;
+  /** Toggle a profile's starred flag (omit to disable the star column) */
+  onToggleStar?: (pk: string) => void;
 }
 
 /**
@@ -221,8 +223,10 @@ export function TalentTable({
   onToggleSelect,
   onToggleSelectAll,
   duplicateTargetPks,
+  onToggleStar,
 }: TalentTableProps) {
   const selectionEnabled = !!selectedPks && !!onToggleSelect;
+  const starEnabled = !!onToggleStar;
   const allOnPageSelected =
     selectionEnabled && profiles.length > 0 && profiles.every((p) => selectedPks!.has(p.pk));
   const someOnPageSelected =
@@ -238,7 +242,7 @@ export function TalentTable({
         provides its own overflow-x-auto wrapper as a fallback for narrower
         viewports.
       */}
-      <Table className="table-fixed w-full min-w-[1210px]">
+      <Table className="table-fixed w-full min-w-[1254px]">
           <TableHeader>
             <TableRow className="border-border hover:bg-transparent">
               {selectionEnabled && (
@@ -251,6 +255,11 @@ export function TalentTable({
                     }
                     ariaLabel="Select all on page"
                   />
+                </TableHead>
+              )}
+              {starEnabled && (
+                <TableHead className="w-[44px]">
+                  <span className="sr-only">Starred</span>
                 </TableHead>
               )}
               <TableHead className="text-muted-foreground w-[220px]">
@@ -330,7 +339,10 @@ export function TalentTable({
           <TableBody>
             {profiles.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={selectionEnabled ? 9 : 8} className="text-center py-16">
+                <TableCell
+                  colSpan={8 + (selectionEnabled ? 1 : 0) + (starEnabled ? 1 : 0)}
+                  className="text-center py-16"
+                >
                   <div className="flex flex-col items-center gap-4">
                     {isLoading ? (
                       <>
@@ -382,10 +394,17 @@ export function TalentTable({
                 </TableCell>
               </TableRow>
             ) : (
-              profiles.map((profile) => (
+              profiles.map((profile) => {
+                const isSelected = selectionEnabled && selectedPks!.has(profile.pk);
+                const rowHighlightCls = isSelected
+                  ? "bg-accent hover:bg-accent"
+                  : profile.starred
+                    ? "bg-yellow-50 hover:bg-yellow-100 dark:bg-yellow-500/10 dark:hover:bg-yellow-500/15"
+                    : "hover:bg-secondary";
+                return (
                 <TableRow
                   key={profile.pk}
-                  className={`border-border/60 cursor-pointer hover:bg-secondary transition-colors duration-150 group ${selectionEnabled && selectedPks!.has(profile.pk) ? "bg-accent" : ""}`}
+                  className={`border-border/60 cursor-pointer transition-colors duration-150 group ${rowHighlightCls}`}
                   onClick={() => onSelectProfile(profile)}
                 >
                   {selectionEnabled && (
@@ -399,6 +418,31 @@ export function TalentTable({
                         stopClick
                         ariaLabel={`Select ${profile.name}`}
                       />
+                    </TableCell>
+                  )}
+                  {starEnabled && (
+                    <TableCell>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onToggleStar!(profile.pk);
+                        }}
+                        className="flex items-center justify-center h-7 w-7 rounded-lg hover:bg-accent transition-colors"
+                        aria-label={
+                          profile.starred
+                            ? `Remove ${profile.name || "candidate"} from starred`
+                            : `Star ${profile.name || "candidate"}`
+                        }
+                      >
+                        <Star
+                          className={`h-4 w-4 transition-colors ${
+                            profile.starred
+                              ? "fill-yellow-400 text-yellow-400"
+                              : "text-foreground/25 hover:text-yellow-400"
+                          }`}
+                        />
+                      </button>
                     </TableCell>
                   )}
                   <TableCell>
@@ -519,7 +563,8 @@ export function TalentTable({
                     </div>
                   </TableCell>
                 </TableRow>
-              ))
+                );
+              })
             )}
           </TableBody>
       </Table>
