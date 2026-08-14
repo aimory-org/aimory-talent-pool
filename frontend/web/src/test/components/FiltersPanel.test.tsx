@@ -37,6 +37,9 @@ describe("FiltersPanel", () => {
     onToggleWarningsFilter: vi.fn(),
     selectedWarningTypes: [],
     onWarningTypesChange: vi.fn(),
+    starredCount: 0,
+    starredFilterActive: false,
+    onToggleStarredFilter: vi.fn(),
   };
 
   describe("Rendering", () => {
