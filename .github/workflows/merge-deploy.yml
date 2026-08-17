@@ -272,7 +272,10 @@ jobs:
           VITE_COGNITO_CLIENT_ID=${{ needs.terraform.outputs.cognito_web_client_id }}
           VITE_COGNITO_DOMAIN=${{ needs.terraform.outputs.cognito_domain }}
           VITE_AWS_REGION=us-east-1
-          VITE_COGNITO_REDIRECT_URI=https://${{ needs.terraform.outputs.distribution_domain }}
+          # Deliberately unset: auth.ts falls back to window.location.origin, which
+          # is the only value correct on both the CloudFront hostname and the custom
+          # domain. Pinning one origin makes Amplify reject sign-in from the other.
+          VITE_COGNITO_REDIRECT_URI=
           VITE_API_ENDPOINT=${{ needs.terraform.outputs.api_endpoint }}
           VITE_ALLOWED_EMAIL_SUFFIXES=${{ vars.VITE_ALLOWED_EMAIL_SUFFIXES }}
           ENVEOF
@@ -611,7 +614,8 @@ jobs:
           VITE_COGNITO_CLIENT_ID=${{ steps.rollback_outputs.outputs.cognito_web_client_id }}
           VITE_COGNITO_DOMAIN=${{ steps.rollback_outputs.outputs.cognito_domain }}
           VITE_AWS_REGION=us-east-1
-          VITE_COGNITO_REDIRECT_URI=https://${{ steps.rollback_outputs.outputs.distribution_domain }}
+          # Unset for the same reason as the deploy build above.
+          VITE_COGNITO_REDIRECT_URI=
           VITE_API_ENDPOINT=${{ steps.rollback_outputs.outputs.api_endpoint }}
           VITE_ALLOWED_EMAIL_SUFFIXES=${{ vars.VITE_ALLOWED_EMAIL_SUFFIXES }}
           ENVEOF
