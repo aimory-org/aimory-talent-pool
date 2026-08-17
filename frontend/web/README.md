@@ -147,6 +147,27 @@ Get `<frontend-bucket>` and `<id>` from:
 
 ```bash
 cd infra/envs/dev
-terraform output frontend_bucket_name
-terraform output frontend_cloudfront_distribution_id
+terraform output frontend_site_bucket_name
+terraform output frontend_distribution_id
 ```
+
+### Where it is served
+
+| URL | Notes |
+|-----|-------|
+| `https://arrow.aimoryconsulting.com` | Primary. DNS is managed at Namecheap — setup and constraints in [infra/README.md](../../infra/README.md#custom-domain). |
+| `https://<id>.cloudfront.net` | Origin hostname. Still works; useful when diagnosing DNS. |
+
+```bash
+terraform output frontend_url
+```
+
+Nothing in the bundle hardcodes the origin — `VITE_COGNITO_REDIRECT_URI` is left
+empty so the app reads `window.location.origin` at runtime, and Terraform adds
+the custom-domain origin to the Cognito callback and CORS allow-lists. The same
+build therefore works on either URL.
+
+`VITE_API_ENDPOINT` still points at `*.execute-api.us-east-1.amazonaws.com`,
+which the CloudFront CSP permits. If the API ever moves to a custom domain, the
+`connect-src` directive in `infra/modules/frontend/main.tf` has to change in the
+same commit or every API call is blocked by the browser.

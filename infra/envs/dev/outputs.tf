@@ -73,6 +73,37 @@ output "frontend_distribution_domain" {
   value       = module.frontend_site.distribution_domain_name
 }
 
+# Everything you have to paste into Namecheap -> Advanced DNS, pre-formatted.
+# The validation CNAME must stay in place permanently: ACM re-reads it to renew
+# the certificate roughly every 13 months. Deleting it breaks renewal silently.
+output "namecheap_records" {
+  description = "CNAME records to create at Namecheap for the custom domain"
+  value = local.custom_domain_enabled ? [
+    {
+      purpose = "certificate validation (must never be deleted)"
+      type    = module.certificate[0].validation_record.type
+      host    = module.certificate[0].validation_record.host
+      value   = module.certificate[0].validation_record.value
+    },
+    {
+      purpose = "points the app at CloudFront"
+      type    = "CNAME"
+      host    = local.app_host
+      value   = module.frontend_site.distribution_domain_name
+    },
+  ] : []
+}
+
+output "certificate_arn_unvalidated" {
+  description = "ACM certificate ARN without waiting for validation — for checking status during setup"
+  value       = local.custom_domain_enabled ? module.certificate[0].certificate_arn_unvalidated : null
+}
+
+output "frontend_url" {
+  description = "Public URL for the frontend"
+  value       = local.custom_domain_enabled ? local.app_origin : "https://${module.frontend_site.distribution_domain_name}"
+}
+
 output "frontend_distribution_id" {
   description = "CloudFront distribution ID"
   value       = module.frontend_site.distribution_id
