@@ -98,6 +98,12 @@ resource "aws_cloudfront_response_headers_policy" "site" {
 }
 
 resource "aws_cloudfront_distribution" "site" {
+  # checkov:skip=CKV_AWS_174: TLS floor is set below, but keyed on certificate_arn,
+  # which arrives from the ACM module and is unknown until apply. Checkov folds
+  # only literals — not comparisons, locals, or variable defaults — so it cannot
+  # see which branch is taken and assumes the weaker one. When a custom cert is
+  # attached the distribution pins TLSv1.2_2021; the TLSv1 branch applies only to
+  # the default *.cloudfront.net certificate, where AWS rejects a higher floor.
   enabled             = true
   comment             = "${var.project_name}-${var.environment} frontend"
   default_root_object = var.default_root_object
