@@ -1,3 +1,22 @@
+locals {
+  # try() covers null; the trimspace guards an empty TF_VAR_frontend_hostname,
+  # which would otherwise read as "enabled" with a blank hostname.
+  custom_domain_enabled = try(trimspace(var.frontend_hostname) != "", false)
+  app_origin            = local.custom_domain_enabled ? "https://${var.frontend_hostname}" : null
+
+  # Namecheap's form takes the host relative to the apex ("arrow"), not the FQDN.
+  hostname_labels = local.custom_domain_enabled ? split(".", var.frontend_hostname) : []
+  apex_domain     = local.custom_domain_enabled ? join(".", slice(local.hostname_labels, length(local.hostname_labels) - 2, length(local.hostname_labels))) : null
+  app_host        = local.custom_domain_enabled ? trimsuffix(var.frontend_hostname, ".${local.apex_domain}") : null
+
+  # The custom origin has to reach Cognito's callback/logout allow-lists and the
+  # API + S3 CORS allow-lists. Miss either and the site loads on the new host but
+  # login bounces and every API call is CORS-rejected. Derived here rather than
+  # hand-maintained in tfvars so the hostname is only written down once.
+  cognito_callback_urls = distinct(compact(concat(var.cognito_callback_urls, [local.app_origin])))
+  cognito_logout_urls   = distinct(compact(concat(var.cognito_logout_urls, [local.app_origin])))
+}
+
 module "storage" {
   source       = "../../modules/storage"
   project_name = var.project_name
@@ -5,7 +24,7 @@ module "storage" {
 
   cors_allowed_origins = concat(
     ["http://localhost:5173"],
-    [for url in var.cognito_callback_urls : url if url != "http://localhost:5173"],
+    [for url in local.cognito_callback_urls : url if url != "http://localhost:5173"],
     ["https://${module.frontend_site.distribution_domain_name}"],
   )
 }
@@ -16,12 +35,23 @@ locals {
   lookup_tables = module.storage.lookup_tables
 }
 
+# Certificate only. DNS for aimoryconsulting.com stays at Namecheap, so both the
+# ownership-validation CNAME and the record pointing at CloudFront are created
+# by hand there — see "Custom Domain" in infra/README.md.
+module "certificate" {
+  count        = local.custom_domain_enabled ? 1 : 0
+  source       = "../../modules/certificate"
+  project_name = var.project_name
+  environment  = var.environment
+  hostname     = var.frontend_hostname
+}
+
 module "frontend_site" {
   source          = "../../modules/frontend"
   project_name    = var.project_name
   environment     = var.environment
-  domain_aliases  = var.frontend_domain_aliases
-  certificate_arn = var.frontend_certificate_arn
+  domain_aliases  = local.custom_domain_enabled ? [var.frontend_hostname] : var.frontend_domain_aliases
+  certificate_arn = local.custom_domain_enabled ? module.certificate[0].certificate_arn : var.frontend_certificate_arn
 }
 
 module "cognito" {
@@ -30,8 +60,8 @@ module "cognito" {
   environment  = var.environment
 
   # OAuth callback URLs - include both localhost and production
-  callback_urls = var.cognito_callback_urls
-  logout_urls   = var.cognito_logout_urls
+  callback_urls = local.cognito_callback_urls
+  logout_urls   = local.cognito_logout_urls
 
   # Microsoft Entra ID federation
   entra_client_id     = var.entra_client_id
@@ -141,7 +171,7 @@ module "api" {
 
   cors_allowed_origins = concat(
     ["http://localhost:5173"],
-    [for url in var.cognito_callback_urls : url if url != "http://localhost:5173"],
+    [for url in local.cognito_callback_urls : url if url != "http://localhost:5173"],
     ["https://${module.frontend_site.distribution_domain_name}"]
   )
 }

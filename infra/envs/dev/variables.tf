@@ -64,8 +64,25 @@ variable "sfn_arn_param_name" {
   }
 }
 
+variable "frontend_hostname" {
+  description = <<-EOT
+    Custom hostname for the frontend. When set, Terraform creates a delegated
+    Route 53 zone, an ACM certificate, and the CloudFront alias records, and
+    adds the https origin to the Cognito and CORS allow-lists. Null disables all
+    of it and falls back to frontend_domain_aliases / frontend_certificate_arn.
+
+    The default is deliberately the real hostname rather than null. CI supplies
+    variables via TF_VAR_* env only and never reads the gitignored
+    terraform.tfvars, so a null default would make every merge-deploy destroy
+    the hosted zone and certificate — which also invalidates the NS delegation
+    at Namecheap, since a recreated zone gets new nameservers.
+  EOT
+  type        = string
+  default     = "arrow.aimoryconsulting.com"
+}
+
 variable "frontend_domain_aliases" {
-  description = "Optional custom domains for the CloudFront frontend"
+  description = "Optional custom domains for the CloudFront frontend (ignored when frontend_hostname is set)"
   type        = list(string)
   default     = []
 }

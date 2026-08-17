@@ -19,7 +19,17 @@ github_pat_param     = "/aimory/github-pat"
 github_repo          = "bencas21/aimory-talent-pool"
 github_workflow_file = "merge-deploy.yml"
 
-# Frontend hosting (optional custom domain)
+# Frontend hosting (custom domain)
+#
+# frontend_hostname drives everything: a delegated Route 53 zone, an ACM cert,
+# the CloudFront alias records, and the Cognito + CORS allow-list entries.
+# Leave it unset here — the default in variables.tf is the source of truth so
+# that CI (which only sees TF_VAR_* env, never this file) agrees with local
+# applies. Setup runbook: infra/docs/custom-domain.md
+#
+# frontend_hostname = "arrow.aimoryconsulting.com"
+
+# Only used when frontend_hostname is null — manual cert/alias wiring.
 frontend_domain_aliases  = []  # e.g., ["talent.example.com"]
 frontend_certificate_arn = null  # ACM cert ARN if using custom domain
 

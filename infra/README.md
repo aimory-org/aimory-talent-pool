@@ -19,6 +19,7 @@ infra/
     ├── api/                  # API Gateway + Lambda endpoints
     │   └── lambda_src/       # Python handlers (list_talents, get_talent, etc.)
     ├── auth/                 # Cognito User Pool + Microsoft Entra ID federation
+    ├── certificate/          # ACM cert for the custom domain (DNS stays at Namecheap)
     ├── document_pipeline/    # Reusable document processing pipeline (see its README)
     │   ├── lambda_src/       # Shared Lambdas (starter, classify, textract, gather_text, llm_extract)
     │   └── layers/           # Custom Lambda layers (pdfminer)
@@ -356,11 +357,13 @@ raw_prefix         = "resumes/raw"
 extracted_prefix   = "extracted"
 sfn_arn_param_name = "/aimory-talent-pool/dev/resume-pipeline-arn"
 
-# Frontend (optional custom domain)
-frontend_domain_aliases  = []     # e.g., ["talent.aimory.com"]
-frontend_certificate_arn = null   # ACM cert ARN (must be in us-east-1)
+# Frontend custom domain — see "Custom Domain" below.
+# Do NOT set frontend_hostname here; its default in variables.tf is the source
+# of truth so that CI (which only sees TF_VAR_* env) agrees with local applies.
+frontend_domain_aliases  = []     # legacy manual path only
+frontend_certificate_arn = null   # legacy manual path only
 
-# Cognito OAuth URLs
+# Cognito OAuth URLs. The custom-domain origin is appended automatically.
 cognito_callback_urls = ["http://localhost:5173"]
 cognito_logout_urls   = ["http://localhost:5173"]
 
@@ -407,22 +410,168 @@ https://<cognito-domain>.auth.<region>.amazoncognito.com/oauth2/idpresponse
 
 Get the CloudFront URL:
 ```bash
-terraform output frontend_cloudfront_url
+terraform output frontend_distribution_domain
 ```
 
-Update `terraform.tfvars`:
-```hcl
-cognito_callback_urls = [
-  "http://localhost:5173",
-  "https://d1234567890abc.cloudfront.net"
-]
-cognito_logout_urls = [
-  "http://localhost:5173", 
-  "https://d1234567890abc.cloudfront.net"
-]
+Add it to `cognito_callback_urls` and `cognito_logout_urls` in `terraform.tfvars`,
+then `terraform apply` again.
+
+> The **custom-domain** origin (`https://arrow.aimoryconsulting.com`) does *not*
+> need to be listed. `modules.tf` appends it to the Cognito allow-lists and the
+> API/S3 CORS origins automatically from `frontend_hostname`. Only the raw
+> CloudFront URL is manual.
+
+## Custom Domain
+
+The app is reachable at **https://arrow.aimoryconsulting.com**, in addition to
+its CloudFront hostname.
+
+### Where DNS lives
+
+**All DNS for `aimoryconsulting.com` stays at Namecheap.** No Route 53, no
+nameserver changes. Terraform requests the TLS certificate; the two DNS records
+it needs are created by hand in the Namecheap panel.
+
+This keeps the apex zone — and with it the Microsoft 365 records (MX, SPF, DKIM,
+DMARC, autodiscover) — entirely untouched.
+
+### Why a certificate is needed at all
+
+Pointing `arrow` at the CloudFront hostname is enough to route traffic, but
+CloudFront would answer holding its default `*.cloudfront.net` certificate and
+every browser would block the page with `ERR_CERT_COMMON_NAME_INVALID`. Serving
+a custom hostname over HTTPS requires an ACM certificate naming it, issued in
+us-east-1.
+
+### What you need
+
+- Namecheap access to edit **Advanced DNS** on `aimoryconsulting.com`.
+- AWS credentials for the account running `infra/envs/dev`.
+
+### Step 1 — request the certificate
+
+Validation is manual, so this is a two-step apply. The first one only requests
+the certificate and prints the records to paste; an unvalidated certificate
+costs nothing while it waits.
+
+```bash
+cd infra/envs/dev
+terraform apply -target='module.certificate[0].aws_acm_certificate.app'
+terraform output namecheap_records
 ```
 
-Run `terraform apply` again.
+### Step 2 — add both records at Namecheap
+
+Namecheap → Domain List → `aimoryconsulting.com` → **Manage** → **Advanced DNS**
+→ **Add New Record**, twice. `terraform output namecheap_records` prints both
+rows with the host already made relative to the apex, so paste the values
+verbatim:
+
+| Type  | Host                    | Value                            | TTL       |
+| ----- | ----------------------- | -------------------------------- | --------- |
+| CNAME | `_<hash>.arrow`         | `<hash>.xxx.acm-validations.aws` | Automatic |
+| CNAME | `arrow`                 | `d1t1fkbbxct55k.cloudfront.net`  | Automatic |
+
+Host is relative — Namecheap appends `.aimoryconsulting.com` itself. Do not
+paste the fully-qualified name or it becomes
+`arrow.aimoryconsulting.com.aimoryconsulting.com`.
+
+**Leave every existing record alone.** That panel holds the email records.
+
+> ⚠️ The first CNAME must stay **forever**. ACM re-reads it to renew the
+> certificate before each expiry. The value never changes and there is
+> nothing to do annually — but delete it and renewal fails silently, and the
+> site starts blocking visitors a few months later. See
+> [Cost and renewal](#cost-and-renewal).
+
+Verify before continuing (usually a few minutes):
+
+```bash
+dig CNAME arrow.aimoryconsulting.com +short   # -> d1t1fkbbxct55k.cloudfront.net
+aws acm describe-certificate --region us-east-1 \
+  --certificate-arn "$(terraform output -raw certificate_arn_unvalidated)" \
+  --query 'Certificate.Status'                # -> "ISSUED"
+```
+
+### Step 3 — attach it and go live
+
+Once ACM reports `ISSUED`:
+
+```bash
+terraform apply
+```
+
+**Prefer letting CI do this apply** — merge to `main` and `merge-deploy.yml`
+applies with the full secret set. A local full apply has two rough edges:
+
+- **It destroys the Cognito e2e test user.** `merge-deploy.yml` sets
+  `TF_VAR_enable_e2e_test_user=true`; `terraform.tfvars` does not, so locally
+  the count drops to zero. Setting only that env var does *not* help — it trips
+  a precondition, because `e2e_test_user_email` and `e2e_test_user_password`
+  are also CI-only secrets. Either supply all three, or accept the destroy:
+  the next merge-deploy recreates the user.
+- Locally rebuilt Lambda layers (`pdfminer`, `opensearch`) show as
+  `must be replaced`, which pulls source-hash updates through most Lambdas.
+  That is normal layer-version churn, not data loss.
+
+Either way, plan first and read the destroy list:
+
+```bash
+terraform plan
+```
+
+CloudFront takes roughly 5–15 minutes to redeploy after picking up the
+certificate and alias.
+
+### How it is wired
+
+`frontend_hostname` (default in `envs/dev/variables.tf`) is the single source of
+truth. Everything else derives from it in `modules.tf`:
+
+- `module.certificate` — the ACM certificate and the records to paste
+- `module.frontend_site` — CloudFront `aliases` and `viewer_certificate`
+- Cognito callback + logout URLs
+- API Gateway and S3 CORS allowed origins
+
+Those last two are the easy ones to miss. Without them the site loads on the new
+hostname, then login bounces and every API call is CORS-rejected.
+
+The default deliberately lives in `variables.tf` rather than `terraform.tfvars`:
+tfvars is gitignored and CI passes variables via `TF_VAR_*` env only, so a null
+default would make every `merge-deploy` run tear the certificate back off the
+distribution.
+
+Set `frontend_hostname = null` to disable the custom domain entirely and fall
+back to the CloudFront hostname.
+
+### Cost and renewal
+
+The ACM certificate is free and there is no hosted zone, so the custom domain
+adds nothing to the AWS bill.
+
+ACM renews automatically by re-reading the validation CNAME at Namecheap. The
+value never changes, so there is no recurring task — the only failure mode is
+that record being deleted. If it is, renewal fails, AWS emails the account
+address, and the certificate eventually expires and blocks all visitors.
+
+Certificate lifetimes are shrinking industry-wide (the current cert is ~200
+days, not the older 13 months), so renewals happen more often than they used
+to. That makes the record's permanence matter more, not less.
+
+Managed renewal also requires the certificate to be **in use**. While it is
+attached to nothing, `describe-certificate` reports
+`RenewalEligibility: INELIGIBLE`; that flips to `ELIGIBLE` once CloudFront is
+serving it. Worth re-checking after the first full apply:
+
+```bash
+aws acm describe-certificate --region us-east-1 \
+  --certificate-arn "$(terraform output -raw certificate_arn_unvalidated)" \
+  --query 'Certificate.[Status,NotAfter,RenewalEligibility]'
+```
+
+> The Entra ID app registration needs **no** change. Its redirect URI points at
+> the Cognito hosted-UI `/oauth2/idpresponse` endpoint, and the Cognito domain
+> is not moving.
 
 ## Terraform Outputs
 
@@ -434,7 +583,7 @@ terraform output cognito_frontend_config
 
 # Individual values
 terraform output api_endpoint
-terraform output frontend_cloudfront_url
+terraform output frontend_distribution_domain
 terraform output cognito_user_pool_id
 terraform output cognito_client_id
 terraform output cognito_domain
@@ -497,12 +646,24 @@ Cognito User Pool with:
 - OAuth 2.0 / OIDC configuration
 - Web app client (public, PKCE)
 
+### certificate
+
+ACM certificate for the custom domain (see [Custom Domain](#custom-domain)):
+- Requests a us-east-1 certificate for `arrow.aimoryconsulting.com`
+- Creates **no DNS records** — DNS is managed at Namecheap, so the validation
+  CNAME is pasted there by hand
+- `validation_record` output pre-formats that CNAME for the registrar's form
+  (host relative to the apex, trailing dots stripped)
+- `certificate_arn` blocks until ACM reports ISSUED, which is what makes it safe
+  to attach to CloudFront
+
 ### frontend/site
 
 Static site hosting:
 - S3 bucket (private, OAC-protected)
 - CloudFront distribution with SPA routing
-- Optional custom domain support
+- Custom domain via `aliases` + `viewer_certificate` (the DNS record pointing at
+  the distribution is created manually at Namecheap)
 
 ## Common Operations
 
@@ -541,7 +702,13 @@ aws logs tail /aws/lambda/aimory-talent-pool-dev-llm_extract --follow
 
 3. Create `terraform.tfvars` with staging-specific values
 
-4. Deploy:
+4. **Override `frontend_hostname`** in the new env's `variables.tf` — set it to a
+   distinct hostname or `null`. The copied default points at
+   `arrow.aimoryconsulting.com`; leaving it would request a duplicate
+   certificate and try to claim a CloudFront alias that dev already owns
+   (aliases are globally unique across all CloudFront distributions).
+
+5. Deploy:
    ```bash
    cd infra/envs/staging
    terraform init
@@ -560,6 +727,40 @@ The pdfminer layer may not be built. Run the build script and retry.
 Check that the redirect URI in Entra ID matches exactly what Cognito expects. Get the expected value from:
 ```bash
 terraform output cognito_domain
+```
+
+### Custom domain: `terraform apply` hangs, then "timeout while waiting for state to become 'ISSUED'"
+
+ACM can't see the validation CNAME, so it never issues. Check the record is
+actually live and matches what ACM expects:
+
+```bash
+terraform output namecheap_records
+dig CNAME "$(terraform output -json namecheap_records | jq -r '.[0].host').aimoryconsulting.com" +short
+```
+
+A common cause is pasting the fully-qualified host into Namecheap, producing
+`_hash.arrow.aimoryconsulting.com.aimoryconsulting.com`. The host field must be
+relative to the apex. Fix it and re-run `terraform apply` — nothing needs
+unwinding.
+
+### Custom domain: browser shows ERR_CERT_COMMON_NAME_INVALID
+
+DNS is pointing at CloudFront but the certificate isn't attached yet, so
+CloudFront is answering with its default `*.cloudfront.net` cert. Finish Step 3
+and give CloudFront 5–15 minutes to redeploy.
+
+### Custom domain: site loads but login bounces or API calls fail
+
+The origin is missing from an allow-list. Both are derived from
+`frontend_hostname`, so this usually means the apply that added it didn't
+complete. Confirm:
+
+```bash
+aws cognito-idp describe-user-pool-client \
+  --user-pool-id $(terraform output -raw cognito_user_pool_id) \
+  --client-id $(terraform output -raw cognito_web_client_id) \
+  --query 'UserPoolClient.CallbackURLs'
 ```
 
 ### Textract "AccessDenied"
