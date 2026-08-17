@@ -49,6 +49,7 @@ def _get_client():
 # indices via put_mapping (idempotent) so deploys don't require recreating the index.
 _ADDITIVE_PROPERTIES = {
     "industry_category_list": {"type": "keyword"},
+    "starred": {"type": "boolean"},
 }
 
 
@@ -91,6 +92,7 @@ def _ensure_index(client):
                     "date_received": {"type": "keyword"},
                     "updated_at": {"type": "keyword"},
                     "possible_duplicate_of": {"type": "keyword"},
+                    "starred": {"type": "boolean"},
                 }
             }
         },

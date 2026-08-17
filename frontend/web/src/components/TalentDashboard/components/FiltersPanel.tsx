@@ -2,7 +2,7 @@
  * Filters panel component for filtering talent pool results.
  */
 import { useState } from "react";
-import { Filter, X, Trash2, Settings, AlertTriangle } from "lucide-react";
+import { Filter, X, Trash2, Settings, AlertTriangle, Star } from "lucide-react";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Label } from "@/components/ui/label";
 import {
@@ -43,6 +43,9 @@ interface FiltersPanelProps {
   onToggleWarningsFilter: () => void;
   selectedWarningTypes: WarningType[];
   onWarningTypesChange: (types: WarningType[]) => void;
+  starredCount: number;
+  starredFilterActive: boolean;
+  onToggleStarredFilter: () => void;
 }
 
 export function FiltersPanel({
@@ -67,6 +70,9 @@ export function FiltersPanel({
   onToggleWarningsFilter,
   selectedWarningTypes,
   onWarningTypesChange,
+  starredCount,
+  starredFilterActive,
+  onToggleStarredFilter,
 }: FiltersPanelProps) {
   const [managingTags, setManagingTags] = useState(false);
   const [confirmDeleteTag, setConfirmDeleteTag] = useState<string | null>(null);
@@ -139,6 +145,28 @@ export function FiltersPanel({
                 />
               </div>
             )}
+            <button
+              onClick={onToggleStarredFilter}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors duration-150 ${
+                starredFilterActive
+                  ? "bg-yellow-400/15 border border-yellow-400/40 text-yellow-600 dark:text-yellow-300"
+                  : "border border-border text-muted-foreground hover:text-yellow-500 hover:border-yellow-400/40"
+              }`}
+            >
+              <Star className={`h-3.5 w-3.5 ${starredFilterActive ? "fill-yellow-400 text-yellow-400" : ""}`} />
+              Starred
+              {starredCount > 0 && (
+                <span
+                  className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                    starredFilterActive
+                      ? "bg-yellow-400 text-white"
+                      : "bg-yellow-400/15 text-yellow-600 dark:text-yellow-300"
+                  }`}
+                >
+                  {starredCount}
+                </span>
+              )}
+            </button>
             {totalWarningCount > 0 && (
               <button
                 onClick={onToggleWarningsFilter}

@@ -29,7 +29,9 @@ type ActionType =
   | "new_candidate"
   | "new_job_description"
   | "archive_jd"
-  | "unarchive_jd";
+  | "unarchive_jd"
+  | "starred"
+  | "unstarred";
 
 interface RecruiterEvent {
   id: string;
@@ -122,6 +124,16 @@ const ACTION_CONFIG: Record<
     badge: "bg-secondary text-muted-foreground border-transparent",
     dot: "bg-muted-foreground",
   },
+  starred: {
+    label: "Starred",
+    badge: "bg-yellow-400/10 text-yellow-600 dark:text-yellow-300 border-yellow-400/20",
+    dot: "bg-yellow-400",
+  },
+  unstarred: {
+    label: "Unstarred",
+    badge: "bg-secondary text-muted-foreground border-transparent",
+    dot: "bg-muted-foreground",
+  },
 };
 
 const ACTION_FILTERS: { value: ActionType | "all"; label: string }[] = [
@@ -135,6 +147,8 @@ const ACTION_FILTERS: { value: ActionType | "all"; label: string }[] = [
   { value: "tag_remove", label: "Tags Removed" },
   { value: "archive_jd", label: "JD Archived" },
   { value: "unarchive_jd", label: "JD Unarchived" },
+  { value: "starred", label: "Starred" },
+  { value: "unstarred", label: "Unstarred" },
 ];
 
 function formatDate(iso: string) {
@@ -284,6 +298,23 @@ function mapRecruiterEvent(entry: AuditEntry): RecruiterEvent | null {
               : `Removed tag ${tagAction.value}.`,
         };
       }
+    }
+
+    // Starred field change — use a dedicated action type and description.
+    if ("starred" in changes) {
+      const isStarring = changes.starred.new === true;
+      return {
+        id: entry.sk,
+        timestamp: entry.timestamp,
+        recruiter_name: recruiterName,
+        recruiter_email: entry.user_email,
+        action: isStarring ? "starred" : "unstarred",
+        candidate_name: candidateName,
+        candidate_id: entry.pk,
+        details: isStarring
+          ? `Starred ${candidateName} for future recruitment.`
+          : `Removed ${candidateName} from starred.`,
+      };
     }
 
     // Archived field change — use a dedicated action type and description.

@@ -201,6 +201,7 @@ export interface UpdateTalentParams {
   years_of_experience?: number | null;
   notes?: string;
   tags?: string[];
+  starred?: boolean;
   dismiss_duplicate?: boolean;
 }
 
