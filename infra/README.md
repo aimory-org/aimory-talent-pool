@@ -479,7 +479,7 @@ paste the fully-qualified name or it becomes
 **Leave every existing record alone.** That panel holds the email records.
 
 > ⚠️ The first CNAME must stay **forever**. ACM re-reads it to renew the
-> certificate about every 13 months. The value never changes and there is
+> certificate before each expiry. The value never changes and there is
 > nothing to do annually — but delete it and renewal fails silently, and the
 > site starts blocking visitors a few months later. See
 > [Cost and renewal](#cost-and-renewal).
@@ -549,11 +549,25 @@ back to the CloudFront hostname.
 The ACM certificate is free and there is no hosted zone, so the custom domain
 adds nothing to the AWS bill.
 
-ACM renews automatically about 60 days before the 13-month expiry by re-reading
-the validation CNAME at Namecheap. The value never changes, so there is no
-recurring task — the only failure mode is that record being deleted. If it is,
-renewal fails, AWS emails the account address, and the certificate eventually
-expires and blocks all visitors.
+ACM renews automatically by re-reading the validation CNAME at Namecheap. The
+value never changes, so there is no recurring task — the only failure mode is
+that record being deleted. If it is, renewal fails, AWS emails the account
+address, and the certificate eventually expires and blocks all visitors.
+
+Certificate lifetimes are shrinking industry-wide (the current cert is ~200
+days, not the older 13 months), so renewals happen more often than they used
+to. That makes the record's permanence matter more, not less.
+
+Managed renewal also requires the certificate to be **in use**. While it is
+attached to nothing, `describe-certificate` reports
+`RenewalEligibility: INELIGIBLE`; that flips to `ELIGIBLE` once CloudFront is
+serving it. Worth re-checking after the first full apply:
+
+```bash
+aws acm describe-certificate --region us-east-1 \
+  --certificate-arn "$(terraform output -raw certificate_arn_unvalidated)" \
+  --query 'Certificate.[Status,NotAfter,RenewalEligibility]'
+```
 
 > The Entra ID app registration needs **no** change. Its redirect URI points at
 > the Cognito hosted-UI `/oauth2/idpresponse` endpoint, and the Cognito domain

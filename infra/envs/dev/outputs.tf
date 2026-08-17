@@ -75,7 +75,8 @@ output "frontend_distribution_domain" {
 
 # Everything you have to paste into Namecheap -> Advanced DNS, pre-formatted.
 # The validation CNAME must stay in place permanently: ACM re-reads it to renew
-# the certificate roughly every 13 months. Deleting it breaks renewal silently.
+# the certificate (~200 day validity as of 2026). Deleting it breaks renewal
+# silently.
 output "namecheap_records" {
   description = "CNAME records to create at Namecheap for the custom domain"
   value = local.custom_domain_enabled ? [
